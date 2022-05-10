@@ -1,0 +1,6 @@
+﻿  Generating code
+  Previous IPDB not found, fall back to full compilation.
+  All 1141 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  Finished generating code
+SDL2main.lib(SDL_windows_main.obj) : warning LNK4099: PDB 'SDL2main.pdb' was not found with 'SDL2main.lib(SDL_windows_main.obj)' or at 'C:\Git\Vulkan_Engine\x64\Release\SDL2main.pdb'; linking object as if no debug info
+  Vulkan_Engine.vcxproj -> C:\Git\Vulkan_Engine\x64\Release\Vulkan_Engine.exe

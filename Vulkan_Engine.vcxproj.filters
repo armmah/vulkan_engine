@@ -9,6 +9,12 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
+    <Filter Include="Header Files\Presentation">
+      <UniqueIdentifier>{fda7530e-8aa9-4c01-8a4e-5394c448d855}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Presentation">
+      <UniqueIdentifier>{df6c0160-1c39-4979-a161-d57bc5b4683a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -26,6 +32,21 @@
     <ClCompile Include="src\vkinit_queue.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\Presentation\Frame.cpp">
+      <Filter>Source Files\Presentation</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Presentation\HardwarePresentation.cpp">
+      <Filter>Source Files\Presentation</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Presentation\PresentationDevice.cpp">
+      <Filter>Source Files\Presentation</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Presentation\PresentationFrames.cpp">
+      <Filter>Source Files\Presentation</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Presentation\PresentationTarget.cpp">
+      <Filter>Source Files\Presentation</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\vk_engine.h">
@@ -33,6 +54,21 @@
     </ClInclude>
     <ClInclude Include="src\vk_types.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Presentation\Frame.h">
+      <Filter>Header Files\Presentation</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Presentation\HardwarePresentation.h">
+      <Filter>Header Files\Presentation</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Presentation\PresentationFrames.h">
+      <Filter>Header Files\Presentation</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Presentation\PresentationTarget.h">
+      <Filter>Header Files\Presentation</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Presentation\PresentationDevice.h">
+      <Filter>Header Files\Presentation</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

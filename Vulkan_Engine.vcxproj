@@ -153,12 +153,22 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\Presentation\Frame.cpp" />
+    <ClCompile Include="src\Presentation\HardwarePresentation.cpp" />
+    <ClCompile Include="src\Presentation\PresentationDevice.cpp" />
+    <ClCompile Include="src\Presentation\PresentationFrames.cpp" />
+    <ClCompile Include="src\Presentation\PresentationTarget.cpp" />
     <ClCompile Include="src\vkinit_instance.cpp" />
     <ClCompile Include="src\vkinit_queue.cpp" />
     <ClCompile Include="src\vk_engine.cpp" />
     <ClCompile Include="src\vk_types.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\Presentation\Frame.h" />
+    <ClInclude Include="src\Presentation\HardwarePresentation.h" />
+    <ClInclude Include="src\Presentation\PresentationDevice.h" />
+    <ClInclude Include="src\Presentation\PresentationFrames.h" />
+    <ClInclude Include="src\Presentation\PresentationTarget.h" />
     <ClInclude Include="src\vk_engine.h" />
     <ClInclude Include="src\vk_types.h" />
   </ItemGroup>

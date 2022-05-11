@@ -4,6 +4,13 @@
 #pragma once
 
 #include "vk_types.h"
+
+#include "Presentation/HardwarePresentation.h"
+#include "Presentation/PresentationDevice.h"
+#include "Presentation/PresentationTarget.h"
+#include "Presentation/Frame.h"
+#include "Presentation/PresentationFrames.h"
+
 #include <vector>
 #include <optional>
 #include <string>

@@ -1,10 +1,10 @@
 #include "vk_types.h"
 
-#include "Presentation/HardwarePresentation.h"
-#include "Presentation/PresentationDevice.h"
+#include "Presentation/HardwareDevice.h"
+#include "Presentation/Device.h"
 #include "Presentation/PresentationTarget.h"
 #include "Presentation/Frame.h"
-#include "Presentation/PresentationFrames.h"
+#include "Presentation/FrameCollection.h"
 
 bool VulkanValidationLayers::checkValidationLayerSupport()
 {
@@ -114,12 +114,12 @@ struct Shader
 	Shader(VkDevice device, ShaderSource source) 
 		: device(device)
 	{
-		if (!PresentationTarget::createShaderModule(vertShader, source.getVertexSource(), device))
+		if (!Presentation::PresentationTarget::createShaderModule(vertShader, source.getVertexSource(), device))
 		{
 			printf("Failed to compile the shader '%s'.", source.fragmentPath);
 		}
 
-		if (!PresentationTarget::createShaderModule(fragShader, source.getFragmentSource(), device))
+		if (!Presentation::PresentationTarget::createShaderModule(fragShader, source.getFragmentSource(), device))
 		{
 			printf("Failed to compile the shader '%s'.", source.fragmentPath);
 		}
@@ -203,7 +203,7 @@ struct VertexBinding
 	}
 };
 
-bool PresentationTarget::createGraphicsPipeline(VkDevice device, VkExtent2D scissorExtent, VkCullModeFlagBits faceCullingMode = VK_CULL_MODE_BACK_BIT)
+bool Presentation::PresentationTarget::createGraphicsPipeline(VkDevice device, VkExtent2D scissorExtent, VkCullModeFlagBits faceCullingMode = VK_CULL_MODE_BACK_BIT)
 {
 	Shader shader(device, ShaderSource::getHardcodedTriangle());
 	auto vertexInputInfo = VertexBinding::getHardcodedTriangle();
@@ -335,7 +335,7 @@ bool PresentationTarget::createGraphicsPipeline(VkDevice device, VkExtent2D scis
 	return true;
 }
 
-bool PresentationTarget::createShaderModule(VkShaderModule& module, const std::vector<char>& code, VkDevice device)
+bool Presentation::PresentationTarget::createShaderModule(VkShaderModule& module, const std::vector<char>& code, VkDevice device)
 {
 	VkShaderModuleCreateInfo createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;

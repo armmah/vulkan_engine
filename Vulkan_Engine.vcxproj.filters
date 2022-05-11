@@ -35,13 +35,13 @@
     <ClCompile Include="src\Presentation\Frame.cpp">
       <Filter>Source Files\Presentation</Filter>
     </ClCompile>
-    <ClCompile Include="src\Presentation\HardwarePresentation.cpp">
+    <ClCompile Include="src\Presentation\HardwareDevice.cpp">
       <Filter>Source Files\Presentation</Filter>
     </ClCompile>
-    <ClCompile Include="src\Presentation\PresentationDevice.cpp">
+    <ClCompile Include="src\Presentation\Device.cpp">
       <Filter>Source Files\Presentation</Filter>
     </ClCompile>
-    <ClCompile Include="src\Presentation\PresentationFrames.cpp">
+    <ClCompile Include="src\Presentation\FrameCollection.cpp">
       <Filter>Source Files\Presentation</Filter>
     </ClCompile>
     <ClCompile Include="src\Presentation\PresentationTarget.cpp">
@@ -58,16 +58,16 @@
     <ClInclude Include="src\Presentation\Frame.h">
       <Filter>Header Files\Presentation</Filter>
     </ClInclude>
-    <ClInclude Include="src\Presentation\HardwarePresentation.h">
+    <ClInclude Include="src\Presentation\HardwareDevice.h">
       <Filter>Header Files\Presentation</Filter>
     </ClInclude>
-    <ClInclude Include="src\Presentation\PresentationFrames.h">
+    <ClInclude Include="src\Presentation\FrameCollection.h">
       <Filter>Header Files\Presentation</Filter>
     </ClInclude>
     <ClInclude Include="src\Presentation\PresentationTarget.h">
       <Filter>Header Files\Presentation</Filter>
     </ClInclude>
-    <ClInclude Include="src\Presentation\PresentationDevice.h">
+    <ClInclude Include="src\Presentation\Device.h">
       <Filter>Header Files\Presentation</Filter>
     </ClInclude>
   </ItemGroup>

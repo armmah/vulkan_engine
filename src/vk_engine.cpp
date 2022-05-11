@@ -52,16 +52,16 @@ bool VulkanEngine::init_vulkan(SDL_Window* window)
 		vkinit::Instance::createInstance(m_instance, applicationName, extensions, m_validationLayers) &&
 		vkinit::Surface::createSurface(surface, m_instance, window);
 
-	m_presentationHardware = std::make_shared<HardwarePresentationDevice>(m_instance, surface);
-	m_presentationDevice = std::make_shared<PresentationDevice>(m_presentationHardware->getActiveGPU(), surface, window, m_validationLayers);
-	m_swapchain = std::make_unique<PresentationTarget>(m_presentationHardware, m_presentationDevice);
-	m_framePresentation = std::make_unique<PresentationFrames>(m_presentationDevice);
+	m_presentationHardware = std::make_shared<Presentation::HardwareDevice>(m_instance, surface);
+	m_presentationDevice = std::make_shared<Presentation::Device>(m_presentationHardware->getActiveGPU(), surface, window, m_validationLayers);
+	m_presentationTarget = std::make_unique<Presentation::PresentationTarget>(m_presentationHardware, m_presentationDevice);
+	m_framePresentation = std::make_unique<Presentation::FrameCollection>(m_presentationDevice);
 
 	return
 		instanceCreated &&
 		m_presentationHardware->isInitialized() &&
 		m_presentationDevice->isInitialized() &&
-		m_swapchain->isInitialized() &&
+		m_presentationTarget->isInitialized() &&
 		m_framePresentation->isInitialized();
 }
 
@@ -92,7 +92,7 @@ void VulkanEngine::draw()
 	auto frame = m_framePresentation->getNextFrameAndWaitOnFence();
 
 	uint32_t imageIndex;
-	auto result = m_framePresentation->acquireImageFromSwapchain(imageIndex, m_swapchain->swapchain);
+	auto result = m_framePresentation->acquireImageFromSwapchain(imageIndex, m_presentationTarget->swapchain);
 	
 	if (handleFailedToAcquireImageIfNecessary(result))
 		return;
@@ -100,11 +100,11 @@ void VulkanEngine::draw()
 	auto buffer = frame.getCommandBuffer();
 	vkResetCommandBuffer(buffer, 0);
 	
-	CommandObjectsWrapper::HelloTriangleCommand(buffer, m_swapchain->pipeline, m_swapchain->renderPass, m_swapchain->swapChainFrameBuffers[imageIndex], m_swapchain->swapChainExtent);
+	CommandObjectsWrapper::HelloTriangleCommand(buffer, m_presentationTarget->pipeline, m_presentationTarget->renderPass, m_presentationTarget->swapChainFrameBuffers[imageIndex], m_presentationTarget->swapChainExtent);
 
 	frame.resetAcquireFence(m_presentationDevice->getDevice());
 	frame.submitToQueue(m_presentationDevice->getGraphicsQueue());
-	frame.present(imageIndex, m_swapchain->swapchain, m_presentationDevice->getPresentQueue());
+	frame.present(imageIndex, m_presentationTarget->swapchain, m_presentationDevice->getPresentQueue());
 }
 
 bool VulkanEngine::handleFailedToAcquireImageIfNecessary(VkResult imageAcquireResult)
@@ -113,8 +113,8 @@ bool VulkanEngine::handleFailedToAcquireImageIfNecessary(VkResult imageAcquireRe
 	{
 		vkDeviceWaitIdle(m_presentationDevice->getDevice());
 
-		m_swapchain->release(m_presentationDevice->getDevice());
-		if (!m_swapchain->createPresentationTarget(m_presentationHardware, m_presentationDevice))
+		m_presentationTarget->release(m_presentationDevice->getDevice());
+		if (!m_presentationTarget->createPresentationTarget(m_presentationHardware, m_presentationDevice))
 			printf("Recreating the swapchain was not successful");
 
 		return true;
@@ -133,7 +133,7 @@ void VulkanEngine::cleanup()
 	{
 		m_framePresentation->releaseFrameResources();
 
-		m_swapchain->release(m_presentationDevice->getDevice());
+		m_presentationTarget->release(m_presentationDevice->getDevice());
 		m_presentationDevice->release();
 
 		vkDestroySurfaceKHR(m_instance, m_presentationDevice->getSurface(), nullptr);

@@ -5,11 +5,11 @@
 
 #include "vk_types.h"
 
-#include "Presentation/HardwarePresentation.h"
-#include "Presentation/PresentationDevice.h"
+#include "Presentation/HardwareDevice.h"
+#include "Presentation/Device.h"
 #include "Presentation/PresentationTarget.h"
 #include "Presentation/Frame.h"
-#include "Presentation/PresentationFrames.h"
+#include "Presentation/FrameCollection.h"
 
 #include <vector>
 #include <optional>
@@ -25,10 +25,10 @@ public:
 	VulkanValidationLayers m_validationLayers;
 	//VkDebugUtilsMessengerEXT _debug_messenger; // Vulkan debug output handle
 
-	std::shared_ptr<HardwarePresentationDevice> m_presentationHardware;
-	std::shared_ptr<PresentationDevice> m_presentationDevice;
-	std::unique_ptr<PresentationTarget> m_swapchain;
-	std::unique_ptr<PresentationFrames> m_framePresentation;
+	std::shared_ptr<Presentation::HardwareDevice> m_presentationHardware;
+	std::shared_ptr<Presentation::Device> m_presentationDevice;
+	std::unique_ptr<Presentation::PresentationTarget> m_presentationTarget;
+	std::unique_ptr<Presentation::FrameCollection> m_framePresentation;
 
 	bool _isInitialized { false };
 

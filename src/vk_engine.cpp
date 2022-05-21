@@ -7,6 +7,9 @@
 #include <assert.h>
 #include <cassert>
 
+#define VMA_IMPLEMENTATION
+#include "vk_mem_alloc.h"
+
 void VulkanEngine::init()
 {
 	// We initialize SDL and create a window with it. 
@@ -48,17 +51,27 @@ bool VulkanEngine::init_vulkan(SDL_Window* window)
 		return false;
 
 	VkSurfaceKHR surface;
-	bool instanceCreated = 
-		vkinit::Instance::createInstance(m_instance, applicationName, extensions, m_validationLayers) &&
-		vkinit::Surface::createSurface(surface, m_instance, window);
+	if (!vkinit::Instance::createInstance(m_instance, applicationName, extensions, m_validationLayers) ||
+		!vkinit::Surface::createSurface(surface, m_instance, window))
+		return false;
 
 	m_presentationHardware = std::make_shared<Presentation::HardwareDevice>(m_instance, surface);
 	m_presentationDevice = std::make_shared<Presentation::Device>(m_presentationHardware->getActiveGPU(), surface, window, m_validationLayers);
-	m_presentationTarget = std::make_unique<Presentation::PresentationTarget>(m_presentationHardware, m_presentationDevice);
-	m_framePresentation = std::make_unique<Presentation::FrameCollection>(m_presentationDevice);
 
+	m_openScene = std::make_unique<Scene>();
+
+	VmaAllocatorCreateInfo allocatorInfo = {};
+	allocatorInfo.physicalDevice = m_presentationHardware->getActiveGPU();
+	allocatorInfo.device = m_presentationDevice->getDevice();
+	allocatorInfo.instance = m_instance;
+	if (vmaCreateAllocator(&allocatorInfo, &m_memoryAllocator) != VK_SUCCESS || 
+		!m_openScene->load(m_memoryAllocator))
+		return false;
+
+	m_presentationTarget = std::make_unique<Presentation::PresentationTarget>(m_presentationHardware, m_presentationDevice, m_openScene->vertexBinding);
+	m_framePresentation = std::make_unique<Presentation::FrameCollection>(m_presentationDevice);
+	
 	return
-		instanceCreated &&
 		m_presentationHardware->isInitialized() &&
 		m_presentationDevice->isInitialized() &&
 		m_presentationTarget->isInitialized() &&
@@ -100,7 +113,12 @@ void VulkanEngine::draw()
 	auto buffer = frame.getCommandBuffer();
 	vkResetCommandBuffer(buffer, 0);
 	
-	CommandObjectsWrapper::HelloTriangleCommand(buffer, m_presentationTarget->pipeline, m_presentationTarget->renderPass, m_presentationTarget->swapChainFrameBuffers[imageIndex], m_presentationTarget->swapChainExtent);
+	//CommandObjectsWrapper::HelloTriangleCommand(buffer, m_presentationTarget->pipeline, m_presentationTarget->renderPass, 
+	//	m_presentationTarget->swapChainFrameBuffers[imageIndex], m_presentationTarget->swapChainExtent,
+	//	nullptr, 3);
+
+	CommandObjectsWrapper::renderSingleIndexedMesh(buffer, m_presentationTarget->pipeline, m_presentationTarget->renderPass,
+		m_presentationTarget->swapChainFrameBuffers[imageIndex], m_presentationTarget->swapChainExtent, m_openScene->graphicsMesh);
 
 	frame.resetAcquireFence(m_presentationDevice->getDevice());
 	frame.submitToQueue(m_presentationDevice->getGraphicsQueue());
@@ -114,7 +132,7 @@ bool VulkanEngine::handleFailedToAcquireImageIfNecessary(VkResult imageAcquireRe
 		vkDeviceWaitIdle(m_presentationDevice->getDevice());
 
 		m_presentationTarget->release(m_presentationDevice->getDevice());
-		if (!m_presentationTarget->createPresentationTarget(m_presentationHardware, m_presentationDevice))
+		if (!m_presentationTarget->createPresentationTarget(m_presentationHardware, m_presentationDevice, m_openScene->vertexBinding))
 			printf("Recreating the swapchain was not successful");
 
 		return true;
@@ -131,6 +149,17 @@ void VulkanEngine::cleanup()
 {
 	if (m_instance)
 	{
+		m_openScene->release();
+
+		auto graphicsMesh = m_openScene->graphicsMesh;
+		vmaDestroyBuffer(m_memoryAllocator, graphicsMesh.iAttributes.buffer, graphicsMesh.iAttributes.memoryRange);
+
+		for(int i = 0; i < graphicsMesh.vAttributes.memoryRanges.size(); i++)
+		{
+			vmaDestroyBuffer(m_memoryAllocator, graphicsMesh.vAttributes.buffers[i], graphicsMesh.vAttributes.memoryRanges[i]);
+		}
+		vmaDestroyAllocator(m_memoryAllocator);
+
 		m_framePresentation->releaseFrameResources();
 
 		m_presentationTarget->release(m_presentationDevice->getDevice());

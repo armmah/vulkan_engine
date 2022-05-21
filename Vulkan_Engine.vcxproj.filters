@@ -15,6 +15,12 @@
     <Filter Include="Source Files\Presentation">
       <UniqueIdentifier>{df6c0160-1c39-4979-a161-d57bc5b4683a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\EngineCore">
+      <UniqueIdentifier>{cda11587-2c3e-47e3-b1d8-806c94ca3d33}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\EngineCore">
+      <UniqueIdentifier>{61c71138-4e25-4bb3-82c5-e7387226576f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -47,6 +53,9 @@
     <ClCompile Include="src\Presentation\PresentationTarget.cpp">
       <Filter>Source Files\Presentation</Filter>
     </ClCompile>
+    <ClCompile Include="src\EngineCore\Scene.cpp">
+      <Filter>Source Files\EngineCore</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\vk_engine.h">
@@ -69,6 +78,9 @@
     </ClInclude>
     <ClInclude Include="src\Presentation\Device.h">
       <Filter>Header Files\Presentation</Filter>
+    </ClInclude>
+    <ClInclude Include="src\EngineCore\Scene.h">
+      <Filter>Header Files\EngineCore</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

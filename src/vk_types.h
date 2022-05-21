@@ -17,6 +17,8 @@
 #include <memory>
 #include <optional>
 
+#include "EngineCore/Scene.h"
+
 #define REF std::shared_ptr
 #define MAKEREF std::make_shared
 
@@ -98,6 +100,19 @@ namespace vkinit
 
 			return vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer) == VK_SUCCESS;
 		}
+		
+		static bool createCommandBuffers(std::vector<VkCommandBuffer>& commandBufferCollection, uint32_t count, VkCommandPool pool, VkDevice device)
+		{
+			commandBufferCollection.resize(count);
+
+			VkCommandBufferAllocateInfo allocInfo{};
+			allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+			allocInfo.commandPool = pool;
+			allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+			allocInfo.commandBufferCount = count;
+
+			return vkAllocateCommandBuffers(device, &allocInfo, commandBufferCollection.data()) == VK_SUCCESS;
+		}
 	};
 
 	struct Synchronization
@@ -121,6 +136,71 @@ namespace vkinit
 			}
 
 			return vkCreateFence(device, &fenceInfo, nullptr, &fence) == VK_SUCCESS;
+		}
+	};
+
+	struct MemoryBuffer
+	{
+		static bool createBuffer(VkBuffer& buffer, VkDeviceMemory& memory, VkPhysicalDevice physicalDevice, VkDevice device, uint32_t bufferSize)
+		{
+			VkBufferCreateInfo bufferInfo{};
+			bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+			bufferInfo.size = bufferSize;
+
+			bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+			bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+			if(vkCreateBuffer(device, &bufferInfo, nullptr, &buffer) != VK_SUCCESS)
+				return false;
+
+			VkMemoryRequirements memRequirements;
+			vkGetBufferMemoryRequirements(device, buffer, &memRequirements);
+
+			VkPhysicalDeviceMemoryProperties memProperties;
+			vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+			auto memTypeIndex = findSuitableProperties(&memProperties, memRequirements.memoryTypeBits, (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
+
+			if (memTypeIndex < 0)
+				memTypeIndex = 0; // stupid fallback, don't do this :/
+			// Realisitcally we won't hit this case as according to spec, host visible and host coherent is a combination that is guaranteed to be present.
+
+			VkMemoryAllocateInfo allocInfo{};
+			allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+			allocInfo.allocationSize = memRequirements.size;
+			allocInfo.memoryTypeIndex = memTypeIndex;
+
+			return vkAllocateMemory(device, &allocInfo, nullptr, &memory) == VK_SUCCESS &&
+				vkBindBufferMemory(device, buffer, memory, 0) == VK_SUCCESS;
+		}
+
+		static int32_t findSuitableProperties(const VkPhysicalDeviceMemoryProperties* pMemoryProperties, uint32_t memoryTypeBitsRequirement, VkMemoryPropertyFlags requiredProperties)
+		{
+			const uint32_t memoryCount = pMemoryProperties->memoryTypeCount;
+			for (uint32_t memoryIndex = 0; memoryIndex < memoryCount; memoryIndex++)
+			{
+				const uint32_t memoryTypeBits = (1 << memoryIndex);
+				const bool isRequiredMemoryType = memoryTypeBitsRequirement & memoryTypeBits;
+
+				const VkMemoryPropertyFlags properties = pMemoryProperties->memoryTypes[memoryIndex].propertyFlags;
+				const bool hasRequiredProperties = (properties & requiredProperties) == requiredProperties;
+
+				if (isRequiredMemoryType && hasRequiredProperties)
+					return static_cast<int32_t>(memoryIndex);
+			}
+
+			// failed to find memory type
+			return -1;
+		}
+
+		// Only works for host coherent memory type
+		static bool fillMemory(VkDevice device, VkDeviceMemory memory, const void* source, uint32_t size)
+		{
+			void* data;
+			vkMapMemory(device, memory, 0, size, 0, &data);
+			memcpy(data, source, static_cast<size_t>(size));
+			vkUnmapMemory(device, memory);
+
+			return true;
 		}
 	};
 }
@@ -152,5 +232,40 @@ struct CommandObjectsWrapper
 		~RenderPassScope();
 	};
 
-	static void HelloTriangleCommand(VkCommandBuffer buffer, VkPipeline pipeline, VkRenderPass renderPass, VkFramebuffer frameBuffer, VkExtent2D extent);
+	static void HelloTriangleCommand(VkCommandBuffer buffer, VkPipeline pipeline, VkRenderPass renderPass, VkFramebuffer frameBuffer, VkExtent2D extent, VkBuffer vertexBuffer, uint32_t size)
+	{
+		auto cbs = CommandBufferScope(buffer);
+		{
+			auto rps = RenderPassScope(buffer, renderPass, frameBuffer, extent);
+
+			vkCmdBindPipeline(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+
+			if (vertexBuffer != nullptr)
+			{
+				VkBuffer vertexBuffers[] = { vertexBuffer };
+				VkDeviceSize offsets[] = { 0 };
+				vkCmdBindVertexBuffers(buffer, 0, 1, vertexBuffers, offsets);
+			}
+
+			vkCmdDraw(buffer, size, 1, 0, 0);
+		}
+	}
+
+	static void renderSingleIndexedMesh(VkCommandBuffer commandBuffer, VkPipeline pipeline, VkRenderPass renderPass, VkFramebuffer frameBuffer, VkExtent2D extent, const VkMesh& mesh)
+	{
+		const VertexAttributes& vAttributes = mesh.vAttributes;
+		const IndexAttributes& iAttributes = mesh.iAttributes;
+
+		auto cbs = CommandBufferScope(commandBuffer);
+		{
+			auto rps = RenderPassScope(commandBuffer, renderPass, frameBuffer, extent);
+
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+
+			vkCmdBindVertexBuffers(commandBuffer, vAttributes.firstBinding, vAttributes.bindingCount, vAttributes.buffers.data(), vAttributes.offsets.data());
+			vkCmdBindIndexBuffer(commandBuffer, iAttributes.buffer, iAttributes.offset, iAttributes.indexType);
+
+			vkCmdDrawIndexed(commandBuffer, mesh.iCount, 1, 0, 0, 0);
+		}
+	}
 };

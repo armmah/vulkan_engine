@@ -118,7 +118,7 @@
       <SDLCheck>false</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Git\Vulkan_Engine\Vulkan_Engine\src;C:\Git\Vulkan_Engine\third_party\SDL2-2.0.22\include;C:\VulkanSDK\1.3.211.0\Include;C:\Git\Vulkan_Engine\third_party;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Git\Vulkan_Engine\Vulkan_Engine\src;C:\Git\Vulkan_Engine\third_party\SDL2-2.0.22\include;C:\VulkanSDK\1.3.211.0\Include;C:\Git\Vulkan_Engine\third_party\glm\glm;C:\Git\Vulkan_Engine\third_party\imgui;C:\Git\Vulkan_Engine\third_party\stb_image;C:\Git\Vulkan_Engine\third_party\tinyobjloader;C:\Git\Vulkan_Engine\third_party\vma;C:\Git\Vulkan_Engine\third_party\volk;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -139,7 +139,7 @@
       <SDLCheck>false</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Git\Vulkan_Engine\Vulkan_Engine\src;C:\Git\Vulkan_Engine\third_party\SDL2-2.0.22\include;C:\VulkanSDK\1.3.211.0\Include;C:\Git\Vulkan_Engine\third_party;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Git\Vulkan_Engine\Vulkan_Engine\src;C:\Git\Vulkan_Engine\third_party\SDL2-2.0.22\include;C:\VulkanSDK\1.3.211.0\Include;C:\Git\Vulkan_Engine\third_party\glm\glm;C:\Git\Vulkan_Engine\third_party\imgui;C:\Git\Vulkan_Engine\third_party\stb_image;C:\Git\Vulkan_Engine\third_party\tinyobjloader;C:\Git\Vulkan_Engine\third_party\vma;C:\Git\Vulkan_Engine\third_party\volk;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -152,6 +152,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\EngineCore\Scene.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\Presentation\Frame.cpp" />
     <ClCompile Include="src\Presentation\HardwareDevice.cpp" />
@@ -164,6 +165,7 @@
     <ClCompile Include="src\vk_types.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\EngineCore\Scene.h" />
     <ClInclude Include="src\Presentation\Frame.h" />
     <ClInclude Include="src\Presentation\HardwareDevice.h" />
     <ClInclude Include="src\Presentation\Device.h" />

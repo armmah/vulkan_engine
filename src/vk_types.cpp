@@ -99,10 +99,8 @@ struct ShaderSource
 	std::vector<char> getVertexSource() { return FileIO::readFile(vertexPath); }
 	std::vector<char> getFragmentSource() { return FileIO::readFile(fragmentPath); }
 
-	static ShaderSource getHardcodedTriangle()
-	{
-		return ShaderSource("../Shaders/outputSPV/triangle.vert.spv", "../Shaders/outputSPV/triangle.frag.spv");
-	}
+	static ShaderSource getHardcodedTriangle() { return ShaderSource("../Shaders/outputSPV/triangle.vert.spv", "../Shaders/outputSPV/triangle.frag.spv"); }
+	static ShaderSource getDefaultShader() { return ShaderSource("../Shaders/outputSPV/simple.vert.spv", "../Shaders/outputSPV/simple.frag.spv"); }
 };
 
 struct Shader
@@ -116,12 +114,12 @@ struct Shader
 	{
 		if (!Presentation::PresentationTarget::createShaderModule(vertShader, source.getVertexSource(), device))
 		{
-			printf("Failed to compile the shader '%s'.", source.fragmentPath);
+			printf("Failed to compile the shader '%s'.", source.fragmentPath.c_str());
 		}
 
 		if (!Presentation::PresentationTarget::createShaderModule(fragShader, source.getFragmentSource(), device))
 		{
-			printf("Failed to compile the shader '%s'.", source.fragmentPath);
+			printf("Failed to compile the shader '%s'.", source.fragmentPath.c_str());
 		}
 	}
 
@@ -132,81 +130,13 @@ struct Shader
 	}
 };
 
-#include <glm/glm.hpp>
-
-struct Vertex {
-	glm::vec2 pos;
-	glm::vec3 col;
-
-	const std::vector<Vertex> vertices = {
-		{{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-		{{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-		{{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
-	};
-
-	static VkVertexInputBindingDescription getBindingDescription() {
-		VkVertexInputBindingDescription bindingDescription{};
-		bindingDescription.binding = 0;
-		bindingDescription.stride = sizeof(Vertex);
-		bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-		return bindingDescription;
-	}
-
-	static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions() {
-		std::vector<VkVertexInputAttributeDescription> attributeDescriptions(2);
-
-		attributeDescriptions[0].binding = 0;
-		attributeDescriptions[0].location = 0;
-		attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
-		attributeDescriptions[0].offset = offsetof(Vertex, pos);
-
-		attributeDescriptions[1].binding = 0;
-		attributeDescriptions[1].location = 1;
-		attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-		attributeDescriptions[1].offset = offsetof(Vertex, col);
-
-		return attributeDescriptions;
-	}
-};
-
-struct VertexBinding
+bool Presentation::PresentationTarget::createGraphicsPipeline(VkDevice device, VertexBinding& vBinding, VkExtent2D scissorExtent, VkCullModeFlagBits faceCullingMode = VK_CULL_MODE_BACK_BIT)
 {
-	static VkPipelineVertexInputStateCreateInfo getHardcodedTriangle()
-	{
-		// Vertex data - hacking in hardcoded vertex shader defined triangle
-		VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
-		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+	//Shader shader(device, ShaderSource::getHardcodedTriangle());
+	//auto vertexInputInfo = VertexBinding::getHardcodedTriangle();
 
-		vertexInputInfo.vertexBindingDescriptionCount = 0;
-		vertexInputInfo.pVertexBindingDescriptions = nullptr;
-		vertexInputInfo.vertexAttributeDescriptionCount = 0;
-		vertexInputInfo.pVertexAttributeDescriptions = nullptr;
-
-		return vertexInputInfo;
-	}
-
-	static VkPipelineVertexInputStateCreateInfo getTriangleMeshVertexBuffer()
-	{
-		auto bindingDescription = Vertex::getBindingDescription();
-		auto attributeDescriptions = Vertex::getAttributeDescriptions();
-
-		VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
-		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-
-		vertexInputInfo.vertexBindingDescriptionCount = 1;
-		vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
-		vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
-		vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
-
-		return vertexInputInfo;
-	}
-};
-
-bool Presentation::PresentationTarget::createGraphicsPipeline(VkDevice device, VkExtent2D scissorExtent, VkCullModeFlagBits faceCullingMode = VK_CULL_MODE_BACK_BIT)
-{
-	Shader shader(device, ShaderSource::getHardcodedTriangle());
-	auto vertexInputInfo = VertexBinding::getHardcodedTriangle();
+	Shader shader(device, ShaderSource::getDefaultShader());	
+	auto vertexInputInfo = vBinding.getVertexInputCreateInfo();
 
 	VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
 	vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -367,18 +297,6 @@ CommandObjectsWrapper::RenderPassScope::RenderPassScope(VkCommandBuffer commandB
 CommandObjectsWrapper::RenderPassScope::~RenderPassScope()
 {
 	vkCmdEndRenderPass(commandBuffer);
-}
-
-void CommandObjectsWrapper::HelloTriangleCommand(VkCommandBuffer buffer, VkPipeline pipeline, VkRenderPass renderPass, VkFramebuffer frameBuffer, VkExtent2D extent)
-{
-	auto cbs = CommandBufferScope(buffer);
-	{
-		auto rps = RenderPassScope(buffer, renderPass, frameBuffer, extent);
-
-		vkCmdBindPipeline(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-
-		vkCmdDraw(buffer, 3, 1, 0, 0);
-	}
 }
 
 CommandObjectsWrapper::CommandBufferScope::CommandBufferScope(VkCommandBuffer commandBuffer)

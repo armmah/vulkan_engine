@@ -25,9 +25,9 @@ namespace Presentation
 		std::vector<VkImageView> swapChainImageViews;
 		std::vector<VkFramebuffer> swapChainFrameBuffers;
 
-		PresentationTarget(REF<HardwareDevice const> presentationHardware, REF<Device const> presentationDevice)
+		PresentationTarget(REF<HardwareDevice const> presentationHardware, REF<Device const> presentationDevice, VertexBinding& vBinding)
 		{
-			m_isInitialized = createPresentationTarget(presentationHardware, presentationDevice);
+			m_isInitialized = createPresentationTarget(presentationHardware, presentationDevice, vBinding);
 		}
 
 		bool IRequireInitialization::isInitialized() const { return m_isInitialized; }
@@ -50,7 +50,7 @@ namespace Presentation
 			vkDestroySwapchainKHR(device, swapchain, nullptr);
 		}
 
-		bool createPresentationTarget(REF<HardwareDevice const> presentationHardware, REF<Device const> presentationDevice)
+		bool createPresentationTarget(REF<HardwareDevice const> presentationHardware, REF<Device const> presentationDevice, VertexBinding& vBinding)
 		{
 			vkGetPhysicalDeviceSurfaceCapabilitiesKHR(presentationHardware->getActiveGPU(), presentationDevice->getSurface(), &capabilities);
 			swapChainExtent = chooseSwapExtent(presentationDevice->getWindowRef());
@@ -62,7 +62,12 @@ namespace Presentation
 				createRenderPass(vkdevice) &&
 				createFramebuffers(vkdevice) &&
 
-				createGraphicsPipeline(vkdevice, VK_CULL_MODE_BACK_BIT);
+				createGraphicsPipeline(vkdevice, vBinding, VK_CULL_MODE_BACK_BIT);
+		}
+
+		bool createGraphicsPipeline(VkDevice device, VertexBinding& vBinding, VkCullModeFlagBits faceCullingMode = VK_CULL_MODE_BACK_BIT)
+		{
+			return createGraphicsPipeline(device, vBinding, swapChainExtent, faceCullingMode);
 		}
 
 		static bool createShaderModule(VkShaderModule& module, const std::vector<char>& code, VkDevice device);
@@ -91,8 +96,7 @@ namespace Presentation
 			}
 		}
 
-		bool createGraphicsPipeline(VkDevice device, VkCullModeFlagBits faceCullingMode);
-		bool createGraphicsPipeline(VkDevice device, VkExtent2D scissorExtent, VkCullModeFlagBits faceCullingMode);
+		bool createGraphicsPipeline(VkDevice device, VertexBinding& vBinding, VkExtent2D scissorExtent, VkCullModeFlagBits faceCullingMode);
 
 		bool createSwapChain(uint32_t imageCount, REF<HardwareDevice const> swapChainDetails, REF<Device const> device)
 		{

@@ -331,7 +331,7 @@ struct Mesh
 			attributeDescriptions[i].binding = 0;
 			attributeDescriptions[i].location = i;
 			attributeDescriptions[i].format = pickDataFormat(size);
-			attributeDescriptions[i].offset = static_cast<uint32_t>(offset);
+			attributeDescriptions[i].offset = as_uint32(offset);
 
 			if (vectorSizes[i] > 0)
 				offset += size;
@@ -343,7 +343,7 @@ struct Mesh
 		bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 	}
 
-	bool allocateBufferAndMemory(VkBuffer& vBuffer, VmaAllocation& vMemRange, VmaAllocator vmaAllocator, uint32_t totalSizeBytes)
+	bool allocateBufferAndMemory(VkBuffer& vBuffer, VmaAllocation& vMemRange, const VmaAllocator& vmaAllocator, uint32_t totalSizeBytes)
 	{
 		VmaAllocationCreateInfo vmaACI{};
 		vmaACI.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
@@ -356,7 +356,7 @@ struct Mesh
 		return vmaCreateBuffer(vmaAllocator, &bufferInfo, &vmaACI, &vBuffer, &vMemRange, nullptr) == VK_SUCCESS;
 	}
 
-	bool allocateVertexAttributes(VkMesh& graphicsMesh, VertexBinding& vbinding, VmaAllocator vmaAllocator)
+	bool allocateVertexAttributes(VkMesh& graphicsMesh, VertexBinding& vbinding, const VmaAllocator& vmaAllocator)
 	{
 		size_t vertCount = positions.size();
 		const size_t descriptorCount = 4;
@@ -377,7 +377,7 @@ struct Mesh
 
 		VkBuffer vBuffer;
 		VmaAllocation vMemRange;
-		allocateBufferAndMemory(vBuffer, vMemRange, vmaAllocator, totalSizeBytes);
+		allocateBufferAndMemory(vBuffer, vMemRange, vmaAllocator, as_uint32(totalSizeBytes));
 		std::vector<VkBuffer> vBuffers{ vBuffer };
 		std::vector<VkDeviceSize> vOffsets{ 0 };
 		std::vector<VmaAllocation> vMemRanges{ vMemRange };
@@ -409,7 +409,7 @@ struct Mesh
 		return true;
 	}
 
-	bool allocateIndexAttributes(VkMesh& graphicsMesh, VmaAllocator vmaAllocator)
+	bool allocateIndexAttributes(VkMesh& graphicsMesh, const VmaAllocator& vmaAllocator)
 	{
 		size_t totalSize = vectorsizeof(indices);
 
@@ -435,7 +435,7 @@ struct Mesh
 		return true;
 	}
 
-	bool allocateGraphicsMesh(VkMesh& graphicsMesh, VertexBinding& vertexBindings, VmaAllocator vmaAllocator)
+	bool allocateGraphicsMesh(VkMesh& graphicsMesh, VertexBinding& vertexBindings, const VmaAllocator& vmaAllocator)
 	{
 		return allocateVertexAttributes(graphicsMesh, vertexBindings, vmaAllocator) &&
 			allocateIndexAttributes(graphicsMesh, vmaAllocator);
@@ -532,7 +532,7 @@ public:
 
 	Scene() { }
 
-	bool load(VmaAllocator vmaAllocator)
+	bool load(const VmaAllocator& vmaAllocator)
 	{
 		mesh = std::make_unique<Mesh>(Mesh::getPrimitiveQuad());
 

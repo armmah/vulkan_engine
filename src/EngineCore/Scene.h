@@ -2,11 +2,15 @@
 #include <vector>
 #include <memory>
 #include <algorithm>
+#include <set>
+#include <stdexcept>
 
 #include "glm.hpp"
 #include "vulkan/vulkan.h"
 
 #include "vk_mem_alloc.h"
+
+#define as_uint32(x) static_cast<uint32_t>(x)
 
 struct Color
 {
@@ -28,37 +32,6 @@ public:
 
 	operator glm::vec4&() { return normalized; }
 	operator glm::vec4() const { return normalized; }
-};
-
-struct DeprecatedVertex
-{
-	glm::vec2 pos;
-	glm::vec3 col;
-
-	static VkVertexInputBindingDescription getBindingDescription() {
-		VkVertexInputBindingDescription bindingDescription{};
-		bindingDescription.binding = 0;
-		bindingDescription.stride = sizeof(DeprecatedVertex);
-		bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-		return bindingDescription;
-	}
-
-	static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions() {
-		std::vector<VkVertexInputAttributeDescription> attributeDescriptions(2);
-
-		attributeDescriptions[0].binding = 0;
-		attributeDescriptions[0].location = 0;
-		attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
-		attributeDescriptions[0].offset = offsetof(DeprecatedVertex, pos);
-
-		attributeDescriptions[1].binding = 0;
-		attributeDescriptions[1].location = 1;
-		attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-		attributeDescriptions[1].offset = offsetof(DeprecatedVertex, col);
-
-		return attributeDescriptions;
-	}
 };
 
 struct VertexBinding
@@ -88,11 +61,62 @@ struct VertexBinding
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
 		vertexInputInfo.vertexBindingDescriptionCount = 1;
-		vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
+		vertexInputInfo.vertexAttributeDescriptionCount = as_uint32(attributeDescriptions.size());
 		vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
 		vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
 		return vertexInputInfo;
+	}
+
+	bool runValidations()
+	{
+		return validateAttributeAndBindingDescriptions(
+			{ bindingDescription },
+			attributeDescriptions
+		);
+	}
+
+	static bool validateAttributeAndBindingDescriptions(const std::vector<VkVertexInputBindingDescription>& bindingDescriptions, const std::vector<VkVertexInputAttributeDescription>& attributeDescriptions)
+	{
+		//1. Validate (vertexBindingDescriptionCount <= VkPhysicalDeviceLimits::maxVertexInputBindings)
+		//2. Validate (vertexAttributeDescriptionCount <= VkPhysicalDeviceLimits::maxVertexInputAttributes)
+
+		// 3. bindingDescription array should not have conflicting bindings (ensure unique)
+		std::set<uint32_t> uniqueBindings;
+		for (auto& bindDesc : bindingDescriptions)
+		{
+			if (uniqueBindings.count(bindDesc.binding))
+			{
+				printf("A conflicting binding was detected in the binding descriptions.");
+				return false;
+			}
+			uniqueBindings.insert(bindDesc.binding);
+		}
+
+		// 4. Foreach attributeDescriptions[i].binding validate that bindingDescription with the same binding exists
+		for (auto& attrDesc : attributeDescriptions)
+		{
+			if (uniqueBindings.count(attrDesc.binding) == 0)
+			{
+				printf("The required binding could not be found.");
+				return false;
+			}
+		}
+
+		// 5. attributeDescriptions array should not have conflicting locations (ensure unique)
+		std::set<uint32_t> uniqueLocations;
+		for (auto& attrDesc : attributeDescriptions)
+		{
+			if (uniqueLocations.count(attrDesc.location))
+			{
+				printf("A conflicting location was detected in the vertex attribute descriptions.");
+				return false;
+			}
+
+			uniqueLocations.insert(attrDesc.location);
+		}
+
+		return true;
 	}
 };
 
@@ -112,7 +136,7 @@ struct VertexAttributes
 
 		if (bindingCount == 0)
 		{
-			this->bindingCount = static_cast<uint32_t>(buffers.size());
+			this->bindingCount = as_uint32(buffers.size());
 		}
 	}
 };
@@ -226,21 +250,30 @@ struct Mesh
 	}
 
 	template<typename T>
-	uint32_t vectorsizeof(const typename std::vector<T>& vec)
+	size_t vectorsizeof(const typename std::vector<T>& vec)
 	{
 		return sizeof(T) * vec.size();
 	}
 
 	template<typename T>
-	uint32_t normalizedSize(const typename std::vector<T>& vec)
+	size_t normalizedSize(const typename std::vector<T>& vec)
 	{
 		return std::clamp(vec.size(), 0_z, 1_z);
 	}
 
 	template<typename T>
-	uint32_t vectorElementsizeof(const typename std::vector<T>& vec)
+	size_t vectorElementsizeof(const typename std::vector<T>& vec)
 	{
-		return sizeof(T);// *normalizedSize(vec);
+		return sizeof(T);
+	}
+
+	template<typename T>
+	size_t sumValues(const typename T* arr, size_t length)
+	{
+		size_t total = 0;
+		for (size_t i = 0; i < length; i++)
+			total += arr[i];
+		return total;
 	}
 
 	VkFormat pickDataFormat(size_t size)
@@ -255,23 +288,17 @@ struct Mesh
 		return formats[size / sizeof(float) - 1];
 	}
 
-	template<typename T>
-	static void copyInterleaved(std::vector<float>& interleavedVertexData, const std::vector<T>& srcVector, size_t iterStride, size_t offset)
+	static void copyInterleavedNoCheck(std::vector<float>& interleavedVertexData, const void* src, size_t elementByteSize, size_t iterStride, size_t offset)
 	{
-		if (srcVector.empty() || iterStride <= 0) // no op
-			return;
-
-		auto elementByteSize = sizeof(T);
-
 		int i = 0;
 		auto it = interleavedVertexData.begin();
 		auto end = interleavedVertexData.end();
 		std::advance(it, offset);
 
-		for (;it != end;)
+		while (it != end)
 		{
-			memcpy(&(*it), &srcVector[i], elementByteSize);
-			if (std::distance(it, end) < iterStride)
+			memcpy(&(*it), (char*)src + i * elementByteSize, elementByteSize);
+			if (std::distance(it, end) < static_cast<ptrdiff_t>(iterStride))
 				break;
 
 			std::advance(it, iterStride);
@@ -279,27 +306,45 @@ struct Mesh
 		}
 	}
 
-	void allocateVertexAttributes(VkMesh& graphicsMesh, VertexBinding& vbinding, VmaAllocator vmaAllocator)
+	template<typename T>
+	void mapAndCopyBuffer(VmaAllocator vmaAllocator, VmaAllocation memRange, const T* source, size_t elementCount, size_t totalByteSize)
 	{
-		uint32_t vertCount = positions.size();
+		void* data;
+		vmaMapMemory(vmaAllocator, memRange, &data);
+		memcpy(data, source, totalByteSize);
+		vmaUnmapMemory(vmaAllocator, memRange);
 
-		uint32_t p_size = vectorElementsizeof(positions),
-			uv_size = vectorElementsizeof(uvs),
-			n_size = vectorElementsizeof(normals),
-			c_size = vectorElementsizeof(colors);
+		printf("Copied index buffer of size: %zu elements and %zu bytes (%f bytes per index).\n", elementCount, totalByteSize, totalByteSize / (float)elementCount);
+	}
 
-		uint32_t descriptorCount = 4;
+	void initializeBindings(VkVertexInputBindingDescription& bindingDescription, std::vector<VkVertexInputAttributeDescription>& attributeDescriptions,
+		size_t descriptorCount, const size_t* byteSizes, const size_t* vectorSizes)
+	{
+		// Vertex Attribute Descriptions
+		attributeDescriptions.resize(descriptorCount);
 
-		uint32_t p_stride = normalizedSize(positions) * p_size,
-			uv_stride = normalizedSize(uvs) * uv_size,
-			n_stride = normalizedSize(normals) * n_size,
-			c_stride = normalizedSize(colors) * c_size;
+		size_t offset = 0;
+		for (uint32_t i = 0; i < descriptorCount; i++)
+		{
+			auto size = byteSizes[i];
 
-		uint32_t vertexStride = p_stride + uv_stride + n_stride + c_stride;
-		uint32_t floatCount = vertexStride / sizeof(float);
-		uint32_t totalSizeBytes = vertexStride * vertCount;
+			attributeDescriptions[i].binding = 0;
+			attributeDescriptions[i].location = i;
+			attributeDescriptions[i].format = pickDataFormat(size);
+			attributeDescriptions[i].offset = static_cast<uint32_t>(offset);
 
-#pragma region buffer_allocation
+			if (vectorSizes[i] > 0)
+				offset += size;
+		}
+
+		bindingDescription = {};
+		bindingDescription.binding = 0;
+		bindingDescription.stride = as_uint32(offset);
+		bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+	}
+
+	bool allocateBufferAndMemory(VkBuffer& vBuffer, VmaAllocation& vMemRange, VmaAllocator vmaAllocator, uint32_t totalSizeBytes)
+	{
 		VmaAllocationCreateInfo vmaACI{};
 		vmaACI.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
 
@@ -308,138 +353,63 @@ struct Mesh
 		bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 		bufferInfo.size = totalSizeBytes;
 
+		return vmaCreateBuffer(vmaAllocator, &bufferInfo, &vmaACI, &vBuffer, &vMemRange, nullptr) == VK_SUCCESS;
+	}
+
+	bool allocateVertexAttributes(VkMesh& graphicsMesh, VertexBinding& vbinding, VmaAllocator vmaAllocator)
+	{
+		size_t vertCount = positions.size();
+		const size_t descriptorCount = 4;
+
+		size_t p_size = vectorElementsizeof(positions),
+			uv_size = vectorElementsizeof(uvs),
+			n_size = vectorElementsizeof(normals),
+			c_size = vectorElementsizeof(colors);
+
+		size_t byteSizes[descriptorCount] = { p_size, uv_size, n_size, c_size };
+		size_t strides[descriptorCount] = { normalizedSize(positions) * p_size, normalizedSize(uvs) * uv_size, normalizedSize(normals) * n_size, normalizedSize(colors) * c_size };
+		void* vectors[descriptorCount] = { positions.data(), uvs.data(), normals.data(), colors.data() };
+		size_t vectorSizes[descriptorCount] = { positions.size(), uvs.size(), normals.size(), colors.size() };
+
+		size_t vertexStride = sumValues(strides, descriptorCount);
+		size_t floatCount = vertexStride / sizeof(float);
+		size_t totalSizeBytes = vertexStride * vertCount;
+
 		VkBuffer vBuffer;
 		VmaAllocation vMemRange;
-		vmaCreateBuffer(vmaAllocator, &bufferInfo, &vmaACI, &vBuffer, &vMemRange, nullptr);
-
+		allocateBufferAndMemory(vBuffer, vMemRange, vmaAllocator, totalSizeBytes);
 		std::vector<VkBuffer> vBuffers{ vBuffer };
 		std::vector<VkDeviceSize> vOffsets{ 0 };
 		std::vector<VmaAllocation> vMemRanges{ vMemRange };
 		graphicsMesh.vAttributes = VertexAttributes(vBuffers, vMemRanges, vOffsets);
-		graphicsMesh.vCount = static_cast<uint32_t>(vertCount);
-#pragma endregion
+		graphicsMesh.vCount = as_uint32(vertCount);
+
+		initializeBindings(vbinding.bindingDescription, vbinding.attributeDescriptions, descriptorCount, byteSizes, vectorSizes);
+		
+		if(!vbinding.runValidations())
+			return false;
 
 		// Align and optimize the mesh data
-		auto interleavedCount = floatCount * vertCount;//totalSize / sizeof(float);
+		auto interleavedCount = floatCount * vertCount;
 		std::vector<float> interleavedVertexData(interleavedCount);
 
-		uint32_t offset = 0;
-		copyInterleaved(interleavedVertexData, positions,	floatCount, offset);
-		offset += p_stride / sizeof(float);
-
-		copyInterleaved(interleavedVertexData, uvs,			floatCount, offset);
-		offset += uv_stride / sizeof(float);
-
-		copyInterleaved(interleavedVertexData, normals,		floatCount, offset);
-		offset += n_stride / sizeof(float);
-
-		copyInterleaved(interleavedVertexData, colors,		floatCount, offset);
-		offset += c_stride / sizeof(float);
-
-		/*
-		int i = 0;
-		for(auto it = interleavedVertexData.begin(); it != interleavedVertexData.end();)
+		size_t offset = 0;
+		for (int i = 0; i < descriptorCount; i++)
 		{
-			memcpy(&(*it), &positions[i], p_size);
-			std::advance(it, p_size / sizeof(float));
+			if (vectorSizes[i] == 0)
+				continue;
 
-			auto sz = uv_size * std::clamp(uvs.size(), 0_z, 1_z);
-			if (uvs.size() > 0)
-			{
-				memcpy(&(*it), &uvs[i], sz);
-				std::advance(it, sz / sizeof(float));
-			}
-
-			sz = n_size * std::clamp(normals.size(), 0_z, 1_z);
-			if (normals.size() > 0)
-			{
-				memcpy(&(*it), &normals[i], sz);
-				std::advance(it, sz / sizeof(float));
-			}
-
-			sz = c_size * std::clamp(colors.size(), 0_z, 1_z);
-			if (colors.size() > 0)
-			{
-				memcpy(&(*it), &colors[i], sz);
-				std::advance(it, sz / sizeof(float));
-			}
-
-			++i;
-		}*/
-
-		// Hardcoded locations to match the shader locations for now
-		std::vector<VkVertexInputAttributeDescription>& viaDesc = vbinding.attributeDescriptions;
-		viaDesc.resize(descriptorCount);
-		
-		offset = 0;
-		if (p_size > 0)
-		{
-			viaDesc[0].binding = 0;
-			viaDesc[0].location = 0;
-			viaDesc[0].format = pickDataFormat(p_size);
-			viaDesc[0].offset = offset;
-
-			offset += p_size;
+			copyInterleavedNoCheck(interleavedVertexData, vectors[i], byteSizes[i], floatCount, offset);
+			offset += strides[i] / sizeof(float);
 		}
-
-		if (uv_size > 0)
-		{
-			viaDesc[1].binding = 0;
-			viaDesc[1].location = 1;
-			viaDesc[1].format = pickDataFormat(uv_size);
-			viaDesc[1].offset = offset;
-
-			if (uvs.size() > 0)
-				offset += uv_size;
-		}
-
-		if (n_size > 0)
-		{
-			viaDesc[2].binding = 0;
-			viaDesc[2].location = 2;
-			viaDesc[2].format = pickDataFormat(n_size);
-			viaDesc[2].offset = offset;
-
-			if (normals.size() > 0)
-				offset += n_size;
-		}
-
-		if (c_size > 0)
-		{
-			viaDesc[3].binding = 0;
-			viaDesc[3].location = 3;
-			viaDesc[3].format = pickDataFormat(c_size);
-			viaDesc[3].offset = offset;
-
-			if (colors.size() > 0)
-				offset += c_size;
-		}
-
-		VkVertexInputBindingDescription bindingDescription{};
-		bindingDescription.binding = 0;
-		bindingDescription.stride = offset;
-		bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-		vbinding.bindingDescription = bindingDescription;
-		
-		/*
-		1. Validate (vertexBindingDescriptionCount <= VkPhysicalDeviceLimits::maxVertexInputBindings)
-		2. Validate (vertexAttributeDescriptionCount <= VkPhysicalDeviceLimits::maxVertexInputAttributes)
-		3. Foreach attributeDescriptions[i].binding validate that bindingDescription with the same binding exists
-		4. bindingDescription array should not have conflicting bindings (ensure unique)
-		5. attributeDescriptions array should not have conflicting locations (ensure unique)
-		*/
 
 		// Fill the vertex buffer
-		void* data;
-		vmaMapMemory(vmaAllocator, vMemRange, &data);
-		memcpy(data, interleavedVertexData.data(), totalSizeBytes);
-		vmaUnmapMemory(vmaAllocator, vMemRange);
+		mapAndCopyBuffer(vmaAllocator, vMemRange, interleavedVertexData.data(), vertCount, totalSizeBytes);
 
-		printf("Copied vertex buffer of size: %i elements and %i bytes (%f bytes per vert).\n", vertCount, totalSizeBytes, totalSizeBytes / (double)vertCount);
+		return true;
 	}
 
-	void allocateIndexAttributes(VkMesh& graphicsMesh, VmaAllocator vmaAllocator)
+	bool allocateIndexAttributes(VkMesh& graphicsMesh, VmaAllocator vmaAllocator)
 	{
 		size_t totalSize = vectorsizeof(indices);
 
@@ -449,29 +419,26 @@ struct Mesh
 		VkBufferCreateInfo bufferInfo{};
 		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 		bufferInfo.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-		bufferInfo.size = static_cast<uint32_t>(totalSize);
+		bufferInfo.size = as_uint32(totalSize);
 
 		VkBuffer iBuffer;
 		VmaAllocation iMemRange;
-		vmaCreateBuffer(vmaAllocator, &bufferInfo, &vmaACI, &iBuffer, &iMemRange, nullptr);
+		if(vmaCreateBuffer(vmaAllocator, &bufferInfo, &vmaACI, &iBuffer, &iMemRange, nullptr) != VK_SUCCESS)
+			return false;
 
 		graphicsMesh.iAttributes = IndexAttributes(iBuffer, iMemRange, VkIndexType::VK_INDEX_TYPE_UINT16);
-		graphicsMesh.iCount = static_cast<uint32_t>(indices.size());
+		graphicsMesh.iCount = as_uint32(indices.size());
 		
 		// Fill the index buffer
-		void* data;
-		vmaMapMemory(vmaAllocator, iMemRange, &data);
-		memcpy(data, indices.data(), totalSize);
-		vmaUnmapMemory(vmaAllocator, iMemRange);
+		mapAndCopyBuffer(vmaAllocator, iMemRange, indices.data(), indices.size(), totalSize);
 
-		printf("Copied index buffer of size: %i elements and %i bytes (%f bytes per index).\n", indices.size(), totalSize, totalSize / (double)indices.size());
+		return true;
 	}
 
-	void allocateGraphicsMesh(VkMesh& graphicsMesh, VertexBinding& vertexBindings, VmaAllocator vmaAllocator)
+	bool allocateGraphicsMesh(VkMesh& graphicsMesh, VertexBinding& vertexBindings, VmaAllocator vmaAllocator)
 	{
-		allocateVertexAttributes(graphicsMesh, vertexBindings, vmaAllocator);
-
-		allocateIndexAttributes(graphicsMesh, vmaAllocator);
+		return allocateVertexAttributes(graphicsMesh, vertexBindings, vmaAllocator) &&
+			allocateIndexAttributes(graphicsMesh, vmaAllocator);
 	}
 
 	static Mesh getPrimitiveTriangle()
@@ -565,13 +532,12 @@ public:
 
 	Scene() { }
 
-
 	bool load(VmaAllocator vmaAllocator)
 	{
 		mesh = std::make_unique<Mesh>(Mesh::getPrimitiveQuad());
-		mesh->allocateGraphicsMesh(graphicsMesh, vertexBinding, vmaAllocator);
 
-		return mesh->isValid();
+		return mesh->allocateGraphicsMesh(graphicsMesh, vertexBinding, vmaAllocator) && 
+			mesh->isValid();
 	}
 
 	void release()

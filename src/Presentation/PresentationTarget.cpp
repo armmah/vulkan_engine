@@ -81,8 +81,13 @@ namespace Presentation
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipelineLayoutInfo.setLayoutCount = 0; // Optional
 		pipelineLayoutInfo.pSetLayouts = nullptr; // Optional
-		pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
-		pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
+
+		VkPushConstantRange pushConstantRange {};
+		pushConstantRange.offset = 0;
+		pushConstantRange.size = sizeof(TransformPushConstant);
+		pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
+		pipelineLayoutInfo.pushConstantRangeCount = 1;
 
 		if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &m_pipelineLayout) != VK_SUCCESS)
 		{

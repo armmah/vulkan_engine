@@ -278,6 +278,11 @@ struct Shader
 	}
 };
 
+struct TransformPushConstant
+{
+	glm::mat4 mvp_matrix;
+};
+
 struct CommandObjectsWrapper
 {
 	class CommandBufferScope
@@ -323,7 +328,32 @@ struct CommandObjectsWrapper
 		}
 	}
 
-	static void renderSingleIndexedMesh(VkCommandBuffer commandBuffer, VkPipeline m_pipeline, VkRenderPass m_renderPass, VkFramebuffer frameBuffer, VkExtent2D extent, const VkMesh& mesh)
+	static void drawAt(VkCommandBuffer commandBuffer, const VkMesh& mesh, VkPipelineLayout layout, float aspectRatio, uint32_t frameNumber, float freq, glm::vec3 pos)
+	{
+		glm::vec3 camPos = { 0.f,0.f, -2.f };
+
+		glm::mat4 view = glm::translate(glm::mat4(1.f), camPos);
+
+		//camera projection
+		glm::mat4 projection = glm::perspective(glm::radians(70.f), aspectRatio, 0.1f, 100.0f);
+
+		//model rotation
+		glm::mat4 model =
+			glm::translate(glm::mat4(1.f), pos) *
+			glm::rotate(glm::mat4{ 1.0f }, glm::radians(frameNumber * 0.01f * freq), glm::vec3(0, 0, -1));
+
+		TransformPushConstant pushConstant{};
+		pushConstant.mvp_matrix = projection * view * model;
+
+		mesh.vAttributes->bind(commandBuffer);
+		mesh.iAttributes->bind(commandBuffer);
+
+		vkCmdPushConstants(commandBuffer, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(TransformPushConstant), &pushConstant);
+		vkCmdDrawIndexed(commandBuffer, mesh.iCount, 1, 0, 0, 0);
+	}
+
+	static void renderIndexedMeshes(VkCommandBuffer commandBuffer, VkPipeline pipeline, VkPipelineLayout pipelineLayout, VkRenderPass m_renderPass, 
+		VkFramebuffer frameBuffer, VkExtent2D extent, const std::vector<UNQ<VkMesh>>& meshes, uint32_t frameNumber)
 	{
 		auto cbs = CommandBufferScope(commandBuffer);
 		{
@@ -336,12 +366,14 @@ struct CommandObjectsWrapper
 
 			auto rps = RenderPassScope(commandBuffer, m_renderPass, frameBuffer, extent);
 
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
-			mesh.vAttributes->bind(commandBuffer);
-			mesh.iAttributes->bind(commandBuffer);
-
-			vkCmdDrawIndexed(commandBuffer, mesh.iCount, 1, 0, 0, 0);
+			float aspect = extent.width / (float) extent.height;
+			for (int i = 0; i < meshes.size(); i++)
+			{
+				auto sign = (i * 2 - 1);
+				drawAt(commandBuffer, *meshes[i], pipelineLayout, aspect, frameNumber, sign * (i * 10.0f + 0.2f), glm::vec3(sign * 0.2f , sign * 0.2f, 0.0f));
+			}
 		}
 	}
 };

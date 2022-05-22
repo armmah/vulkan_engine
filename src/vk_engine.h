@@ -39,6 +39,7 @@ public:
 	bool _isInitialized { false };
 
 	VkExtent2D m_startingWindowSize{ 800 , 600 };
+	uint32_t m_frameNumber{ 0 };
 	struct SDL_Window* m_window{ nullptr };
 
 

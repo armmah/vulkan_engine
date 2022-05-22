@@ -5,7 +5,9 @@
 #include <set>
 #include <stdexcept>
 
-#include "glm.hpp"
+#include <glm/vec3.hpp>
+#include <glm/mat4x4.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include "vulkan/vulkan.h"
 
 #include "vk_mem_alloc.h"
@@ -209,28 +211,34 @@ constexpr std::size_t operator "" _z(unsigned long long n)
 struct Mesh
 {
 public:
-	Mesh() noexcept :
-		positions(),
-		uvs(),
-		normals(), 
-		colors(), 
-		indices() { }
+	Mesh() = delete;
+	Mesh(std::vector<glm::vec3>& positions, std::vector<glm::vec2>& uvs, std::vector<glm::vec3>& normals, std::vector<glm::vec3>& colors, std::vector<uint16_t>& indices)
+		: m_positions(std::move(positions)), m_uvs(std::move(uvs)), m_normals(std::move(normals)), m_colors(std::move(colors)), m_indices(std::move(indices))
+	{
+		metaData.vectors[0] = m_positions.data();
+		metaData.vectors[1] = m_uvs.data();
+		metaData.vectors[2] = m_normals.data();
+		metaData.vectors[3] = m_colors.data();
 
-	Mesh(Mesh&& other)  noexcept :
-		positions(std::move(other.positions)),
-		uvs(std::move(other.uvs)),
-		normals(std::move(other.normals)),
-		colors(std::move(other.colors)),
-		indices(std::move(other.indices)) { }
+		metaData.lengths[0] = m_positions.size();
+		metaData.lengths[1] = m_uvs.size();
+		metaData.lengths[2] = m_normals.size();
+		metaData.lengths[3] = m_colors.size();
+
+		metaData.elementByteSizes[0] = vectorElementsizeof(m_positions);
+		metaData.elementByteSizes[1] = vectorElementsizeof(m_uvs);
+		metaData.elementByteSizes[2] = vectorElementsizeof(m_normals);
+		metaData.elementByteSizes[3] = vectorElementsizeof(m_colors);
+	}
 
 	void clear()
 	{
-		positions.clear();
-		uvs.clear();
-		normals.clear();
-		colors.clear();
+		m_positions.clear();
+		m_uvs.clear();
+		m_normals.clear();
+		m_colors.clear();
 
-		indices.clear();
+		m_indices.clear();
 	}
 
 	static bool validateOptionalBufferSize(size_t vectorSize, size_t vertexCount, char const* name)
@@ -247,7 +255,7 @@ public:
 
 	bool isValid()
 	{
-		auto n = positions.size();
+		auto n = m_positions.size();
 
 		if (n == 0)
 		{
@@ -262,15 +270,15 @@ public:
 			return false;
 		}
 
-		if (!validateOptionalBufferSize(uvs.size(), n, "Uvs") ||
-			!validateOptionalBufferSize(normals.size(), n, "Normals") ||
-			!validateOptionalBufferSize(colors.size(), n, "Colors"))
+		if (!validateOptionalBufferSize(m_uvs.size(), n, "Uvs") ||
+			!validateOptionalBufferSize(m_normals.size(), n, "Normals") ||
+			!validateOptionalBufferSize(m_colors.size(), n, "Colors"))
 			return false;
 
 #ifndef NDEBUG
-		for(size_t i = 0, in = indices.size(); i < in; ++i)
+		for(size_t i = 0, in = m_indices.size(); i < in; ++i)
 		{
-			auto index = indices[i];
+			auto index = m_indices[i];
 			if (index < 0 || index >= n)
 			{
 				printf("An incorrect index '%i' detected at position indices[%zu], should be in {0, %zu} range.", index, i, n);
@@ -283,25 +291,25 @@ public:
 	}
 
 	template<typename T>
-	size_t vectorsizeof(const typename std::vector<T>& vec)
+	static size_t vectorsizeof(const typename std::vector<T>& vec)
 	{
 		return sizeof(T) * vec.size();
 	}
 
 	template<typename T>
-	size_t normalizedSize(const typename std::vector<T>& vec)
+	static size_t normalizedSize(const typename std::vector<T>& vec)
 	{
 		return std::clamp(vec.size(), 0_z, 1_z);
 	}
 
 	template<typename T>
-	size_t vectorElementsizeof(const typename std::vector<T>& vec)
+	static size_t vectorElementsizeof(const typename std::vector<T>& vec)
 	{
 		return sizeof(T);
 	}
 
 	template<typename T>
-	size_t sumValues(const typename T* arr, size_t length)
+	static size_t sumValues(const typename T* arr, size_t length)
 	{
 		size_t total = 0;
 		for (size_t i = 0; i < length; i++)
@@ -309,7 +317,7 @@ public:
 		return total;
 	}
 
-	VkFormat pickDataFormat(size_t size)
+	static VkFormat pickDataFormat(size_t size)
 	{
 		static const VkFormat formats[4] {
 			VkFormat::VK_FORMAT_R32_SFLOAT,
@@ -354,6 +362,59 @@ public:
 		printf(message, elementCount, totalByteSize, totalByteSize / (float)elementCount);
 	}
 
+	struct MeshDescriptor
+	{
+		static const size_t descriptorCount = 4;
+		void* vectors[descriptorCount];
+		size_t lengths[descriptorCount];
+		size_t elementByteSizes[descriptorCount];
+
+		bool operator==(MeshDescriptor& other) 
+		{
+			for (int i = 0; i < descriptorCount; i++)
+			{
+				if(elementByteSizes[i] != other.elementByteSizes[i] ||
+					std::min(lengths[i], 1_z) != std::min(other.lengths[i], 1_z))
+					return false;
+			}
+			return true;
+		}
+
+		bool operator !=(MeshDescriptor& other) { return !(*this == other); }
+	};
+
+	static void initializeBindings(UNQ<VertexBinding>& vbinding, const MeshDescriptor& meshDescriptor)
+	{
+		VkVertexInputBindingDescription bindingDescription;
+		std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
+
+		auto descriptorCount = meshDescriptor.descriptorCount;
+		// Vertex Attribute Descriptions
+		attributeDescriptions.resize(descriptorCount);
+
+		size_t offset = 0;
+		for (uint32_t i = 0; i < descriptorCount; i++)
+		{
+			auto size = meshDescriptor.elementByteSizes[i];
+
+			attributeDescriptions[i].binding = 0;
+			attributeDescriptions[i].location = i;
+			attributeDescriptions[i].format = pickDataFormat(size);
+			attributeDescriptions[i].offset = as_uint32(offset);
+
+			offset += size * std::clamp(meshDescriptor.lengths[i], 0_z, 1_z);
+		}
+
+		bindingDescription = {};
+		bindingDescription.binding = 0;
+		bindingDescription.stride = as_uint32(offset);
+		bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+		vbinding = MAKEUNQ<VertexBinding>(bindingDescription, attributeDescriptions);
+	}
+
+	void initializeBindings(UNQ<VertexBinding>& vbinding) { initializeBindings(vbinding, metaData); }
+
 	void initializeBindings(UNQ<VertexBinding>& vbinding, size_t descriptorCount, const size_t* byteSizes, const size_t* vectorSizes)
 	{
 		VkVertexInputBindingDescription bindingDescription;
@@ -397,20 +458,17 @@ public:
 		return vmaCreateBuffer(vmaAllocator, &bufferInfo, &vmaACI, &vBuffer, &vMemRange, nullptr) == VK_SUCCESS;
 	}
 
-	bool allocateVertexAttributes(VkMesh& graphicsMesh, UNQ<VertexBinding>& vbinding, const VmaAllocator& vmaAllocator)
+	bool allocateVertexAttributes(VkMesh& graphicsMesh, const VmaAllocator& vmaAllocator)
 	{
-		size_t vertCount = positions.size();
-		const size_t descriptorCount = 4;
+		size_t vertCount = m_positions.size();
 
-		size_t p_size = vectorElementsizeof(positions),
-			uv_size = vectorElementsizeof(uvs),
-			n_size = vectorElementsizeof(normals),
-			c_size = vectorElementsizeof(colors);
+		const size_t descriptorCount = metaData.descriptorCount;
+		auto& byteSizes = metaData.elementByteSizes;
+		auto& vectorSizes = metaData.lengths;
 
-		size_t byteSizes[descriptorCount] = { p_size, uv_size, n_size, c_size };
-		size_t strides[descriptorCount] = { normalizedSize(positions) * p_size, normalizedSize(uvs) * uv_size, normalizedSize(normals) * n_size, normalizedSize(colors) * c_size };
-		void* vectors[descriptorCount] = { positions.data(), uvs.data(), normals.data(), colors.data() };
-		size_t vectorSizes[descriptorCount] = { positions.size(), uvs.size(), normals.size(), colors.size() };
+		size_t strides[descriptorCount];
+		for (int i = 0; i < descriptorCount; i++)
+			strides[i] = std::clamp(metaData.lengths[i], 0_z, 1_z) * byteSizes[i];
 
 		size_t vertexStride = sumValues(strides, descriptorCount);
 		size_t floatCount = vertexStride / sizeof(float);
@@ -425,11 +483,6 @@ public:
 		graphicsMesh.vAttributes = MAKEUNQ<VertexAttributes>(vBuffers, vMemRanges, vOffsets);
 		graphicsMesh.vCount = as_uint32(vertCount);
 
-		initializeBindings(vbinding, descriptorCount, byteSizes, vectorSizes);
-		
-		if(!vbinding->runValidations())
-			return false;
-
 		// Align and optimize the mesh data
 		auto interleavedCount = floatCount * vertCount;
 		std::vector<float> interleavedVertexData(interleavedCount);
@@ -440,7 +493,7 @@ public:
 			if (vectorSizes[i] == 0)
 				continue;
 
-			copyInterleavedNoCheck(interleavedVertexData, vectors[i], byteSizes[i], floatCount, offset);
+			copyInterleavedNoCheck(interleavedVertexData, metaData.vectors[i], byteSizes[i], floatCount, offset);
 			offset += strides[i] / sizeof(float);
 		}
 
@@ -453,7 +506,7 @@ public:
 
 	bool allocateIndexAttributes(VkMesh& graphicsMesh, const VmaAllocator& vmaAllocator)
 	{
-		size_t totalSize = vectorsizeof(indices);
+		size_t totalSize = vectorsizeof(m_indices);
 
 		VmaAllocationCreateInfo vmaACI{};
 		vmaACI.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
@@ -469,19 +522,19 @@ public:
 			return false;
 
 		graphicsMesh.iAttributes = MAKEUNQ<IndexAttributes>(iBuffer, iMemRange, VkIndexType::VK_INDEX_TYPE_UINT16);
-		graphicsMesh.iCount = as_uint32(indices.size());
+		graphicsMesh.iCount = as_uint32(m_indices.size());
 		
 		// Fill the index buffer
-		mapAndCopyBuffer(vmaAllocator, iMemRange, indices.data(), indices.size() / 3, totalSize, 
+		mapAndCopyBuffer(vmaAllocator, iMemRange, m_indices.data(), m_indices.size() / 3, totalSize, 
 			"Copied index buffer of size: %zu triangles and %zu bytes (%f bytes per triangle).\n");
 
 		return true;
 	}
 
-	bool allocateGraphicsMesh(UNQ<VkMesh>& graphicsMesh, UNQ<VertexBinding>& vertexBindings, const VmaAllocator& vmaAllocator)
+	bool allocateGraphicsMesh(UNQ<VkMesh>& graphicsMesh, const VmaAllocator& vmaAllocator)
 	{
 		graphicsMesh = MAKEUNQ<VkMesh>();
-		if (!allocateVertexAttributes(*graphicsMesh, vertexBindings, vmaAllocator) ||
+		if (!allocateVertexAttributes(*graphicsMesh, vmaAllocator) ||
 			!allocateIndexAttributes(*graphicsMesh, vmaAllocator))
 			return false;
 
@@ -490,120 +543,158 @@ public:
 
 	static Mesh getPrimitiveTriangle()
 	{
-		Mesh mesh;
+		std::vector<glm::vec3> positions;
+		std::vector<glm::vec2> uvs;
+		std::vector<glm::vec3> normals;
+		std::vector<glm::vec3> colors;
+		std::vector<uint16_t> indices;
 
-		float extent = 0.5f;
-		mesh.positions = {
-			{ 0.0f, -extent, 0.0f },
-			{ extent, extent, 0.0f },
-			{ -extent, extent, 0.0f },
+		float extentX = 0.5f;
+		float extentY = extentX / 3.0f;
+		positions = {
+			{ 0.0f, -extentY * 2.f, 0.0f },
+			{ extentX, extentY, 0.0f },
+			{ -extentX, extentY, 0.0f },
 		};
 
-		mesh.uvs = {
+		uvs = {
 			{ 0.5, 0 },
 			{ 1.0, 1.0 },
 			{ 0.0, 1.0 }
 		};
 
-		glm::vec3 forward(0.0f, 0.0f, 1.0f);
-		mesh.normals = {
-			forward,
-			forward,
-			forward
+		//glm::vec3 forward(0.0f, 0.0f, 1.0f);
+		//normals = {
+		//	forward,
+		//	forward,
+		//	forward
+		//};
+
+		colors = {
+			Color::red().v4() * 0.5f + glm::vec4(0.5f),
+			Color::green().v4() * 0.5f + glm::vec4(0.5f),
+			Color::blue().v4() * 0.5f + glm::vec4(0.5f)
 		};
 
-		mesh.colors = {
-			Color::red().v4(),
-			Color::green().v4(),
-			Color::blue().v4()
-		};
-
-		mesh.indices = {
+		indices = {
 			0, 1, 2
 		};
 
-		return mesh;
+		return Mesh(positions, uvs, normals, colors, indices);
 	}
 
 	static Mesh getPrimitiveQuad()
 	{
-		Mesh mesh;
+		std::vector<glm::vec3> positions;
+		std::vector<glm::vec2> uvs;
+		std::vector<glm::vec3> normals;
+		std::vector<glm::vec3> colors;
+		std::vector<uint16_t> indices;
 
 		float extent = 0.5f;
-		mesh.positions = {
+		positions = {
 			{ -extent, -extent, 0.0f },
 			{ extent, -extent, 0.0f },
 			{ -extent, extent, 0.0f },
 			{ extent, extent, 0.0f }
 		};
 
-		//mesh.uvs = {
-		//	{ 0.0, 0.0 },
-		//	{ 1.0, 0.0 },
-		//	{ 0.0, 1.0 },
-		//	{ 1.0, 1.0 }
-		//};
+		uvs = {
+			{ 0.0, 0.0 },
+			{ 1.0, 0.0 },
+			{ 0.0, 1.0 },
+			{ 1.0, 1.0 }
+		};
 
 		//glm::vec3 forward(0.0f, 0.0f, 1.0f);
-		//mesh.normals = {
+		//normals = {
 		//	forward,
 		//	forward,
 		//	forward,
 		//	forward
 		//};
 
-		mesh.colors = {
-			Color::red().v4(),
-			Color::green().v4(),
-			Color::green().v4(),
-			Color::blue().v4()
+		colors = {
+			Color::red().v4() * 0.5f,
+			Color::green().v4() * 0.5f,
+			Color::green().v4() * 0.5f,
+			Color::blue().v4() * 0.5f
 		};
 
-		mesh.indices = {
+		indices = {
 			0, 1, 2,
 			2, 1, 3
 		};
 
-		return mesh;
+		return Mesh(positions, uvs, normals, colors, indices);
 	}
 
+	MeshDescriptor metaData;
 private:
-	std::vector<glm::vec3> positions;
-	std::vector<glm::vec2> uvs;
-	std::vector<glm::vec3> normals;
-	std::vector<glm::vec3> colors;
+	std::vector<glm::vec3> m_positions;
+	std::vector<glm::vec2> m_uvs;
+	std::vector<glm::vec3> m_normals;
+	std::vector<glm::vec3> m_colors;
 
-	std::vector<uint16_t> indices;
+	std::vector<uint16_t> m_indices;
 };
 
 class Scene
 {
 public:
-	const Mesh& getMesh() const { return *mesh; }
-	const VkMesh& getGraphicsMesh() const { return *graphicsMesh; }
+	const std::vector<UNQ<Mesh>>& getMeshes() const { return meshes; }
+	const std::vector<UNQ<VkMesh>>& getGraphicsMeshes() const { return graphicsMeshes; }
 	const VertexBinding& getVertexBinding() const { return *vertexBinding; }
 
 	bool load(const VmaAllocator& vmaAllocator)
 	{
-		mesh = MAKEUNQ<Mesh>(Mesh::getPrimitiveQuad());
+		meshes.resize(2);
+		meshes[0] = MAKEUNQ<Mesh>(Mesh::getPrimitiveQuad());
+		meshes[1] = MAKEUNQ<Mesh>(Mesh::getPrimitiveTriangle());
 
-		return mesh->allocateGraphicsMesh(graphicsMesh, vertexBinding, vmaAllocator) && 
-			mesh->isValid();
+		auto count = meshes.size();
+		graphicsMeshes.resize(count);
+		Mesh::MeshDescriptor md;
+		for(int i = 0; i < count; i++)
+		{
+			if (i == 0)
+				md = meshes[i]->metaData;
+
+			if (!meshes[i]->allocateGraphicsMesh(graphicsMeshes[i], vmaAllocator) || !meshes[i]->isValid())
+				return false;
+
+			if (md != meshes[i]->metaData)
+			{
+				printf("Mesh metadata does not match - can not bind to the same pipeline.");
+				return false;
+			}
+		}
+		
+		Mesh::initializeBindings(vertexBinding, md);
+
+		return vertexBinding->runValidations();
 	}
 
 	void release(const VmaAllocator& allocator)
 	{
-		mesh->clear();
-		mesh.release();
+		for (auto& mesh : meshes)
+		{
+			mesh->clear();
+			mesh.release();
+		}
 
-		graphicsMesh->release(allocator);
+		for (auto& gmesh : graphicsMeshes)
+		{
+			gmesh->release(allocator);
+		}
+
 		vertexBinding.release();
 	}
 
 private:
 	// hardcoded to contain a single mesh for now
-	UNQ<Mesh> mesh;
-	UNQ<VkMesh> graphicsMesh;
+	std::vector<UNQ<Mesh>> meshes;
+	std::vector<UNQ<VkMesh>> graphicsMeshes;
 	UNQ<VertexBinding> vertexBinding;
 };
  

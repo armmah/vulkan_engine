@@ -20,6 +20,7 @@ namespace Presentation
 		VkExtent2D getSwapchainExtent() const { return m_swapChainExtent; }
 		VkRenderPass getRenderPass() const { return m_renderPass; }
 		VkPipeline getPipeline() const { return m_pipeline; }
+		VkPipelineLayout getPipelineLayout() const { return m_pipelineLayout; }
 
 		VkImage getSwapchainImage(uint32_t index) const { return m_swapChainImages[index]; }
 		VkImageView getSwapchainImageView(uint32_t index) const { return m_swapChainImageViews[index]; }

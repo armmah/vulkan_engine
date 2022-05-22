@@ -117,16 +117,15 @@ void VulkanEngine::draw()
 
 	auto buffer = frame.getCommandBuffer();
 	vkResetCommandBuffer(buffer, 0);
-	
-	//CommandObjectsWrapper::HelloTriangleCommand(buffer, m_presentationTarget->pipeline, m_presentationTarget->renderPass, 
-	//	m_presentationTarget->swapChainFrameBuffers[imageIndex], m_presentationTarget->swapChainExtent, nullptr, 3);
 
-	CommandObjectsWrapper::renderSingleIndexedMesh(buffer, m_presentationTarget->getPipeline(), m_presentationTarget->getRenderPass(),
-		m_presentationTarget->getSwapchainFrameBuffers(imageIndex), m_presentationTarget->getSwapchainExtent(), m_openScene->getGraphicsMesh());
+	CommandObjectsWrapper::renderIndexedMeshes(buffer, m_presentationTarget->getPipeline(), m_presentationTarget->getPipelineLayout(), m_presentationTarget->getRenderPass(),
+		m_presentationTarget->getSwapchainFrameBuffers(imageIndex), m_presentationTarget->getSwapchainExtent(), m_openScene->getGraphicsMeshes(), m_frameNumber);
 
 	frame.resetAcquireFence(m_presentationDevice->getDevice());
 	frame.submitToQueue(m_presentationDevice->getGraphicsQueue());
 	frame.present(imageIndex, m_presentationTarget->getSwapchain(), m_presentationDevice->getPresentQueue());
+
+	++m_frameNumber;
 }
 
 bool VulkanEngine::handleFailedToAcquireImageIfNecessary(VkResult imageAcquireResult)

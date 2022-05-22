@@ -9,9 +9,9 @@ namespace Presentation
 	class PresentationTarget : IRequireInitialization
 	{
 	public:
-		PresentationTarget(REF<HardwareDevice const> presentationHardware, REF<Device const> presentationDevice, const VertexBinding& vBinding)
+		PresentationTarget(const HardwareDevice& presentationHardware, const Device& presentationDevice, const VertexBinding& vBinding, uint32_t swapchainCount = 3u)
 		{
-			m_isInitialized = createPresentationTarget(presentationHardware, presentationDevice, vBinding);
+			m_isInitialized = createPresentationTarget(presentationHardware, presentationDevice, vBinding, swapchainCount);
 		}
 
 		bool IRequireInitialization::isInitialized() const { return m_isInitialized; }
@@ -25,7 +25,7 @@ namespace Presentation
 		VkImageView getSwapchainImageView(uint32_t index) const { return m_swapChainImageViews[index]; }
 		VkFramebuffer getSwapchainFrameBuffers(uint32_t index) const { return m_swapChainFrameBuffers[index]; }
 
-		bool createPresentationTarget(REF<HardwareDevice const> presentationHardware, REF<Device const> presentationDevice, const VertexBinding& vBinding);
+		bool createPresentationTarget(const HardwareDevice& presentationHardware, const Device& presentationDevice, const VertexBinding& vBinding, uint32_t swapchainCount = 3u);
 		bool createGraphicsPipeline(VkDevice device, const VertexBinding& vBinding, VkCullModeFlagBits faceCullingMode = VK_CULL_MODE_BACK_BIT);
 		bool createGraphicsPipeline(VkDevice device, const VertexBinding& vBinding, VkExtent2D scissorExtent, VkCullModeFlagBits faceCullingMode);
 
@@ -48,7 +48,7 @@ namespace Presentation
 		std::vector<VkImageView> m_swapChainImageViews;
 		std::vector<VkFramebuffer> m_swapChainFrameBuffers;
 
-		bool createSwapChain(uint32_t imageCount, REF<HardwareDevice const> swapChainDetails, REF<Device const> device);
+		bool createSwapChain(uint32_t imageCount, const HardwareDevice& swapChainDetails, const Device& device);
 		bool createRenderPass(VkDevice device);
 		bool createSwapChainImageViews(VkDevice device);
 		bool createFramebuffers(VkDevice device);

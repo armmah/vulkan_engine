@@ -157,14 +157,14 @@ namespace Presentation
 		vkDestroySwapchainKHR(device, m_swapchain, nullptr);
 	}
 
-	bool PresentationTarget::createPresentationTarget(REF<HardwareDevice const> presentationHardware, REF<Device const> presentationDevice, const VertexBinding& vBinding)
+	bool PresentationTarget::createPresentationTarget(const HardwareDevice& presentationHardware, const Device& presentationDevice, const VertexBinding& vBinding, uint32_t swapchainCount)
 	{
-		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(presentationHardware->getActiveGPU(), presentationDevice->getSurface(), &m_capabilities);
-		m_swapChainExtent = chooseSwapExtent(presentationDevice->getWindowRef());
+		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(presentationHardware.getActiveGPU(), presentationDevice.getSurface(), &m_capabilities);
+		m_swapChainExtent = chooseSwapExtent(presentationDevice.getWindowRef());
 
-		auto vkdevice = presentationDevice->getDevice();
+		auto vkdevice = presentationDevice.getDevice();
 
-		return createSwapChain(3u, presentationHardware, presentationDevice) &&
+		return createSwapChain(swapchainCount, presentationHardware, presentationDevice) &&
 			createSwapChainImageViews(vkdevice) &&
 			createRenderPass(vkdevice) &&
 			createFramebuffers(vkdevice) &&
@@ -195,11 +195,11 @@ namespace Presentation
 		}
 	}
 
-	bool PresentationTarget::createSwapChain(uint32_t imageCount, REF<HardwareDevice const> swapChainDetails, REF<Device const> device)
+	bool PresentationTarget::createSwapChain(uint32_t imageCount, const HardwareDevice& swapChainDetails, const Device& device)
 	{
-		auto surfaceFormat = swapChainDetails->chooseSwapSurfaceFormat();
-		auto presentationMode = swapChainDetails->chooseSwapPresentMode();
-		auto extent = chooseSwapExtent(device->getWindowRef());
+		auto surfaceFormat = swapChainDetails.chooseSwapSurfaceFormat();
+		auto presentationMode = swapChainDetails.chooseSwapPresentMode();
+		auto extent = chooseSwapExtent(device.getWindowRef());
 
 		imageCount = std::max(imageCount, m_capabilities.minImageCount);
 		if (m_capabilities.maxImageCount != 0)
@@ -207,7 +207,7 @@ namespace Presentation
 
 		VkSwapchainCreateInfoKHR createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-		createInfo.surface = device->getSurface();
+		createInfo.surface = device.getSurface();
 		createInfo.minImageCount = imageCount;
 		createInfo.imageFormat = surfaceFormat.format;
 		createInfo.imageColorSpace = surfaceFormat.colorSpace;
@@ -221,16 +221,16 @@ namespace Presentation
 		createInfo.clipped = VK_TRUE;
 		createInfo.oldSwapchain = VK_NULL_HANDLE;
 
-		bool isSuccess = vkCreateSwapchainKHR(device->getDevice(), &createInfo, nullptr, &m_swapchain) == VK_SUCCESS;
+		bool isSuccess = vkCreateSwapchainKHR(device.getDevice(), &createInfo, nullptr, &m_swapchain) == VK_SUCCESS;
 
 		if (isSuccess)
 		{
 			m_swapChainExtent = extent;
 			m_swapChainImageFormat = surfaceFormat.format;
 
-			vkGetSwapchainImagesKHR(device->getDevice(), m_swapchain, &imageCount, nullptr);
+			vkGetSwapchainImagesKHR(device.getDevice(), m_swapchain, &imageCount, nullptr);
 			m_swapChainImages.resize(imageCount);
-			vkGetSwapchainImagesKHR(device->getDevice(), m_swapchain, &imageCount, m_swapChainImages.data());
+			vkGetSwapchainImagesKHR(device.getDevice(), m_swapchain, &imageCount, m_swapChainImages.data());
 		}
 
 		return isSuccess;

@@ -60,24 +60,24 @@ bool VulkanEngine::init_vulkan(SDL_Window* window)
 		!vkinit::Surface::createSurface(surface, m_instance, window))
 		return false;
 
-	m_presentationHardware = std::make_shared<Presentation::HardwareDevice>(m_instance, surface);
-	m_presentationDevice = std::make_shared<Presentation::Device>(m_presentationHardware->getActiveGPU(), surface, window, m_validationLayers.get());
+	m_presentationHardware = MAKEUNQ<Presentation::HardwareDevice>(m_instance, surface);
+	m_presentationDevice = MAKEUNQ<Presentation::Device>(m_presentationHardware->getActiveGPU(), surface, window, m_validationLayers.get());
 
-	m_openScene = std::make_unique<Scene>();
+	m_openScene = MAKEUNQ<Scene>();
 
 	VmaAllocatorCreateInfo allocatorInfo = {};
 	allocatorInfo.physicalDevice = m_presentationHardware->getActiveGPU();
 	allocatorInfo.device = m_presentationDevice->getDevice();
 	allocatorInfo.instance = m_instance;
+
 	if (vmaCreateAllocator(&allocatorInfo, &m_memoryAllocator) != VK_SUCCESS || 
 		!m_openScene->load(m_memoryAllocator))
 		return false;
 
-	m_presentationTarget = std::make_unique<Presentation::PresentationTarget>(m_presentationHardware, m_presentationDevice, m_openScene->getVertexBinding());
-	m_framePresentation = std::make_unique<Presentation::FrameCollection>(m_presentationDevice);
+	m_presentationTarget = MAKEUNQ<Presentation::PresentationTarget>(*m_presentationHardware, *m_presentationDevice, m_openScene->getVertexBinding());
+	m_framePresentation = MAKEUNQ<Presentation::FrameCollection>(m_presentationDevice->getDevice(), m_presentationDevice->getCommandPool());
 	
-	return
-		m_presentationHardware->isInitialized() &&
+	return m_presentationHardware->isInitialized() &&
 		m_presentationDevice->isInitialized() &&
 		m_presentationTarget->isInitialized() &&
 		m_framePresentation->isInitialized();
@@ -136,7 +136,7 @@ bool VulkanEngine::handleFailedToAcquireImageIfNecessary(VkResult imageAcquireRe
 		vkDeviceWaitIdle(m_presentationDevice->getDevice());
 
 		m_presentationTarget->release(m_presentationDevice->getDevice());
-		if (!m_presentationTarget->createPresentationTarget(m_presentationHardware, m_presentationDevice, m_openScene->getVertexBinding()))
+		if (!m_presentationTarget->createPresentationTarget(*m_presentationHardware, *m_presentationDevice, m_openScene->getVertexBinding()))
 			printf("Recreating the swapchain was not successful");
 
 		return true;

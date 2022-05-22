@@ -8,7 +8,7 @@ namespace Presentation
 	class FrameCollection : IRequireInitialization
 	{
 	public:
-		FrameCollection(REF<Device const> presentationDevice, int frameCount = 2);
+		FrameCollection(VkDevice device, VkCommandPool pool, int frameCount = 2);
 
 		bool IRequireInitialization::isInitialized() const { return m_fullyInitialized; }
 
@@ -22,7 +22,7 @@ namespace Presentation
 	private:
 		bool m_fullyInitialized = false;
 
-		REF<Device const> m_presentationDevice;
+		VkDevice m_device;
 		std::vector<Frame> m_frameCollection;
 		int m_currentFrameIndex = 0;
 	};

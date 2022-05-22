@@ -2,13 +2,10 @@
 
 namespace Presentation
 {
-	FrameCollection::FrameCollection(REF<Device const> presentationDevice, int frameCount) :
-		m_presentationDevice(presentationDevice)
+	FrameCollection::FrameCollection(VkDevice device, VkCommandPool pool, int frameCount) :
+		m_device(device)
 	{
 		m_fullyInitialized = true;
-
-		auto device = presentationDevice->getDevice();
-		auto pool = presentationDevice->getCommandPool();
 
 		m_frameCollection.reserve(frameCount);
 		for (int i = 0; i < frameCount; i++)
@@ -27,20 +24,20 @@ namespace Presentation
 	Frame FrameCollection::getNextFrameAndWaitOnFence()
 	{
 		auto frame = getNextFrame();
-		frame.waitOnAcquireFence(m_presentationDevice->getDevice());
+		frame.waitOnAcquireFence(m_device);
 		return frame;
 	}
 
 	VkResult FrameCollection::acquireImageFromSwapchain(uint32_t& imageIndex, VkSwapchainKHR m_swapchain)
 	{
-		return vkAcquireNextImageKHR(m_presentationDevice->getDevice(), m_swapchain, UINT64_MAX, m_frameCollection[m_currentFrameIndex].getImageAvailableSemaphore(), VK_NULL_HANDLE, &imageIndex);
+		return vkAcquireNextImageKHR(m_device, m_swapchain, UINT64_MAX, m_frameCollection[m_currentFrameIndex].getImageAvailableSemaphore(), VK_NULL_HANDLE, &imageIndex);
 	}
 
 	void FrameCollection::releaseFrameResources()
 	{
 		for (auto& frame : m_frameCollection)
 		{
-			frame.release(m_presentationDevice->getDevice());
+			frame.release(m_device);
 		}
 
 		m_frameCollection.clear();

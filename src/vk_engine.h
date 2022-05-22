@@ -29,8 +29,8 @@ public:
 	VmaAllocator m_memoryAllocator;
 	//VkDebugUtilsMessengerEXT _debug_messenger; // Vulkan debug output handle
 
-	std::shared_ptr<Presentation::HardwareDevice> m_presentationHardware;
-	std::shared_ptr<Presentation::Device> m_presentationDevice;
+	std::unique_ptr<Presentation::HardwareDevice> m_presentationHardware;
+	std::unique_ptr<Presentation::Device> m_presentationDevice;
 	std::unique_ptr<Presentation::PresentationTarget> m_presentationTarget;
 	std::unique_ptr<Presentation::FrameCollection> m_framePresentation;
 	

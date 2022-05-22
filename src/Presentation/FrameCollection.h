@@ -7,11 +7,6 @@ namespace Presentation
 {
 	class FrameCollection : IRequireInitialization
 	{
-		REF<Device const> m_presentationDevice;
-		std::vector<Frame> m_frameCollection;
-		int m_currentFrameIndex = 0;
-		bool m_fullyInitialized = false;
-
 	public:
 		FrameCollection(REF<Device const> presentationDevice, int frameCount = 2);
 
@@ -20,8 +15,15 @@ namespace Presentation
 		Frame getNextFrame();
 		Frame getNextFrameAndWaitOnFence();
 
-		VkResult acquireImageFromSwapchain(uint32_t& imageIndex, VkSwapchainKHR swapchain);
+		VkResult acquireImageFromSwapchain(uint32_t& imageIndex, VkSwapchainKHR m_swapchain);
 
 		void releaseFrameResources();
+
+	private:
+		bool m_fullyInitialized = false;
+
+		REF<Device const> m_presentationDevice;
+		std::vector<Frame> m_frameCollection;
+		int m_currentFrameIndex = 0;
 	};
 }

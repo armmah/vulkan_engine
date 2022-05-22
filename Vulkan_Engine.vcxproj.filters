@@ -82,5 +82,8 @@
     <ClInclude Include="src\EngineCore\Scene.h">
       <Filter>Header Files\EngineCore</Filter>
     </ClInclude>
+    <ClInclude Include="src\EngineCore\Common.h">
+      <Filter>Header Files\EngineCore</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

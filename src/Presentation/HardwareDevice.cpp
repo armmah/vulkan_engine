@@ -86,7 +86,7 @@ namespace Presentation
 		return score;
 	}
 
-	bool HardwareDevice::checkDeviceExtensionSupport(VkPhysicalDevice device, std::vector<const char*> requiredExtensions, std::string& unsupportedExtensionNames) const
+	bool HardwareDevice::checkDeviceExtensionSupport(VkPhysicalDevice device, const std::vector<const char*>& requiredExtensions, std::string& unsupportedExtensionNames) const
 	{
 		uint32_t extCount;
 		vkEnumerateDeviceExtensionProperties(device, nullptr, &extCount, nullptr);

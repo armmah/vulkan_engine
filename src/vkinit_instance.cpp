@@ -11,7 +11,7 @@ namespace vkinit
 		return SDL_Vulkan_GetInstanceExtensions(window, extCount, extensionNames);
 	}
 
-	bool Instance::createInstance(VkInstance& instance, std::string applicationName, std::vector<const char*> extNames, std::optional<VulkanValidationLayers> validationLayers)
+	bool Instance::createInstance(VkInstance& instance, std::string applicationName, std::vector<const char*> extNames, const VulkanValidationLayers* validationLayers)
 	{
 		VkApplicationInfo appInfo{};
 		appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -25,9 +25,9 @@ namespace vkinit
 		createInfo.enabledExtensionCount = static_cast<uint32_t>(extNames.size());
 		createInfo.ppEnabledExtensionNames = extNames.data();
 
-		if (validationLayers.has_value())
+		if (validationLayers)
 		{
-			validationLayers.value().applyValidationLayers(createInfo);
+			validationLayers->applyValidationLayers(createInfo);
 		}
 
 		return vkCreateInstance(&createInfo, nullptr, &instance) == VK_SUCCESS;

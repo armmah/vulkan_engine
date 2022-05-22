@@ -5,21 +5,8 @@ namespace Presentation
 {
 	class Device : IRequireInitialization
 	{
-		VkDevice m_vkdevice;
-		VkSurfaceKHR m_surface;
-		QueueFamilyIndices m_queueIndices;
-
-		VkQueue m_graphicsQueue;
-		VkQueue m_presentQueue;
-
-		VkCommandPool m_commandPool;
-
-		const SDL_Window* m_window;
-		std::optional<VulkanValidationLayers> m_validationLayers;
-		bool m_isInitialized = false;
-
 	public:
-		Device(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, const SDL_Window* windowPtr, std::optional<VulkanValidationLayers> validationLayers);
+		Device(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, const SDL_Window* windowPtr, const VulkanValidationLayers* validationLayers);
 
 		bool IRequireInitialization::isInitialized() const { return m_isInitialized; }
 
@@ -37,5 +24,19 @@ namespace Presentation
 
 		bool createLogicalDevice(VkPhysicalDevice physicalDevice);
 
+	private:
+		bool m_isInitialized = false;
+
+		VkDevice m_vkdevice;
+		VkSurfaceKHR m_surface;
+		QueueFamilyIndices m_queueIndices;
+
+		VkQueue m_graphicsQueue;
+		VkQueue m_presentQueue;
+
+		VkCommandPool m_commandPool;
+
+		const SDL_Window* m_window;
+		const VulkanValidationLayers* m_validationLayers;
 	};
 }

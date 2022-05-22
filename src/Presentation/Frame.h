@@ -5,16 +5,6 @@ namespace Presentation
 {
 	class Frame : IRequireInitialization
 	{
-		VkCommandBuffer m_buffer;
-
-		VkSemaphore m_imageAvailableSemaphore;
-		VkSemaphore m_renderFinishedSemaphore;
-		VkFence m_inFlightFence;
-
-		bool m_isInitialized = false;
-
-		bool initialize(VkDevice device, VkCommandPool pool);
-
 	public:
 		Frame(VkDevice device, VkCommandPool pool)
 		{
@@ -36,5 +26,16 @@ namespace Presentation
 		void resetAcquireFence(VkDevice device);
 
 		void release(VkDevice device);
+
+	private:
+		bool m_isInitialized = false;
+
+		VkCommandBuffer m_buffer;
+
+		VkSemaphore m_imageAvailableSemaphore;
+		VkSemaphore m_renderFinishedSemaphore;
+		VkFence m_inFlightFence;
+
+		bool initialize(VkDevice device, const VkCommandPool& pool);
 	};
 }

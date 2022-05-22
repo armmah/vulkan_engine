@@ -165,6 +165,7 @@
     <ClCompile Include="src\vk_types.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\EngineCore\Common.h" />
     <ClInclude Include="src\EngineCore\Scene.h" />
     <ClInclude Include="src\Presentation\Frame.h" />
     <ClInclude Include="src\Presentation\HardwareDevice.h" />

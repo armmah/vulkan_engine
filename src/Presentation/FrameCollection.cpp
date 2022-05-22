@@ -31,9 +31,9 @@ namespace Presentation
 		return frame;
 	}
 
-	VkResult FrameCollection::acquireImageFromSwapchain(uint32_t& imageIndex, VkSwapchainKHR swapchain)
+	VkResult FrameCollection::acquireImageFromSwapchain(uint32_t& imageIndex, VkSwapchainKHR m_swapchain)
 	{
-		return vkAcquireNextImageKHR(m_presentationDevice->getDevice(), swapchain, UINT64_MAX, m_frameCollection[m_currentFrameIndex].getImageAvailableSemaphore(), VK_NULL_HANDLE, &imageIndex);
+		return vkAcquireNextImageKHR(m_presentationDevice->getDevice(), m_swapchain, UINT64_MAX, m_frameCollection[m_currentFrameIndex].getImageAvailableSemaphore(), VK_NULL_HANDLE, &imageIndex);
 	}
 
 	void FrameCollection::releaseFrameResources()

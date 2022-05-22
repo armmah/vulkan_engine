@@ -24,15 +24,15 @@ public:
 	std::string applicationName = "Hello Triangle";
 
 	VkInstance m_instance; // Vulkan library handle
-	VulkanValidationLayers m_validationLayers;
+
+	std::unique_ptr<VulkanValidationLayers> m_validationLayers;
+	VmaAllocator m_memoryAllocator;
 	//VkDebugUtilsMessengerEXT _debug_messenger; // Vulkan debug output handle
 
 	std::shared_ptr<Presentation::HardwareDevice> m_presentationHardware;
 	std::shared_ptr<Presentation::Device> m_presentationDevice;
 	std::unique_ptr<Presentation::PresentationTarget> m_presentationTarget;
 	std::unique_ptr<Presentation::FrameCollection> m_framePresentation;
-
-	VmaAllocator m_memoryAllocator;
 	
 	std::unique_ptr<Scene> m_openScene;
 
@@ -42,7 +42,7 @@ public:
 	struct SDL_Window* m_window{ nullptr };
 
 	//initializes everything in the engine
-	void init();
+	void init(bool requestValidationLayers);
 
 	//shuts down the engine
 	void cleanup();

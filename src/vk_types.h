@@ -16,32 +16,23 @@
 #include <string>
 #include <memory>
 #include <optional>
+#include <string>
 
 #include "EngineCore/Scene.h"
 
-#define REF std::shared_ptr
-#define MAKEREF std::make_shared
-
 class VulkanValidationLayers
 {
-#ifdef NDEBUG
-	bool m_enableValidationLayers = false;
-#else
-	bool m_enableValidationLayers = true;
-#endif
-
-	const std::vector<const char*> m_validationLayers = { "VK_LAYER_KHRONOS_validation" };
+	const char* m_validationLayerName = "VK_LAYER_KHRONOS_validation";
 
 	bool checkValidationLayerSupport();
 
 public:
 	VulkanValidationLayers() { }
-	VulkanValidationLayers(bool forceValidation) { m_enableValidationLayers = forceValidation; }
 
 	bool checkValidationLayersFailed();
 
-	void applyValidationLayers(VkInstanceCreateInfo& createInfo);
-	void applyValidationLayers(VkDeviceCreateInfo& createInfo);
+	void applyValidationLayers(VkInstanceCreateInfo& createInfo) const;
+	void applyValidationLayers(VkDeviceCreateInfo& createInfo) const;
 };
 
 class IRequireInitialization
@@ -66,7 +57,7 @@ namespace vkinit
 		static const std::vector<const char*> requiredExtensions;
 
 		static bool getRequiredExtensionsForPlatform(SDL_Window* window, unsigned int* extCount, const char** extensionNames);
-		static bool createInstance(VkInstance& instance, std::string applicationName, std::vector<const char*> extNames, std::optional<VulkanValidationLayers> validationLayers);
+		static bool createInstance(VkInstance& instance, std::string applicationName, std::vector<const char*> extNames, const VulkanValidationLayers* validationLayers);
 	};
 
 	struct Surface
@@ -212,6 +203,58 @@ struct FileIO
 	static std::vector<char> readFile(const std::string& filename);
 };
 
+struct ShaderSource
+{
+	std::string vertexPath,
+		fragmentPath;
+
+	ShaderSource(std::string path_vertexShaderSource, std::string path_fragmentShaderSource)
+		: vertexPath(path_vertexShaderSource), fragmentPath(path_fragmentShaderSource) { }
+
+	std::vector<char> getVertexSource() { return FileIO::readFile(vertexPath); }
+	std::vector<char> getFragmentSource() { return FileIO::readFile(fragmentPath); }
+
+	static ShaderSource getHardcodedTriangle() { return ShaderSource("../Shaders/outputSPV/triangle.vert.spv", "../Shaders/outputSPV/triangle.frag.spv"); }
+	static ShaderSource getDefaultShader() { return ShaderSource("../Shaders/outputSPV/simple.vert.spv", "../Shaders/outputSPV/simple.frag.spv"); }
+};
+
+struct Shader
+{
+	VkDevice device;
+	VkShaderModule vertShader,
+		fragShader;
+
+	Shader(VkDevice device, ShaderSource source)
+		: device(device)
+	{
+		if (!createShaderModule(vertShader, source.getVertexSource(), device))
+		{
+			printf("Failed to compile the shader '%s'.", source.fragmentPath.c_str());
+		}
+
+		if (!createShaderModule(fragShader, source.getFragmentSource(), device))
+		{
+			printf("Failed to compile the shader '%s'.", source.fragmentPath.c_str());
+		}
+	}
+
+	static bool createShaderModule(VkShaderModule& module, const std::vector<char>& code, VkDevice device)
+	{
+		VkShaderModuleCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+		createInfo.codeSize = code.size();
+		createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
+
+		return vkCreateShaderModule(device, &createInfo, nullptr, &module) == VK_SUCCESS;
+	}
+
+	void release()
+	{
+		vkDestroyShaderModule(device, vertShader, nullptr);
+		vkDestroyShaderModule(device, fragShader, nullptr);
+	}
+};
+
 struct CommandObjectsWrapper
 {
 	class CommandBufferScope
@@ -221,6 +264,9 @@ struct CommandObjectsWrapper
 	public:
 		CommandBufferScope(VkCommandBuffer commandBuffer);
 		~CommandBufferScope();
+
+		CommandBufferScope(const CommandBufferScope&) = delete;
+		CommandBufferScope& operator=(const CommandBufferScope&) = delete;
 	};
 
 	class RenderPassScope
@@ -228,17 +274,20 @@ struct CommandObjectsWrapper
 		VkCommandBuffer commandBuffer;
 
 	public:
-		RenderPassScope(VkCommandBuffer commandBuffer, VkRenderPass renderPass, VkFramebuffer swapChainFramebuffer, VkExtent2D extent);
+		RenderPassScope(VkCommandBuffer commandBuffer, VkRenderPass m_renderPass, VkFramebuffer swapChainFramebuffer, VkExtent2D extent);
 		~RenderPassScope();
+
+		RenderPassScope(const RenderPassScope&) = delete;
+		RenderPassScope& operator=(const RenderPassScope&) = delete;
 	};
 
-	static void HelloTriangleCommand(VkCommandBuffer buffer, VkPipeline pipeline, VkRenderPass renderPass, VkFramebuffer frameBuffer, VkExtent2D extent, VkBuffer vertexBuffer, uint32_t size)
+	static void HelloTriangleCommand(VkCommandBuffer buffer, VkPipeline m_pipeline, VkRenderPass m_renderPass, VkFramebuffer frameBuffer, VkExtent2D extent, VkBuffer vertexBuffer, uint32_t size)
 	{
 		auto cbs = CommandBufferScope(buffer);
 		{
-			auto rps = RenderPassScope(buffer, renderPass, frameBuffer, extent);
+			auto rps = RenderPassScope(buffer, m_renderPass, frameBuffer, extent);
 
-			vkCmdBindPipeline(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+			vkCmdBindPipeline(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
 
 			if (vertexBuffer != nullptr)
 			{
@@ -251,19 +300,16 @@ struct CommandObjectsWrapper
 		}
 	}
 
-	static void renderSingleIndexedMesh(VkCommandBuffer commandBuffer, VkPipeline pipeline, VkRenderPass renderPass, VkFramebuffer frameBuffer, VkExtent2D extent, const VkMesh& mesh)
+	static void renderSingleIndexedMesh(VkCommandBuffer commandBuffer, VkPipeline m_pipeline, VkRenderPass m_renderPass, VkFramebuffer frameBuffer, VkExtent2D extent, const VkMesh& mesh)
 	{
-		const VertexAttributes& vAttributes = mesh.vAttributes;
-		const IndexAttributes& iAttributes = mesh.iAttributes;
-
 		auto cbs = CommandBufferScope(commandBuffer);
 		{
-			auto rps = RenderPassScope(commandBuffer, renderPass, frameBuffer, extent);
+			auto rps = RenderPassScope(commandBuffer, m_renderPass, frameBuffer, extent);
 
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
 
-			vkCmdBindVertexBuffers(commandBuffer, vAttributes.firstBinding, vAttributes.bindingCount, vAttributes.buffers.data(), vAttributes.offsets.data());
-			vkCmdBindIndexBuffer(commandBuffer, iAttributes.buffer, iAttributes.offset, iAttributes.indexType);
+			mesh.vAttributes->bind(commandBuffer);
+			mesh.iAttributes->bind(commandBuffer);
 
 			vkCmdDrawIndexed(commandBuffer, mesh.iCount, 1, 0, 0, 0);
 		}

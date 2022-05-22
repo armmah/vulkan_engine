@@ -2,7 +2,7 @@
 
 namespace Presentation
 {
-	Device::Device(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, const SDL_Window* windowPtr, std::optional<VulkanValidationLayers> validationLayers)
+	Device::Device(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, const SDL_Window* windowPtr, const VulkanValidationLayers* validationLayers)
 		: m_surface(surface), m_window(windowPtr), m_validationLayers(validationLayers)
 	{
 		m_isInitialized =
@@ -46,9 +46,9 @@ namespace Presentation
 
 		createInfo.pEnabledFeatures = &deviceFeatures;
 
-		if (m_validationLayers.has_value())
+		if (m_validationLayers)
 		{
-			m_validationLayers.value().applyValidationLayers(createInfo);
+			m_validationLayers->applyValidationLayers(createInfo);
 		}
 
 		bool isSuccess = vkCreateDevice(physicalDevice, &createInfo, nullptr, &m_vkdevice) == VK_SUCCESS;

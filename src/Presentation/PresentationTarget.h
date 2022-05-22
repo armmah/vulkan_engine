@@ -9,9 +9,9 @@ namespace Presentation
 	class PresentationTarget : IRequireInitialization
 	{
 	public:
-		PresentationTarget(const HardwareDevice& presentationHardware, const Device& presentationDevice, const VertexBinding& vBinding, uint32_t swapchainCount = 3u)
+		PresentationTarget(const HardwareDevice& presentationHardware, const Device& presentationDevice, uint32_t swapchainCount = 3u)
 		{
-			m_isInitialized = createPresentationTarget(presentationHardware, presentationDevice, vBinding, swapchainCount);
+			m_isInitialized = createPresentationTarget(presentationHardware, presentationDevice, swapchainCount);
 		}
 
 		bool IRequireInitialization::isInitialized() const { return m_isInitialized; }
@@ -25,10 +25,10 @@ namespace Presentation
 		VkImageView getSwapchainImageView(uint32_t index) const { return m_swapChainImageViews[index]; }
 		VkFramebuffer getSwapchainFrameBuffers(uint32_t index) const { return m_swapChainFrameBuffers[index]; }
 
-		bool createPresentationTarget(const HardwareDevice& presentationHardware, const Device& presentationDevice, const VertexBinding& vBinding, uint32_t swapchainCount = 3u);
+		bool createPresentationTarget(const HardwareDevice& presentationHardware, const Device& presentationDevice, uint32_t swapchainCount = 3u);
 		bool createGraphicsPipeline(VkDevice device, const VertexBinding& vBinding, VkCullModeFlagBits faceCullingMode = VK_CULL_MODE_BACK_BIT);
-		bool createGraphicsPipeline(VkDevice device, const VertexBinding& vBinding, VkExtent2D scissorExtent, VkCullModeFlagBits faceCullingMode);
 
+		void releasePipeline(VkDevice device);
 		void release(VkDevice device);
 
 	private:

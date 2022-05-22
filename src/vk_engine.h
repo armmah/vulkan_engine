@@ -41,6 +41,7 @@ public:
 	VkExtent2D m_startingWindowSize{ 800 , 600 };
 	struct SDL_Window* m_window{ nullptr };
 
+
 	//initializes everything in the engine
 	void init(bool requestValidationLayers);
 
@@ -55,6 +56,8 @@ public:
 
 
 private:
+
+	void initializeTheWindow();
 
 	bool init_vulkan(SDL_Window* window);
 	

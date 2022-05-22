@@ -104,6 +104,19 @@ namespace vkinit
 
 			return vkAllocateCommandBuffers(device, &allocInfo, commandBufferCollection.data()) == VK_SUCCESS;
 		}
+
+		static void initViewportAndScissor(VkViewport& viewport, VkRect2D& scissor, VkExtent2D extent)
+		{
+			viewport.x = 0.0f;
+			viewport.y = 0.0f;
+			viewport.width = static_cast<float>(extent.width);
+			viewport.height = static_cast<float>(extent.height);
+			viewport.minDepth = 0.0f;
+			viewport.maxDepth = 1.0f;
+
+			scissor.offset = { 0, 0 };
+			scissor.extent = extent;
+		}
 	};
 
 	struct Synchronization
@@ -132,6 +145,16 @@ namespace vkinit
 
 	struct MemoryBuffer
 	{
+		static bool createVmaAllocator(VmaAllocator& vmaAllocator, const VkInstance instance, const VkPhysicalDevice physicalDevice, const VkDevice device)
+		{
+			VmaAllocatorCreateInfo allocatorInfo = {};
+			allocatorInfo.instance = instance;
+			allocatorInfo.physicalDevice = physicalDevice;
+			allocatorInfo.device = device;
+
+			return vmaCreateAllocator(&allocatorInfo, &vmaAllocator) == VK_SUCCESS;
+		}
+		
 		static bool createBuffer(VkBuffer& buffer, VkDeviceMemory& memory, VkPhysicalDevice physicalDevice, VkDevice device, uint32_t bufferSize)
 		{
 			VkBufferCreateInfo bufferInfo{};
@@ -304,6 +327,13 @@ struct CommandObjectsWrapper
 	{
 		auto cbs = CommandBufferScope(commandBuffer);
 		{
+			VkViewport viewport[1]{};
+			VkRect2D scissor[1]{};
+			vkinit::Commands::initViewportAndScissor(viewport[0], scissor[0], extent);
+
+			vkCmdSetViewport(commandBuffer, 0, 1, viewport);
+			vkCmdSetScissor(commandBuffer, 0, 1, scissor);
+
 			auto rps = RenderPassScope(commandBuffer, m_renderPass, frameBuffer, extent);
 
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);

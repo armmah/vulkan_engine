@@ -10,9 +10,8 @@
 #define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"
 
-void VulkanEngine::init(bool requestValidationLayers)
+void VulkanEngine::initializeTheWindow()
 {
-	// We initialize SDL and create a window with it. 
 	SDL_Init(SDL_INIT_VIDEO);
 
 	SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
@@ -25,6 +24,11 @@ void VulkanEngine::init(bool requestValidationLayers)
 		m_startingWindowSize.height,
 		window_flags
 	);
+}
+
+void VulkanEngine::init(bool requestValidationLayers)
+{
+	initializeTheWindow();
 
 	if (requestValidationLayers)
 	{
@@ -35,10 +39,14 @@ void VulkanEngine::init(bool requestValidationLayers)
 	{
 		std::cout << "Successfully created instance." << std::endl;
 	}
-	else
+	else throw std::runtime_error("Failed to create and initialize vulkan objects!");
+
+	m_openScene = MAKEUNQ<Scene>();
+	if (!m_openScene->load(m_memoryAllocator))
 	{
-		throw std::runtime_error("Failed to create and initialize vulkan objects!");
+		throw std::runtime_error("Failed to load the scene!");
 	}
+	m_presentationTarget->createGraphicsPipeline(m_presentationDevice->getDevice(), m_openScene->getVertexBinding());
 }
 
 bool VulkanEngine::init_vulkan(SDL_Window* window)
@@ -63,19 +71,11 @@ bool VulkanEngine::init_vulkan(SDL_Window* window)
 	m_presentationHardware = MAKEUNQ<Presentation::HardwareDevice>(m_instance, surface);
 	m_presentationDevice = MAKEUNQ<Presentation::Device>(m_presentationHardware->getActiveGPU(), surface, window, m_validationLayers.get());
 
-	m_openScene = MAKEUNQ<Scene>();
-
-	VmaAllocatorCreateInfo allocatorInfo = {};
-	allocatorInfo.physicalDevice = m_presentationHardware->getActiveGPU();
-	allocatorInfo.device = m_presentationDevice->getDevice();
-	allocatorInfo.instance = m_instance;
-
-	if (vmaCreateAllocator(&allocatorInfo, &m_memoryAllocator) != VK_SUCCESS || 
-		!m_openScene->load(m_memoryAllocator))
-		return false;
-
-	m_presentationTarget = MAKEUNQ<Presentation::PresentationTarget>(*m_presentationHardware, *m_presentationDevice, m_openScene->getVertexBinding());
+	m_presentationTarget = MAKEUNQ<Presentation::PresentationTarget>(*m_presentationHardware, *m_presentationDevice);
 	m_framePresentation = MAKEUNQ<Presentation::FrameCollection>(m_presentationDevice->getDevice(), m_presentationDevice->getCommandPool());
+
+	if (!vkinit::MemoryBuffer::createVmaAllocator(m_memoryAllocator, m_instance, m_presentationHardware->getActiveGPU(), m_presentationDevice->getDevice()))
+		return false;
 	
 	return m_presentationHardware->isInitialized() &&
 		m_presentationDevice->isInitialized() &&
@@ -136,7 +136,7 @@ bool VulkanEngine::handleFailedToAcquireImageIfNecessary(VkResult imageAcquireRe
 		vkDeviceWaitIdle(m_presentationDevice->getDevice());
 
 		m_presentationTarget->release(m_presentationDevice->getDevice());
-		if (!m_presentationTarget->createPresentationTarget(*m_presentationHardware, *m_presentationDevice, m_openScene->getVertexBinding()))
+		if (!m_presentationTarget->createPresentationTarget(*m_presentationHardware, *m_presentationDevice))
 			printf("Recreating the swapchain was not successful");
 
 		return true;
@@ -159,6 +159,7 @@ void VulkanEngine::cleanup()
 
 		m_framePresentation->releaseFrameResources();
 
+		m_presentationTarget->releasePipeline(m_presentationDevice->getDevice());
 		m_presentationTarget->release(m_presentationDevice->getDevice());
 		m_presentationDevice->release();
 

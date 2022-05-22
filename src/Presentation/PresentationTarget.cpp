@@ -2,7 +2,7 @@
 
 namespace Presentation
 {
-	bool PresentationTarget::createGraphicsPipeline(VkDevice device, const VertexBinding& vBinding, VkExtent2D scissorExtent, VkCullModeFlagBits faceCullingMode = VK_CULL_MODE_BACK_BIT)
+	bool PresentationTarget::createGraphicsPipeline(VkDevice device, const VertexBinding& vBinding, VkCullModeFlagBits faceCullingMode)
 	{
 		Shader shader(device, ShaderSource::getDefaultShader());
 		auto vertexInputInfo = vBinding.getVertexInputCreateInfo();
@@ -27,16 +27,8 @@ namespace Presentation
 		inputAssembly.primitiveRestartEnable = VK_FALSE;
 
 		VkViewport viewport{};
-		viewport.x = 0.0f;
-		viewport.y = 0.0f;
-		viewport.width = (float)m_swapChainExtent.width;
-		viewport.height = (float)m_swapChainExtent.height;
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-
 		VkRect2D scissor{};
-		scissor.offset = { 0, 0 };
-		scissor.extent = scissorExtent;
+		vkinit::Commands::initViewportAndScissor(viewport, scissor, m_swapChainExtent);
 
 		VkPipelineViewportStateCreateInfo viewportState{};
 		viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -113,7 +105,17 @@ namespace Presentation
 		pipelineInfo.pMultisampleState = &multisampling;
 		pipelineInfo.pDepthStencilState = nullptr; // Optional
 		pipelineInfo.pColorBlendState = &colorBlending;
-		pipelineInfo.pDynamicState = nullptr; // Optional
+
+		// Dynamic state - currently hardcoding for viewport and scissor rect, to be able to easily recreate the swapchain.
+		VkPipelineDynamicStateCreateInfo dynamicStateInfo{};
+		dynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+		VkDynamicState dynamicStates[2] = { 
+			VkDynamicState::VK_DYNAMIC_STATE_VIEWPORT, 
+			VkDynamicState::VK_DYNAMIC_STATE_SCISSOR 
+		};
+		dynamicStateInfo.dynamicStateCount = 2;
+		dynamicStateInfo.pDynamicStates = dynamicStates;
+		pipelineInfo.pDynamicState = &dynamicStateInfo;
 
 		pipelineInfo.layout = m_pipelineLayout;
 
@@ -134,16 +136,14 @@ namespace Presentation
 		return true;
 	}
 
-	bool PresentationTarget::createGraphicsPipeline(VkDevice device, const VertexBinding& vBinding, VkCullModeFlagBits faceCullingMode)
+	void PresentationTarget::releasePipeline(VkDevice device)
 	{
-		return createGraphicsPipeline(device, vBinding, m_swapChainExtent, faceCullingMode);
+		vkDestroyPipeline(device, m_pipeline, nullptr);
+		vkDestroyPipelineLayout(device, m_pipelineLayout, nullptr);
 	}
 
 	void PresentationTarget::release(VkDevice device)
 	{
-		vkDestroyPipeline(device, m_pipeline, nullptr);
-		vkDestroyPipelineLayout(device, m_pipelineLayout, nullptr);
-
 		vkDestroyRenderPass(device, m_renderPass, nullptr);
 
 		int count = static_cast<uint32_t>(m_swapChainImageViews.size());
@@ -157,7 +157,7 @@ namespace Presentation
 		vkDestroySwapchainKHR(device, m_swapchain, nullptr);
 	}
 
-	bool PresentationTarget::createPresentationTarget(const HardwareDevice& presentationHardware, const Device& presentationDevice, const VertexBinding& vBinding, uint32_t swapchainCount)
+	bool PresentationTarget::createPresentationTarget(const HardwareDevice& presentationHardware, const Device& presentationDevice, uint32_t swapchainCount)
 	{
 		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(presentationHardware.getActiveGPU(), presentationDevice.getSurface(), &m_capabilities);
 		m_swapChainExtent = chooseSwapExtent(presentationDevice.getWindowRef());
@@ -167,9 +167,7 @@ namespace Presentation
 		return createSwapChain(swapchainCount, presentationHardware, presentationDevice) &&
 			createSwapChainImageViews(vkdevice) &&
 			createRenderPass(vkdevice) &&
-			createFramebuffers(vkdevice) &&
-
-			createGraphicsPipeline(vkdevice, vBinding, VK_CULL_MODE_BACK_BIT);
+			createFramebuffers(vkdevice);
 	}
 
 	VkExtent2D PresentationTarget::chooseSwapExtent(const SDL_Window* window)

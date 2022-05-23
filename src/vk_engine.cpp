@@ -26,6 +26,93 @@ void VulkanEngine::initializeTheWindow()
 	);
 }
 
+void VulkanEngine::initImGui()
+{
+	const uint32_t DESC_POOL_SIZE = 1000u;
+	auto device = m_presentationDevice->getDevice();
+
+	//1: create descriptor pool for IMGUI
+	// the size of the pool is very oversize, but it's copied from imgui demo itself.
+	VkDescriptorPoolSize pool_sizes[] =
+	{
+		{ VK_DESCRIPTOR_TYPE_SAMPLER, DESC_POOL_SIZE },
+		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, DESC_POOL_SIZE },
+		{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, DESC_POOL_SIZE },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, DESC_POOL_SIZE },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, DESC_POOL_SIZE },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, DESC_POOL_SIZE },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, DESC_POOL_SIZE },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, DESC_POOL_SIZE },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, DESC_POOL_SIZE },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, DESC_POOL_SIZE },
+		{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, DESC_POOL_SIZE }
+	};
+
+	VkDescriptorPoolCreateInfo pool_info = {};
+	pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+	pool_info.maxSets = DESC_POOL_SIZE;
+	pool_info.poolSizeCount = std::size(pool_sizes);
+	pool_info.pPoolSizes = pool_sizes;
+
+	vkCreateDescriptorPool(device, &pool_info, nullptr, &m_imguiPool);
+
+	// 2: initialize imgui library
+
+	//this initializes the core structures of imgui
+	ImGui::CreateContext();
+
+	//this initializes imgui for SDL
+	ImGui_ImplSDL2_InitForVulkan(m_window);
+
+	//this initializes imgui for Vulkan
+	ImGui_ImplVulkan_InitInfo init_info = {};
+	init_info.Instance = m_instance;
+	init_info.PhysicalDevice = m_presentationHardware->getActiveGPU();
+	init_info.Device = device;
+	init_info.Queue = m_presentationDevice->getGraphicsQueue();
+	init_info.DescriptorPool = m_imguiPool;
+	init_info.MinImageCount = 3;
+	init_info.ImageCount = 3;
+	init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+
+	ImGui_ImplVulkan_Init(&init_info, m_presentationTarget->getRenderPass());
+
+	{
+		auto cmdPool = m_presentationDevice->getCommandPool();
+		VkCommandBuffer cmdBuffer;
+		vkinit::Commands::createSingleCommandBuffer(cmdBuffer, cmdPool, device);
+
+		VkFence fence;
+		vkinit::Synchronization::createFence(fence, device, false);
+
+		//execute a gpu command to upload imgui font textures
+		{
+			CommandObjectsWrapper::CommandBufferScope sc(cmdBuffer);
+			ImGui_ImplVulkan_CreateFontsTexture(cmdBuffer);
+		}
+
+		VkSubmitInfo submitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &cmdBuffer;
+		vkQueueSubmit(m_presentationDevice->getGraphicsQueue(), 1, &submitInfo, fence);
+
+		vkWaitForFences(device, 1, &fence, VK_TRUE, UINT64_MAX);
+		vkDestroyFence(device, fence, nullptr);
+	}
+
+	//clear font textures from cpu data
+	ImGui_ImplVulkan_DestroyFontUploadObjects();
+}
+
+void releaseImGui(VkDevice device, VkDescriptorPool descriptorPool)
+{
+	//add the destroy the imgui created structures
+	vkDestroyDescriptorPool(device, descriptorPool, nullptr);
+	ImGui_ImplVulkan_Shutdown();
+}
+
 void VulkanEngine::init(bool requestValidationLayers)
 {
 	initializeTheWindow();
@@ -41,12 +128,17 @@ void VulkanEngine::init(bool requestValidationLayers)
 	}
 	else throw std::runtime_error("Failed to create and initialize vulkan objects!");
 
+	initImGui();
+
 	m_openScene = MAKEUNQ<Scene>();
 	if (!m_openScene->load(m_memoryAllocator))
 	{
 		throw std::runtime_error("Failed to load the scene!");
 	}
 	m_presentationTarget->createGraphicsPipeline(m_presentationDevice->getDevice(), m_openScene->getVertexBinding());
+
+	m_cam = MAKEUNQ<Camera>(70.f, m_presentationTarget->getSwapchainExtent());
+	m_cam->setPosition({ 0.f, 0.f, -2.f });
 }
 
 bool VulkanEngine::init_vulkan(SDL_Window* window)
@@ -98,6 +190,22 @@ void VulkanEngine::run()
 			if (e.type == SDL_QUIT) bQuit = true;
 		}
 
+		//imgui new frame
+		ImGui_ImplVulkan_NewFrame();
+		ImGui_ImplSDL2_NewFrame(m_window);
+
+		ImGui::NewFrame();
+
+		ImGui::Begin("Camera controls");
+		float val = glm::eulerAngles(m_cam->getRotation()).y;
+		auto name = "cam_rot_Y";
+		auto pi_half = static_cast<float>(M_PI) / 2.0f;
+		ImGui::SliderFloat(name, &val, -pi_half, pi_half);
+		ImGui::End();
+
+		glm::vec3 rotY(0.f, val, 0.f);
+		m_cam->setRotation(rotY);
+
 		draw();
 	}
 
@@ -107,6 +215,8 @@ void VulkanEngine::run()
 
 void VulkanEngine::draw()
 {
+	ImGui::Render();
+
 	auto frame = m_framePresentation->getNextFrameAndWaitOnFence();
 
 	uint32_t imageIndex;
@@ -117,9 +227,9 @@ void VulkanEngine::draw()
 
 	auto buffer = frame.getCommandBuffer();
 	vkResetCommandBuffer(buffer, 0);
-
+	
 	CommandObjectsWrapper::renderIndexedMeshes(buffer, m_presentationTarget->getPipeline(), m_presentationTarget->getPipelineLayout(), m_presentationTarget->getRenderPass(),
-		m_presentationTarget->getSwapchainFrameBuffers(imageIndex), m_presentationTarget->getSwapchainExtent(), m_openScene->getGraphicsMeshes(), m_frameNumber);
+		m_presentationTarget->getSwapchainFrameBuffers(imageIndex), m_presentationTarget->getSwapchainExtent(), *m_cam, m_openScene->getGraphicsMeshes(), m_frameNumber);
 
 	frame.resetAcquireFence(m_presentationDevice->getDevice());
 	frame.submitToQueue(m_presentationDevice->getGraphicsQueue());
@@ -152,6 +262,8 @@ void VulkanEngine::cleanup()
 {
 	if (m_instance)
 	{
+		releaseImGui(m_presentationDevice->getDevice(), m_imguiPool);
+
 		m_openScene->release(m_memoryAllocator);
 
 		vmaDestroyAllocator(m_memoryAllocator);

@@ -10,6 +10,10 @@
 #include "SDL_vulkan.h"
 #pragma warning(pop)
 
+#include "imgui.h"
+#include "imgui_impl_sdl.h"
+#include "imgui_impl_vulkan.h"
+
 #include <vector>
 #include <algorithm>
 #include <set>
@@ -278,6 +282,98 @@ struct Shader
 	}
 };
 
+class Camera
+{
+public:
+	Camera(float fov_degrees, VkExtent2D windowSize, float nearZ = 1.0f, float farZ = 100.0f) :
+		fov_radians(glm::radians(fov_degrees)),
+		windowExtent(windowSize),
+		nearZ(nearZ), farZ(farZ),
+		pos(0.f), rot(glm::vec3(0.f, 0.f, 0.f))
+	{
+		calculateViewMatrix();
+		updateWindowExtent(windowExtent);
+	}
+
+	const glm::vec3& getPosition() const { return pos; }
+	const glm::quat& getRotation() const { return rot; }
+
+	void setPosition(const glm::vec3& position) { pos = position; calculateViewMatrix(); }
+	void setRotation(const glm::quat& rotation) { rot = rotation; calculateViewMatrix(); }
+	void setRotation(const glm::vec3& rotEuler) { rot = glm::quat(rotEuler); calculateViewMatrix(); }
+
+	const VkViewport& getViewport() const { return viewport; }
+	const VkRect2D& getScissorRect() const { return scissor; }
+
+	void setNearFarZ(float near, float far)
+	{
+		nearZ = near;
+		farZ = far;
+	}
+
+	void setFieldOfView(float fov_degrees)
+	{
+		auto newFoV = glm::radians(fov_degrees);
+		if (newFoV == fov_radians)
+			return;
+
+		fov_radians = newFoV;
+		calculateProjectionMatrix();
+	}
+
+	void updateWindowExtent(VkExtent2D newExtent)
+	{
+		if (newExtent.width == windowExtent.width &&
+			newExtent.height == newExtent.width)
+			return;
+
+		windowExtent = newExtent;
+
+		aspectRatio = windowExtent.width / (float)windowExtent.height;
+		calculateProjectionMatrix();
+
+		vkinit::Commands::initViewportAndScissor(viewport, scissor, newExtent);
+	}
+
+	const glm::mat4& getViewProjectionMatrix() const { return cachedViewProjectionMatrix; }
+
+private:
+	float fov_radians;
+	float aspectRatio;
+	float nearZ;
+	float farZ;
+
+	glm::vec3 pos;
+	glm::quat rot;
+
+	VkExtent2D windowExtent;
+	VkViewport viewport;
+	VkRect2D scissor;
+
+	glm::mat4 cachedViewMatrix;
+	glm::mat4 cachedProjectionMatrix;
+	glm::mat4 cachedViewProjectionMatrix;
+
+	glm::mat4 calculateViewMatrix()
+	{
+		glm::mat4 rotationMatrix = glm::mat4_cast(rot);
+		glm::mat4 translationMatrix = glm::translate(glm::mat4(1.f), pos);
+
+		cachedViewMatrix = translationMatrix * rotationMatrix;
+		cachedViewProjectionMatrix = calculateViewProjectionMatrix();
+		return cachedViewMatrix;
+	}
+
+	glm::mat4 calculateProjectionMatrix()
+	{
+		cachedProjectionMatrix = glm::perspective(fov_radians, aspectRatio, nearZ, farZ);
+		cachedViewProjectionMatrix = calculateViewProjectionMatrix();
+		return cachedProjectionMatrix;
+	}
+
+	glm::mat4 calculateViewProjectionMatrix() { return cachedProjectionMatrix * cachedViewMatrix; }
+};
+
 struct TransformPushConstant
 {
 	glm::mat4 mvp_matrix;
@@ -328,22 +424,15 @@ struct CommandObjectsWrapper
 		}
 	}
 
-	static void drawAt(VkCommandBuffer commandBuffer, const VkMesh& mesh, VkPipelineLayout layout, float aspectRatio, uint32_t frameNumber, float freq, glm::vec3 pos)
+	static void drawAt(VkCommandBuffer commandBuffer, const VkMesh& mesh, VkPipelineLayout layout,
+		const Camera& cam, uint32_t frameNumber, float freq, glm::vec3 pos)
 	{
-		glm::vec3 camPos = { 0.f,0.f, -2.f };
-
-		glm::mat4 view = glm::translate(glm::mat4(1.f), camPos);
-
-		//camera projection
-		glm::mat4 projection = glm::perspective(glm::radians(70.f), aspectRatio, 0.1f, 100.0f);
-
-		//model rotation
 		glm::mat4 model =
 			glm::translate(glm::mat4(1.f), pos) *
-			glm::rotate(glm::mat4{ 1.0f }, glm::radians(frameNumber * 0.01f * freq), glm::vec3(0, 0, -1));
+			glm::rotate(glm::mat4{ 1.0f }, glm::radians(frameNumber * 0.01f * freq), glm::vec3(0, 0, 1));
 
 		TransformPushConstant pushConstant{};
-		pushConstant.mvp_matrix = projection * view * model;
+		pushConstant.mvp_matrix = cam.getViewProjectionMatrix() * model;
 
 		mesh.vAttributes->bind(commandBuffer);
 		mesh.iAttributes->bind(commandBuffer);
@@ -353,27 +442,26 @@ struct CommandObjectsWrapper
 	}
 
 	static void renderIndexedMeshes(VkCommandBuffer commandBuffer, VkPipeline pipeline, VkPipelineLayout pipelineLayout, VkRenderPass m_renderPass, 
-		VkFramebuffer frameBuffer, VkExtent2D extent, const std::vector<UNQ<VkMesh>>& meshes, uint32_t frameNumber)
+		VkFramebuffer frameBuffer, VkExtent2D extent, Camera& cam, const std::vector<UNQ<VkMesh>>& meshes, uint32_t frameNumber)
 	{
 		auto cbs = CommandBufferScope(commandBuffer);
 		{
-			VkViewport viewport[1]{};
-			VkRect2D scissor[1]{};
-			vkinit::Commands::initViewportAndScissor(viewport[0], scissor[0], extent);
+			cam.updateWindowExtent(extent);
 
-			vkCmdSetViewport(commandBuffer, 0, 1, viewport);
-			vkCmdSetScissor(commandBuffer, 0, 1, scissor);
+			vkCmdSetViewport(commandBuffer, 0, 1, &cam.getViewport());
+			vkCmdSetScissor(commandBuffer, 0, 1, &cam.getScissorRect());
 
 			auto rps = RenderPassScope(commandBuffer, m_renderPass, frameBuffer, extent);
 
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
-			float aspect = extent.width / (float) extent.height;
 			for (int i = 0; i < meshes.size(); i++)
 			{
 				auto sign = (i * 2 - 1);
-				drawAt(commandBuffer, *meshes[i], pipelineLayout, aspect, frameNumber, sign * (i * 10.0f + 0.2f), glm::vec3(sign * 0.2f , sign * 0.2f, 0.0f));
+				drawAt(commandBuffer, *meshes[i], pipelineLayout, cam, frameNumber, sign * (i * 10.0f + 0.2f), glm::vec3(sign * 0.2f , sign * 0.2f, 0.0f));
 			}
+
+			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 		}
 	}
 };

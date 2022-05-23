@@ -152,6 +152,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\third_party\imgui\imgui.cpp" />
+    <ClCompile Include="..\third_party\imgui\imgui_demo.cpp" />
+    <ClCompile Include="..\third_party\imgui\imgui_draw.cpp" />
+    <ClCompile Include="..\third_party\imgui\imgui_impl_sdl.cpp" />
+    <ClCompile Include="..\third_party\imgui\imgui_impl_vulkan.cpp" />
+    <ClCompile Include="..\third_party\imgui\imgui_tables.cpp" />
+    <ClCompile Include="..\third_party\imgui\imgui_widgets.cpp" />
     <ClCompile Include="src\EngineCore\Scene.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\Presentation\Frame.cpp" />

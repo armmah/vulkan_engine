@@ -25,16 +25,18 @@ public:
 
 	VkInstance m_instance; // Vulkan library handle
 
-	std::unique_ptr<VulkanValidationLayers> m_validationLayers;
+	UNQ<VulkanValidationLayers> m_validationLayers;
 	VmaAllocator m_memoryAllocator;
 	//VkDebugUtilsMessengerEXT _debug_messenger; // Vulkan debug output handle
 
-	std::unique_ptr<Presentation::HardwareDevice> m_presentationHardware;
-	std::unique_ptr<Presentation::Device> m_presentationDevice;
-	std::unique_ptr<Presentation::PresentationTarget> m_presentationTarget;
-	std::unique_ptr<Presentation::FrameCollection> m_framePresentation;
-	
-	std::unique_ptr<Scene> m_openScene;
+	UNQ<Presentation::HardwareDevice> m_presentationHardware;
+	UNQ<Presentation::Device> m_presentationDevice;
+	UNQ<Presentation::PresentationTarget> m_presentationTarget;
+	UNQ<Presentation::FrameCollection> m_framePresentation;
+
+	VkDescriptorPool m_imguiPool;
+	UNQ<Scene> m_openScene;
+	UNQ<Camera> m_cam;
 
 	bool _isInitialized { false };
 
@@ -59,6 +61,8 @@ public:
 private:
 
 	void initializeTheWindow();
+
+	void initImGui();
 
 	bool init_vulkan(SDL_Window* window);
 	

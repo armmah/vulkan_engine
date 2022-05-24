@@ -212,24 +212,10 @@ constexpr std::size_t operator "" _z(unsigned long long n)
 struct Mesh
 {
 public:
-	Mesh() = delete;
 	Mesh(std::vector<glm::vec3>& positions, std::vector<glm::vec2>& uvs, std::vector<glm::vec3>& normals, std::vector<glm::vec3>& colors, std::vector<uint16_t>& indices)
 		: m_positions(std::move(positions)), m_uvs(std::move(uvs)), m_normals(std::move(normals)), m_colors(std::move(colors)), m_indices(std::move(indices))
 	{
-		metaData.vectors[0] = m_positions.data();
-		metaData.vectors[1] = m_uvs.data();
-		metaData.vectors[2] = m_normals.data();
-		metaData.vectors[3] = m_colors.data();
-
-		metaData.lengths[0] = m_positions.size();
-		metaData.lengths[1] = m_uvs.size();
-		metaData.lengths[2] = m_normals.size();
-		metaData.lengths[3] = m_colors.size();
-
-		metaData.elementByteSizes[0] = vectorElementsizeof(m_positions);
-		metaData.elementByteSizes[1] = vectorElementsizeof(m_uvs);
-		metaData.elementByteSizes[2] = vectorElementsizeof(m_normals);
-		metaData.elementByteSizes[3] = vectorElementsizeof(m_colors);
+		updateMetaData();
 	}
 
 	void clear()
@@ -370,7 +356,7 @@ public:
 		size_t lengths[descriptorCount];
 		size_t elementByteSizes[descriptorCount];
 
-		bool operator==(MeshDescriptor& other) 
+		bool operator==(const MeshDescriptor& other) const
 		{
 			for (int i = 0; i < descriptorCount; i++)
 			{
@@ -381,7 +367,7 @@ public:
 			return true;
 		}
 
-		bool operator !=(MeshDescriptor& other) { return !(*this == other); }
+		bool operator !=(const MeshDescriptor& other) const { return !(*this == other); }
 	};
 
 	static void initializeBindings(UNQ<VertexBinding>& vbinding, const MeshDescriptor& meshDescriptor)
@@ -630,14 +616,94 @@ public:
 		return Mesh(positions, uvs, normals, colors, indices);
 	}
 
-	MeshDescriptor metaData;
+	void makeFace(glm::vec3 pivot, glm::vec3 up, glm::vec3 right, uint16_t firstIndex)
+	{
+		m_positions.push_back(pivot + up - right);
+		m_positions.push_back(pivot + up + right);
+		m_positions.push_back(pivot - up - right);
+		m_positions.push_back(pivot - up + right);
+
+		m_uvs.push_back({ 0.0, 0.0 });
+		m_uvs.push_back({ 1.0, 0.0 });
+		m_uvs.push_back({ 0.0, 1.0 });
+		m_uvs.push_back({ 1.0, 1.0 });
+
+		auto normal = glm::normalize(pivot);
+		//m_normals.push_back(normal);
+		//m_normals.push_back(normal);
+		//m_normals.push_back(normal);
+		//m_normals.push_back(normal);
+
+		m_colors.push_back(Color::red().v4());
+		m_colors.push_back(Color::green().v4());
+		m_colors.push_back(Color::green().v4());
+		m_colors.push_back(Color::blue().v4());
+
+		uint16_t indices[6] {
+			0, 1, 2,
+			2, 1, 3
+		};
+		if (normal.x < 0 || normal.y < 0 || normal.z < 0)
+		{
+			for (int i = 0; i < 6; i += 1)
+				m_indices.push_back(firstIndex + indices[i]);
+		}
+		else
+		{
+			for (int i = 5; i >= 0; i -= 1)
+				m_indices.push_back(firstIndex + indices[i]);
+		}
+	}
+
+	static Mesh getPrimitiveCube()
+	{
+		Mesh mesh;
+		
+		glm::vec3 right(0.5f, 0.f, 0.f);
+		glm::vec3 up(0.f, 0.5f, 0.f);
+		glm::vec3 forward(0.f, 0.f, 0.5f);
+
+		mesh.makeFace(right, up, -forward, 0u);
+		mesh.makeFace(-right, up, -forward, 4u);
+		mesh.makeFace(up, right, forward, 8u);
+		mesh.makeFace(-up, right, forward, 12u);
+		mesh.makeFace(forward, up, right, 16u);
+		mesh.makeFace(-forward, up, right, 20u);
+
+		mesh.updateMetaData();
+		return mesh;
+	}
+
+	const MeshDescriptor& getMeshDescriptor() { return metaData; }
+
 private:
+	Mesh() {}
+
 	std::vector<glm::vec3> m_positions;
 	std::vector<glm::vec2> m_uvs;
 	std::vector<glm::vec3> m_normals;
 	std::vector<glm::vec3> m_colors;
 
 	std::vector<uint16_t> m_indices;
+
+	MeshDescriptor metaData;
+	void updateMetaData()
+	{
+		metaData.vectors[0] = m_positions.data();
+		metaData.vectors[1] = m_uvs.data();
+		metaData.vectors[2] = m_normals.data();
+		metaData.vectors[3] = m_colors.data();
+
+		metaData.lengths[0] = m_positions.size();
+		metaData.lengths[1] = m_uvs.size();
+		metaData.lengths[2] = m_normals.size();
+		metaData.lengths[3] = m_colors.size();
+
+		metaData.elementByteSizes[0] = vectorElementsizeof(m_positions);
+		metaData.elementByteSizes[1] = vectorElementsizeof(m_uvs);
+		metaData.elementByteSizes[2] = vectorElementsizeof(m_normals);
+		metaData.elementByteSizes[3] = vectorElementsizeof(m_colors);
+	}
 };
 
 class Scene
@@ -650,8 +716,8 @@ public:
 	bool load(const VmaAllocator& vmaAllocator)
 	{
 		meshes.resize(2);
-		meshes[0] = MAKEUNQ<Mesh>(Mesh::getPrimitiveQuad());
-		meshes[1] = MAKEUNQ<Mesh>(Mesh::getPrimitiveTriangle());
+		meshes[1] = MAKEUNQ<Mesh>(Mesh::getPrimitiveCube());
+		meshes[0] = MAKEUNQ<Mesh>(Mesh::getPrimitiveTriangle());
 
 		auto count = meshes.size();
 		graphicsMeshes.resize(count);
@@ -659,12 +725,12 @@ public:
 		for(int i = 0; i < count; i++)
 		{
 			if (i == 0)
-				md = meshes[i]->metaData;
+				md = meshes[i]->getMeshDescriptor();
 
 			if (!meshes[i]->allocateGraphicsMesh(graphicsMeshes[i], vmaAllocator) || !meshes[i]->isValid())
 				return false;
 
-			if (md != meshes[i]->metaData)
+			if (md != meshes[i]->getMeshDescriptor())
 			{
 				printf("Mesh metadata does not match - can not bind to the same pipeline.");
 				return false;

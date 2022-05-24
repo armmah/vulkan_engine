@@ -241,8 +241,8 @@ struct ShaderSource
 	std::vector<char> getVertexSource() { return FileIO::readFile(vertexPath); }
 	std::vector<char> getFragmentSource() { return FileIO::readFile(fragmentPath); }
 
-	static ShaderSource getHardcodedTriangle() { return ShaderSource("../Shaders/outputSPV/triangle.vert.spv", "../Shaders/outputSPV/triangle.frag.spv"); }
-	static ShaderSource getDefaultShader() { return ShaderSource("../Shaders/outputSPV/simple.vert.spv", "../Shaders/outputSPV/simple.frag.spv"); }
+	static ShaderSource getHardcodedTriangle() { return ShaderSource("C:/Git/Vulkan_Engine/Shaders/outputSPV/triangle.vert.spv", "C:/Git/Vulkan_Engine/Shaders/outputSPV/triangle.frag.spv"); }
+	static ShaderSource getDefaultShader() { return ShaderSource("C:/Git/Vulkan_Engine/Shaders/outputSPV/simple.vert.spv", "C:/Git/Vulkan_Engine/Shaders/outputSPV/simple.frag.spv"); }
 };
 
 struct Shader
@@ -429,7 +429,7 @@ struct CommandObjectsWrapper
 	{
 		glm::mat4 model =
 			glm::translate(glm::mat4(1.f), pos) *
-			glm::rotate(glm::mat4{ 1.0f }, glm::radians(frameNumber * 0.01f * freq), glm::vec3(0, 0, 1));
+			glm::rotate(glm::mat4{ 1.0f }, glm::radians(frameNumber * 0.01f * freq), glm::vec3(0, 1, 0));
 
 		TransformPushConstant pushConstant{};
 		pushConstant.mvp_matrix = cam.getViewProjectionMatrix() * model;
@@ -458,7 +458,7 @@ struct CommandObjectsWrapper
 			for (int i = 0; i < meshes.size(); i++)
 			{
 				auto sign = (i * 2 - 1);
-				drawAt(commandBuffer, *meshes[i], pipelineLayout, cam, frameNumber, sign * (i * 10.0f + 0.2f), glm::vec3(sign * 0.2f , sign * 0.2f, 0.0f));
+				drawAt(commandBuffer, *meshes[i], pipelineLayout, cam, 0, sign * (i * 10.0f + 0.2f), glm::vec3(sign * 0.2f , sign * 0.2f, 0.0f));
 			}
 
 			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);

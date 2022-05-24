@@ -138,7 +138,7 @@ void VulkanEngine::init(bool requestValidationLayers)
 	m_presentationTarget->createGraphicsPipeline(m_presentationDevice->getDevice(), m_openScene->getVertexBinding());
 
 	m_cam = MAKEUNQ<Camera>(70.f, m_presentationTarget->getSwapchainExtent());
-	m_cam->setPosition({ 0.f, 0.f, -2.f });
+	m_cam->setPosition({ 0.f, 0.f, -4.f });
 }
 
 bool VulkanEngine::init_vulkan(SDL_Window* window)
@@ -197,14 +197,15 @@ void VulkanEngine::run()
 		ImGui::NewFrame();
 
 		ImGui::Begin("Camera controls");
-		float val = glm::eulerAngles(m_cam->getRotation()).y;
-		auto name = "cam_rot_Y";
+		auto rot = glm::eulerAngles(m_cam->getRotation());
 		auto pi_half = static_cast<float>(M_PI) / 2.0f;
-		ImGui::SliderFloat(name, &val, -pi_half, pi_half);
-		ImGui::End();
 
-		glm::vec3 rotY(0.f, val, 0.f);
-		m_cam->setRotation(rotY);
+		ImGui::SliderFloat("cam_rot_x", &rot.x, -pi_half, pi_half);
+		ImGui::SliderFloat("cam_rot_y", &rot.y, -pi_half, pi_half);
+		ImGui::SliderFloat("cam_rot_z", &rot.z, -pi_half, pi_half);
+		m_cam->setRotation(rot);
+
+		ImGui::End();
 
 		draw();
 	}

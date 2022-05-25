@@ -52,7 +52,7 @@ void VulkanEngine::initImGui()
 	pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 	pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 	pool_info.maxSets = DESC_POOL_SIZE;
-	pool_info.poolSizeCount = std::size(pool_sizes);
+	pool_info.poolSizeCount = as_uint32(std::size(pool_sizes));
 	pool_info.pPoolSizes = pool_sizes;
 
 	vkCreateDescriptorPool(device, &pool_info, nullptr, &m_imguiPool);

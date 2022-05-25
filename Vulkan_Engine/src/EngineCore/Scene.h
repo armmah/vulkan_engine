@@ -1,4 +1,6 @@
 #pragma once
+
+#pragma warning ( disable : 26812 )
 #include <vector>
 #include <memory>
 #include <algorithm>
@@ -191,6 +193,8 @@ private:
 struct VkMesh
 {
 public:
+	VkMesh() : vAttributes(nullptr), vCount(0), iAttributes(nullptr), iCount(0) { }
+
 	void release(const VmaAllocator& allocator)
 	{
 		vAttributes->destroy(allocator);
@@ -356,7 +360,7 @@ public:
 		size_t lengths[descriptorCount];
 		size_t elementByteSizes[descriptorCount];
 
-		bool operator==(const MeshDescriptor& other) const
+		bool operator ==(const MeshDescriptor& other) const
 		{
 			for (int i = 0; i < descriptorCount; i++)
 			{
@@ -550,12 +554,12 @@ public:
 			{ 0.0, 1.0 }
 		};
 
-		//glm::vec3 forward(0.0f, 0.0f, 1.0f);
-		//normals = {
-		//	forward,
-		//	forward,
-		//	forward
-		//};
+		glm::vec3 forward(0.0f, 0.0f, 1.0f);
+		normals = {
+			forward,
+			forward,
+			forward
+		};
 
 		colors = {
 			Color::red().v4() * 0.5f + glm::vec4(0.5f),
@@ -593,13 +597,13 @@ public:
 			{ 1.0, 1.0 }
 		};
 
-		//glm::vec3 forward(0.0f, 0.0f, 1.0f);
-		//normals = {
-		//	forward,
-		//	forward,
-		//	forward,
-		//	forward
-		//};
+		glm::vec3 forward(0.0f, 0.0f, 1.0f);
+		normals = {
+			forward,
+			forward,
+			forward,
+			forward
+		};
 
 		colors = {
 			Color::red().v4() * 0.5f,
@@ -629,10 +633,10 @@ public:
 		m_uvs.push_back({ 1.0, 1.0 });
 
 		auto normal = glm::normalize(pivot);
-		//m_normals.push_back(normal);
-		//m_normals.push_back(normal);
-		//m_normals.push_back(normal);
-		//m_normals.push_back(normal);
+		m_normals.push_back(normal);
+		m_normals.push_back(normal);
+		m_normals.push_back(normal);
+		m_normals.push_back(normal);
 
 		m_colors.push_back(Color::red().v4());
 		m_colors.push_back(Color::green().v4());
@@ -657,18 +661,21 @@ public:
 
 	static Mesh getPrimitiveCube()
 	{
-		Mesh mesh;
+		uint16_t vertPerFace = 4u;
+		uint16_t indexPerFace = 6u;
+		uint16_t numOfFaces = 6u;
+		Mesh mesh(vertPerFace * numOfFaces, indexPerFace * numOfFaces);
 		
 		glm::vec3 right(0.5f, 0.f, 0.f);
 		glm::vec3 up(0.f, 0.5f, 0.f);
 		glm::vec3 forward(0.f, 0.f, 0.5f);
 
-		mesh.makeFace(right, up, -forward, 0u);
-		mesh.makeFace(-right, up, -forward, 4u);
-		mesh.makeFace(up, right, forward, 8u);
-		mesh.makeFace(-up, right, forward, 12u);
-		mesh.makeFace(forward, up, right, 16u);
-		mesh.makeFace(-forward, up, right, 20u);
+		mesh.makeFace(right, up, -forward,	vertPerFace * 0);
+		mesh.makeFace(-right, up, -forward, vertPerFace * 1);
+		mesh.makeFace(up, right, forward,	vertPerFace * 2);
+		mesh.makeFace(-up, right, forward,	vertPerFace * 3);
+		mesh.makeFace(forward, up, right,	vertPerFace * 4);
+		mesh.makeFace(-forward, up, right,	vertPerFace * 5);
 
 		mesh.updateMetaData();
 		return mesh;
@@ -677,7 +684,17 @@ public:
 	const MeshDescriptor& getMeshDescriptor() { return metaData; }
 
 private:
-	Mesh() {}
+	Mesh(size_t vertN, size_t indexN)
+	{
+		m_positions.reserve(vertN);
+		m_uvs.reserve(vertN);
+		m_normals.reserve(vertN);
+		m_colors.reserve(vertN);
+
+		m_indices.reserve(indexN);
+
+		updateMetaData();
+	}
 
 	std::vector<glm::vec3> m_positions;
 	std::vector<glm::vec2> m_uvs;
@@ -716,8 +733,8 @@ public:
 	bool load(const VmaAllocator& vmaAllocator)
 	{
 		meshes.resize(2);
-		meshes[1] = MAKEUNQ<Mesh>(Mesh::getPrimitiveCube());
 		meshes[0] = MAKEUNQ<Mesh>(Mesh::getPrimitiveTriangle());
+		meshes[1] = MAKEUNQ<Mesh>(Mesh::getPrimitiveCube());
 
 		auto count = meshes.size();
 		graphicsMeshes.resize(count);
@@ -759,7 +776,6 @@ public:
 	}
 
 private:
-	// hardcoded to contain a single mesh for now
 	std::vector<UNQ<Mesh>> meshes;
 	std::vector<UNQ<VkMesh>> graphicsMeshes;
 	UNQ<VertexBinding> vertexBinding;

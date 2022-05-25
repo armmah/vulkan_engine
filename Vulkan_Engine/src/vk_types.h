@@ -5,14 +5,16 @@
 
 #include "vulkan/vulkan.h"
 
+#include <codeanalysis\warnings.h>
 #pragma warning(push, 0)
+#pragma warning ( disable : ALL_CPPCORECHECK_WARNINGS )
 #include "SDL.h"
 #include "SDL_vulkan.h"
-#pragma warning(pop)
 
 #include "imgui.h"
 #include "imgui_impl_sdl.h"
 #include "imgui_impl_vulkan.h"
+#pragma warning(pop)
 
 #include <vector>
 #include <algorithm>

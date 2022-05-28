@@ -1,8 +1,8 @@
-﻿#include <iostream>
-
+﻿#include "pch.h"
 #include <vk_types.h>
 #include "vk_engine.h"
 
+#include <iostream>
 #include <vector>
 #include <assert.h>
 #include <cassert>
@@ -28,11 +28,10 @@ void VulkanEngine::initializeTheWindow()
 
 void VulkanEngine::initImGui()
 {
-	const uint32_t DESC_POOL_SIZE = 1000u;
+	const uint32_t DESC_POOL_SIZE = 100u;
 	auto device = m_presentationDevice->getDevice();
 
 	//1: create descriptor pool for IMGUI
-	// the size of the pool is very oversize, but it's copied from imgui demo itself.
 	VkDescriptorPoolSize pool_sizes[] =
 	{
 		{ VK_DESCRIPTOR_TYPE_SAMPLER, DESC_POOL_SIZE },
@@ -139,6 +138,7 @@ void VulkanEngine::init(bool requestValidationLayers)
 
 	m_cam = MAKEUNQ<Camera>(70.f, m_presentationTarget->getSwapchainExtent());
 	m_cam->setPosition({ 0.f, 0.f, -4.f });
+	m_cam->setRotation({ -0.2f, -0.66f, 0.12f });
 }
 
 bool VulkanEngine::init_vulkan(SDL_Window* window)

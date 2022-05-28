@@ -1,3 +1,4 @@
+#include <pch.h>
 #include "Device.h"
 
 namespace Presentation

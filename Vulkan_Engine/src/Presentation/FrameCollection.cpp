@@ -1,3 +1,4 @@
+#include "pch.h"
 #include "FrameCollection.h"
 
 namespace Presentation

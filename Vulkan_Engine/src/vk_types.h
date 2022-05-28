@@ -16,13 +16,7 @@
 #include "imgui_impl_vulkan.h"
 #pragma warning(pop)
 
-#include <vector>
-#include <algorithm>
-#include <set>
-#include <string>
-#include <memory>
-#include <optional>
-#include <string>
+#include "EngineCore/pch.h"
 
 #include "EngineCore/Scene.h"
 
@@ -460,7 +454,7 @@ struct CommandObjectsWrapper
 			for (int i = 0; i < meshes.size(); i++)
 			{
 				auto sign = (i * 2 - 1);
-				drawAt(commandBuffer, *meshes[i], pipelineLayout, cam, 0, sign * (i * 10.0f + 0.2f), glm::vec3(sign * 0.2f , sign * 0.2f, 0.0f));
+				drawAt(commandBuffer, *meshes[i], pipelineLayout, cam, frameNumber, sign * (i * 10.0f + 0.2f), glm::vec3(sign * 0.2f , sign * 0.2f, 0.0f));
 			}
 
 			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);

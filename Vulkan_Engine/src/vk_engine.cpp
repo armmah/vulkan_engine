@@ -17,7 +17,7 @@ void VulkanEngine::initializeTheWindow()
 	SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
 	
 	m_window = SDL_CreateWindow(
-		"Vulkan Engine",
+		m_applicationName.c_str(),
 		SDL_WINDOWPOS_UNDEFINED,
 		SDL_WINDOWPOS_UNDEFINED,
 		m_startingWindowSize.width,
@@ -156,7 +156,7 @@ bool VulkanEngine::init_vulkan(SDL_Window* window)
 		return false;
 
 	VkSurfaceKHR surface;
-	if (!vkinit::Instance::createInstance(m_instance, applicationName, extensions, m_validationLayers.get()) ||
+	if (!vkinit::Instance::createInstance(m_instance, m_applicationName, extensions, m_validationLayers.get()) ||
 		!vkinit::Surface::createSurface(surface, m_instance, window))
 		return false;
 

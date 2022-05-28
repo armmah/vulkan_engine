@@ -26,12 +26,13 @@ class VulkanEngine
 {
 public:
 
-	std::string applicationName = "Hello Triangle";
+	std::string m_applicationName = "Basic VK Engine";
 
-	VkInstance m_instance; // Vulkan library handle
+	VkInstance m_instance{}; // Vulkan library handle
+	VmaAllocator m_memoryAllocator{};
+	VkDescriptorPool m_imguiPool{};
 
 	UNQ<VulkanValidationLayers> m_validationLayers;
-	VmaAllocator m_memoryAllocator;
 	//VkDebugUtilsMessengerEXT _debug_messenger; // Vulkan debug output handle
 
 	UNQ<Presentation::HardwareDevice> m_presentationHardware;
@@ -39,7 +40,6 @@ public:
 	UNQ<Presentation::PresentationTarget> m_presentationTarget;
 	UNQ<Presentation::FrameCollection> m_framePresentation;
 
-	VkDescriptorPool m_imguiPool;
 	UNQ<Scene> m_openScene;
 	UNQ<Camera> m_cam;
 

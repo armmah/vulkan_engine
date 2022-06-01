@@ -8,9 +8,11 @@ namespace Presentation
 	class FrameCollection : IRequireInitialization
 	{
 	public:
-		FrameCollection(VkDevice device, VkCommandPool pool, int frameCount = 2);
+		FrameCollection(VkDevice device, VkCommandPool pool, uint32_t frameCount = 2);
 
 		bool IRequireInitialization::isInitialized() const { return m_fullyInitialized; }
+
+		uint32_t getImageCount() { return as_uint32(m_frameCollection.size()); }
 
 		Frame getNextFrame();
 		Frame getNextFrameAndWaitOnFence();

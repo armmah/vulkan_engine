@@ -104,6 +104,9 @@
     <ClCompile Include="src\EngineCore\pch.cpp">
       <Filter>Source Files\EngineCore</Filter>
     </ClCompile>
+    <ClCompile Include="src\EngineCore\ImGuiHandle.cpp">
+      <Filter>Source Files\EngineCore</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\vk_engine.h">
@@ -155,6 +158,9 @@
       <Filter>Header Files\EngineCore</Filter>
     </ClInclude>
     <ClInclude Include="src\EngineCore\pch.h">
+      <Filter>Header Files\EngineCore</Filter>
+    </ClInclude>
+    <ClInclude Include="src\EngineCore\ImGuiHandle.h">
       <Filter>Header Files\EngineCore</Filter>
     </ClInclude>
   </ItemGroup>

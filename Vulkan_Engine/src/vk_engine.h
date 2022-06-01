@@ -1,12 +1,9 @@
-﻿// vulkan_guide.h : Include file for standard system include files,
-// or project specific include files.
+﻿#pragma once
 
-#pragma once
-
-//#include <codeanalysis\warnings.h>
-//#pragma warning(push)
-//// Ignoring unscoped enum warning
-//#pragma warning ( disable : 26812 )
+#include <codeanalysis\warnings.h>
+#pragma warning(push)
+// Ignoring unscoped enum warning
+#pragma warning ( disable : 26812 )
 #include "vk_types.h"
 
 #include "Presentation/HardwareDevice.h"
@@ -20,7 +17,8 @@
 #include <string>
 
 #include "EngineCore/Scene.h"
-//#pragma warning(pop)
+#include "EngineCore/ImGuiHandle.h"
+#pragma warning(pop)
 
 class VulkanEngine
 {
@@ -30,7 +28,6 @@ public:
 
 	VkInstance m_instance{}; // Vulkan library handle
 	VmaAllocator m_memoryAllocator{};
-	VkDescriptorPool m_imguiPool{};
 
 	UNQ<VulkanValidationLayers> m_validationLayers;
 	//VkDebugUtilsMessengerEXT _debug_messenger; // Vulkan debug output handle
@@ -40,10 +37,12 @@ public:
 	UNQ<Presentation::PresentationTarget> m_presentationTarget;
 	UNQ<Presentation::FrameCollection> m_framePresentation;
 
+	UNQ<ImGuiHandle> m_imgui;
+
 	UNQ<Scene> m_openScene;
 	UNQ<Camera> m_cam;
 
-	bool _isInitialized { false };
+	bool m_isInitialized { false };
 
 	VkExtent2D m_startingWindowSize{ 800 , 600 };
 	uint32_t m_frameNumber{ 0 };
@@ -66,8 +65,6 @@ public:
 private:
 
 	void initializeTheWindow();
-
-	void initImGui();
 
 	bool init_vulkan(SDL_Window* window);
 	

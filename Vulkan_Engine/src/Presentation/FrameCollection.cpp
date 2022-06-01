@@ -3,13 +3,13 @@
 
 namespace Presentation
 {
-	FrameCollection::FrameCollection(VkDevice device, VkCommandPool pool, int frameCount) :
+	FrameCollection::FrameCollection(VkDevice device, VkCommandPool pool, uint32_t frameCount) :
 		m_device(device)
 	{
 		m_fullyInitialized = true;
 
 		m_frameCollection.reserve(frameCount);
-		for (int i = 0; i < frameCount; i++)
+		for (uint32_t i = 0; i < frameCount; i++)
 		{
 			m_frameCollection.push_back(Frame(device, pool));
 			m_fullyInitialized &= m_frameCollection[i].isInitialized();

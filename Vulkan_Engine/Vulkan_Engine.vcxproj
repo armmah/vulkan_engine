@@ -188,6 +188,10 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="src\EngineCore\ImGuiHandle.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="src\EngineCore\IndexAttributes.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
@@ -275,6 +279,7 @@
     <ClInclude Include="src\EngineCore\CollectionUtility.h" />
     <ClInclude Include="src\EngineCore\Color.h" />
     <ClInclude Include="src\EngineCore\Common.h" />
+    <ClInclude Include="src\EngineCore\ImGuiHandle.h" />
     <ClInclude Include="src\EngineCore\IndexAttributes.h" />
     <ClInclude Include="src\EngineCore\Mesh.h" />
     <ClInclude Include="src\EngineCore\pch.h" />

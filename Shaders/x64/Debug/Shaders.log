@@ -1,7 +1,1 @@
-﻿  
-  
-  C:\Git\Vulkan_Engine\Shaders\sourceGLSL\simple.frag.spv
-  C:\Git\Vulkan_Engine\Shaders\sourceGLSL\simple.vert.spv
-  C:\Git\Vulkan_Engine\Shaders\sourceGLSL\triangle.frag.spv
-  C:\Git\Vulkan_Engine\Shaders\sourceGLSL\triangle.vert.spv
-          4 file(s) moved.
+﻿C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.MakeFile.Targets(49,5): warning MSB8005: The property 'NMakeReBuildCommandLine' doesn't exist.  Skipping...

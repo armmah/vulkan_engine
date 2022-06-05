@@ -11,7 +11,7 @@ namespace Presentation
 			m_isInitialized = pickPhysicalDevice(instance, surface);
 		}
 
-		bool IRequireInitialization::isInitialized() const { return m_isInitialized; }
+		bool IRequireInitialization::isInitialized() const override { return m_isInitialized; }
 
 		VkPhysicalDevice getActiveGPU() const { return m_chosenGPU; }
 

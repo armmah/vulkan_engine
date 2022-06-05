@@ -14,7 +14,7 @@ namespace Presentation
 			m_isInitialized = createPresentationTarget(presentationHardware, presentationDevice, swapchainCount);
 		}
 
-		bool IRequireInitialization::isInitialized() const { return m_isInitialized; }
+		bool IRequireInitialization::isInitialized() const override { return m_isInitialized; }
 
 		VkSwapchainKHR getSwapchain() const { return m_swapchain; }
 		VkExtent2D getSwapchainExtent() const { return m_swapChainExtent; }

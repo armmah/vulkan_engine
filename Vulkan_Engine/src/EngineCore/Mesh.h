@@ -12,7 +12,6 @@
 #include "VkMesh.h"
 #include "VertexBinding.h"
 
-
 struct Mesh
 {
 public:
@@ -47,7 +46,7 @@ public:
 	bool allocateGraphicsMesh(UNQ<VkMesh>& graphicsMesh, const VmaAllocator& vmaAllocator);
 	bool allocateIndexAttributes(VkMesh& graphicsMesh, const VmaAllocator& vmaAllocator);
 	bool allocateVertexAttributes(VkMesh& graphicsMesh, const VmaAllocator& vmaAllocator);
-	bool allocateBufferAndMemory(VkBuffer& vBuffer, VmaAllocation& vMemRange, const VmaAllocator& vmaAllocator, uint32_t totalSizeBytes);
+	bool allocateBufferAndMemory(VkBuffer& buffer, VmaAllocation& memRange, const VmaAllocator& vmaAllocator, uint32_t totalSizeBytes, VkBufferUsageFlags flags);
 
 	void makeFace(glm::vec3 pivot, glm::vec3 up, glm::vec3 right, uint16_t firstIndex);
 	static Mesh getPrimitiveCube();

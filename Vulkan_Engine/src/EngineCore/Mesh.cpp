@@ -23,20 +23,20 @@ inline void Mesh::mapAndCopyBuffer(VmaAllocator vmaAllocator, VmaAllocation& mem
 	memcpy(data, source, totalByteSize);
 	vmaUnmapMemory(vmaAllocator, memRange);
 
-	printf(message, elementCount, totalByteSize, totalByteSize / (float)elementCount);
+	printf(message, elementCount, totalByteSize, totalByteSize / static_cast<float>(elementCount));
 }
 
-bool Mesh::allocateBufferAndMemory(VkBuffer& vBuffer, VmaAllocation& vMemRange, const VmaAllocator& vmaAllocator, uint32_t totalSizeBytes)
+bool Mesh::allocateBufferAndMemory(VkBuffer& buffer, VmaAllocation& memRange, const VmaAllocator& vmaAllocator, uint32_t totalSizeBytes, VkBufferUsageFlags flags)
 {
 	VmaAllocationCreateInfo vmaACI{};
 	vmaACI.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
 
 	VkBufferCreateInfo bufferInfo{};
 	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+	bufferInfo.usage = flags;
 	bufferInfo.size = totalSizeBytes;
 
-	return vmaCreateBuffer(vmaAllocator, &bufferInfo, &vmaACI, &vBuffer, &vMemRange, nullptr) == VK_SUCCESS;
+	return vmaCreateBuffer(vmaAllocator, &bufferInfo, &vmaACI, &buffer, &memRange, nullptr) == VK_SUCCESS;
 }
 
 bool Mesh::allocateVertexAttributes(VkMesh& graphicsMesh, const VmaAllocator& vmaAllocator)
@@ -57,7 +57,12 @@ bool Mesh::allocateVertexAttributes(VkMesh& graphicsMesh, const VmaAllocator& vm
 
 	VkBuffer vBuffer;
 	VmaAllocation vMemRange;
-	allocateBufferAndMemory(vBuffer, vMemRange, vmaAllocator, as_uint32(totalSizeBytes));
+	if (!allocateBufferAndMemory(vBuffer, vMemRange, vmaAllocator, as_uint32(totalSizeBytes), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT))
+	{
+		printf("Could not allocate vertex memory buffer.");
+		return false;
+	}
+
 	std::vector<VkBuffer> vBuffers{ vBuffer };
 	std::vector<VkDeviceSize> vOffsets{ 0 };
 	std::vector<VmaAllocation> vMemRanges{ vMemRange };
@@ -89,18 +94,13 @@ bool Mesh::allocateIndexAttributes(VkMesh& graphicsMesh, const VmaAllocator& vma
 {
 	size_t totalSize = vectorsizeof(m_indices);
 
-	VmaAllocationCreateInfo vmaACI{};
-	vmaACI.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
-
-	VkBufferCreateInfo bufferInfo{};
-	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	bufferInfo.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-	bufferInfo.size = as_uint32(totalSize);
-
 	VkBuffer iBuffer;
 	VmaAllocation iMemRange;
-	if (vmaCreateBuffer(vmaAllocator, &bufferInfo, &vmaACI, &iBuffer, &iMemRange, nullptr) != VK_SUCCESS)
+	if (!allocateBufferAndMemory(iBuffer, iMemRange, vmaAllocator, as_uint32(totalSize), VK_BUFFER_USAGE_INDEX_BUFFER_BIT))
+	{
+		printf("Could not allocate index memory buffer.");
 		return false;
+	}
 
 	graphicsMesh.iAttributes = MAKEUNQ<IndexAttributes>(iBuffer, iMemRange, VkIndexType::VK_INDEX_TYPE_UINT16);
 	graphicsMesh.iCount = as_uint32(m_indices.size());

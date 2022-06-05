@@ -1,6 +1,5 @@
 #pragma once
 
-#pragma warning ( disable : 26812 )
 #include "Common.h"
 
 #include "glm/gtc/quaternion.hpp"
@@ -27,7 +26,7 @@ public:
 		meshes[0] = MAKEUNQ<Mesh>(Mesh::getPrimitiveTriangle());
 		meshes[1] = MAKEUNQ<Mesh>(Mesh::getPrimitiveCube());
 
-		auto count = meshes.size();
+		const auto count = meshes.size();
 		graphicsMeshes.resize(count);
 		Mesh::MeshDescriptor md;
 		for(int i = 0; i < count; i++)

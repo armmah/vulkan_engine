@@ -132,14 +132,14 @@ void Mesh::makeFace(glm::vec3 pivot, glm::vec3 up, glm::vec3 right, uint16_t fir
 
 Mesh Mesh::getPrimitiveCube()
 {
-	uint16_t vertPerFace = 4u;
-	uint16_t indexPerFace = 6u;
-	uint16_t numOfFaces = 6u;
+	const uint16_t vertPerFace = 4u;
+	const uint16_t indexPerFace = 6u;
+	const uint16_t numOfFaces = 6u;
 	Mesh mesh(vertPerFace * numOfFaces, indexPerFace * numOfFaces);
 
-	glm::vec3 right(0.5f, 0.f, 0.f);
-	glm::vec3 up(0.f, 0.5f, 0.f);
-	glm::vec3 forward(0.f, 0.f, 0.5f);
+	const glm::vec3 right(0.5f, 0.f, 0.f);
+	const glm::vec3 up(0.f, 0.5f, 0.f);
+	const glm::vec3 forward(0.f, 0.f, 0.5f);
 
 	mesh.makeFace(right, up, -forward, vertPerFace * 0);
 	mesh.makeFace(-right, up, -forward, vertPerFace * 1);

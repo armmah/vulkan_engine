@@ -8,7 +8,7 @@ namespace Presentation
 	public:
 		Device(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, const SDL_Window* windowPtr, const VulkanValidationLayers* validationLayers);
 
-		bool IRequireInitialization::isInitialized() const { return m_isInitialized; }
+		bool IRequireInitialization::isInitialized() const override { return m_isInitialized; }
 
 		VkDevice getDevice() const { return m_vkdevice; }
 		VkSurfaceKHR getSurface() const { return m_surface; }

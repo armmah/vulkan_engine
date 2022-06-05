@@ -1,9 +1,5 @@
 ﻿#pragma once
 
-#include <codeanalysis\warnings.h>
-#pragma warning(push)
-// Ignoring unscoped enum warning
-#pragma warning ( disable : 26812 )
 #include "vk_types.h"
 
 #include "Presentation/HardwareDevice.h"
@@ -18,7 +14,6 @@
 
 #include "EngineCore/Scene.h"
 #include "EngineCore/ImGuiHandle.h"
-#pragma warning(pop)
 
 class VulkanEngine
 {

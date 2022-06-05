@@ -26,7 +26,7 @@ bool Mesh::validateOptionalBufferSize(size_t vectorSize, size_t vertexCount, cha
 
 bool Mesh::isValid()
 {
-	auto n = m_positions.size();
+	const auto n = m_positions.size();
 
 	if (n == 0)
 	{
@@ -47,7 +47,7 @@ bool Mesh::isValid()
 		return false;
 
 #ifndef NDEBUG
-	for (size_t i = 0, in = m_indices.size(); i < in; ++i)
+	for (size_t i = 0, size = m_indices.size(); i < size; ++i)
 	{
 		auto index = m_indices[i];
 		if (index < 0 || index >= n)

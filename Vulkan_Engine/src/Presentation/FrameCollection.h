@@ -10,7 +10,7 @@ namespace Presentation
 	public:
 		FrameCollection(VkDevice device, VkCommandPool pool, uint32_t frameCount = 2);
 
-		bool IRequireInitialization::isInitialized() const { return m_fullyInitialized; }
+		bool IRequireInitialization::isInitialized() const override { return m_fullyInitialized; }
 
 		uint32_t getImageCount() { return as_uint32(m_frameCollection.size()); }
 

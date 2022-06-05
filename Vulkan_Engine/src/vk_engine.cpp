@@ -7,14 +7,11 @@
 #include <assert.h>
 #include <cassert>
 
-#define VMA_IMPLEMENTATION
-#include "vk_mem_alloc.h"
-
 void VulkanEngine::initializeTheWindow()
 {
 	SDL_Init(SDL_INIT_VIDEO);
 
-	SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
+	SDL_WindowFlags window_flags = static_cast<SDL_WindowFlags>(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
 	
 	m_window = SDL_CreateWindow(
 		m_applicationName.c_str(),
@@ -110,22 +107,7 @@ void VulkanEngine::run()
 			if (e.type == SDL_QUIT) quit = true;
 		}
 
-		// imgui new frame
-		ImGui_ImplVulkan_NewFrame();
-		ImGui_ImplSDL2_NewFrame(m_window);
-
-		ImGui::NewFrame();
-
-		ImGui::Begin("Camera controls");
-		auto rot = glm::eulerAngles(m_cam->getRotation());
-		auto pi_half = static_cast<float>(M_PI) / 2.0f;
-
-		ImGui::SliderFloat("cam_rot_x", &rot.x, -pi_half, pi_half);
-		ImGui::SliderFloat("cam_rot_y", &rot.y, -pi_half, pi_half);
-		ImGui::SliderFloat("cam_rot_z", &rot.z, -pi_half, pi_half);
-		m_cam->setRotation(rot);
-
-		ImGui::End();
+		m_imgui->draw(m_window, m_cam.get());
 
 		draw();
 	}
@@ -136,8 +118,6 @@ void VulkanEngine::run()
 
 void VulkanEngine::draw()
 {
-	ImGui::Render();
-
 	auto frame = m_framePresentation->getNextFrameAndWaitOnFence();
 
 	uint32_t imageIndex;

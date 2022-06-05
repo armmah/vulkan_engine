@@ -11,7 +11,7 @@ namespace Presentation
 			m_isInitialized = initialize(device, pool);
 		}
 
-		bool IRequireInitialization::isInitialized() const { return m_isInitialized; }
+		bool IRequireInitialization::isInitialized() const override { return m_isInitialized; }
 
 		VkCommandBuffer getCommandBuffer() const { return m_buffer; }
 		VkSemaphore getImageAvailableSemaphore() const { return m_imageAvailableSemaphore; }

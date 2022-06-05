@@ -7,6 +7,8 @@ class ImGuiHandle
 public:
 	ImGuiHandle(VkInstance instance, VkPhysicalDevice activeGPU, const Presentation::Device* presentationDevice, VkRenderPass renderPass, uint32_t imageCount, SDL_Window* window);
 
+	void draw(SDL_Window* window, Camera* cam);
+
 	void release(VkDevice device);
 
 private:

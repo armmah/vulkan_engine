@@ -46,7 +46,7 @@ struct QueueFamilyIndices : IRequireInitialization
 	std::optional<uint32_t> graphicsFamily;
 	std::optional<uint32_t> presentFamily;
 
-	bool IRequireInitialization::isInitialized() const { return graphicsFamily.has_value() && presentFamily.has_value(); }
+	bool IRequireInitialization::isInitialized() const override { return graphicsFamily.has_value() && presentFamily.has_value(); }
 };
 
 namespace vkinit
@@ -325,7 +325,7 @@ public:
 
 		windowExtent = newExtent;
 
-		aspectRatio = windowExtent.width / (float)windowExtent.height;
+		aspectRatio = windowExtent.width / static_cast<float>(windowExtent.height);
 		calculateProjectionMatrix();
 
 		vkinit::Commands::initViewportAndScissor(viewport, scissor, newExtent);
@@ -352,8 +352,8 @@ private:
 
 	glm::mat4 calculateViewMatrix()
 	{
-		glm::mat4 rotationMatrix = glm::mat4_cast(rot);
-		glm::mat4 translationMatrix = glm::translate(glm::mat4(1.f), pos);
+		const glm::mat4 rotationMatrix = glm::mat4_cast(rot);
+		const glm::mat4 translationMatrix = glm::translate(glm::mat4(1.f), pos);
 
 		cachedViewMatrix = translationMatrix * rotationMatrix;
 		cachedViewProjectionMatrix = calculateViewProjectionMatrix();
@@ -412,7 +412,7 @@ struct CommandObjectsWrapper
 			if (vertexBuffer != nullptr)
 			{
 				VkBuffer vertexBuffers[] = { vertexBuffer };
-				VkDeviceSize offsets[] = { 0 };
+				const VkDeviceSize offsets[] = { 0 };
 				vkCmdBindVertexBuffers(buffer, 0, 1, vertexBuffers, offsets);
 			}
 
@@ -423,7 +423,7 @@ struct CommandObjectsWrapper
 	static void drawAt(VkCommandBuffer commandBuffer, const VkMesh& mesh, VkPipelineLayout layout,
 		const Camera& cam, uint32_t frameNumber, float freq, glm::vec3 pos)
 	{
-		glm::mat4 model =
+		const glm::mat4 model =
 			glm::translate(glm::mat4(1.f), pos) *
 			glm::rotate(glm::mat4{ 1.0f }, glm::radians(frameNumber * 0.01f * freq), glm::vec3(0, 1, 0));
 
@@ -453,7 +453,7 @@ struct CommandObjectsWrapper
 
 			for (int i = 0; i < meshes.size(); i++)
 			{
-				auto sign = (i * 2 - 1);
+				const auto sign = (i * 2 - 1);
 				drawAt(commandBuffer, *meshes[i], pipelineLayout, cam, frameNumber, sign * (i * 10.0f + 0.2f), glm::vec3(sign * 0.2f , sign * 0.2f, 0.0f));
 			}
 

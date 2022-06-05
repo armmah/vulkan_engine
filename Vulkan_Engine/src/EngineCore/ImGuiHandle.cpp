@@ -6,7 +6,7 @@ ImGuiHandle::ImGuiHandle(VkInstance instance, VkPhysicalDevice activeGPU, const 
 	auto device = presentationDevice->getDevice();
 
 	// 1: create descriptor pool for IMGUI
-	VkDescriptorPoolSize pool_sizes[] =
+	const VkDescriptorPoolSize pool_sizes[] =
 	{
 		{ VK_DESCRIPTOR_TYPE_SAMPLER, DESC_POOL_SIZE },
 		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, DESC_POOL_SIZE },
@@ -77,6 +77,28 @@ ImGuiHandle::ImGuiHandle(VkInstance instance, VkPhysicalDevice activeGPU, const 
 
 	//clear font textures from cpu data
 	ImGui_ImplVulkan_DestroyFontUploadObjects();
+}
+
+void ImGuiHandle::draw(SDL_Window* window, Camera* cam)
+{
+	// imgui new frame
+	ImGui_ImplVulkan_NewFrame();
+	ImGui_ImplSDL2_NewFrame(window);
+
+	ImGui::NewFrame();
+
+	ImGui::Begin("Camera controls");
+	auto rot = glm::eulerAngles(cam->getRotation());
+	auto pi_half = static_cast<float>(M_PI) / 2.0f;
+
+	ImGui::SliderFloat("cam_rot_x", &rot.x, -pi_half, pi_half);
+	ImGui::SliderFloat("cam_rot_y", &rot.y, -pi_half, pi_half);
+	ImGui::SliderFloat("cam_rot_z", &rot.z, -pi_half, pi_half);
+	cam->setRotation(rot);
+
+	ImGui::End();
+
+	ImGui::Render();
 }
 
 void ImGuiHandle::release(VkDevice device)

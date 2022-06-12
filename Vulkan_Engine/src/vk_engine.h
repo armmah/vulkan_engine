@@ -14,6 +14,7 @@
 
 #include "EngineCore/Scene.h"
 #include "EngineCore/ImGuiHandle.h"
+#include "Texture.h"
 
 class VulkanEngine
 {
@@ -36,6 +37,10 @@ public:
 
 	UNQ<Scene> m_openScene;
 	UNQ<Camera> m_cam;
+	UNQ<VkTexture> m_texture;
+	VkDescriptorPool descriptorPool;
+	std::vector<VkDescriptorSet> descriptorSets;
+	VkDescriptorSetLayout descriptorSetLayout;
 
 	bool m_isInitialized { false };
 

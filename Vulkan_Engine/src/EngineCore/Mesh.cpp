@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "Common.h"
 #include "Mesh.h"
+#include <vk_types.h>
 
 bool Mesh::MeshDescriptor::operator ==(const MeshDescriptor& other) const
 {
@@ -26,19 +27,6 @@ inline void Mesh::mapAndCopyBuffer(VmaAllocator vmaAllocator, VmaAllocation& mem
 	printf(message, elementCount, totalByteSize, totalByteSize / static_cast<float>(elementCount));
 }
 
-bool Mesh::allocateBufferAndMemory(VkBuffer& buffer, VmaAllocation& memRange, const VmaAllocator& vmaAllocator, uint32_t totalSizeBytes, VkBufferUsageFlags flags)
-{
-	VmaAllocationCreateInfo vmaACI{};
-	vmaACI.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
-
-	VkBufferCreateInfo bufferInfo{};
-	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	bufferInfo.usage = flags;
-	bufferInfo.size = totalSizeBytes;
-
-	return vmaCreateBuffer(vmaAllocator, &bufferInfo, &vmaACI, &buffer, &memRange, nullptr) == VK_SUCCESS;
-}
-
 bool Mesh::allocateVertexAttributes(VkMesh& graphicsMesh, const VmaAllocator& vmaAllocator)
 {
 	size_t vertCount = m_positions.size();
@@ -57,7 +45,7 @@ bool Mesh::allocateVertexAttributes(VkMesh& graphicsMesh, const VmaAllocator& vm
 
 	VkBuffer vBuffer;
 	VmaAllocation vMemRange;
-	if (!allocateBufferAndMemory(vBuffer, vMemRange, vmaAllocator, as_uint32(totalSizeBytes), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT))
+	if (!vkinit::MemoryBuffer::allocateBufferAndMemory(vBuffer, vMemRange, vmaAllocator, as_uint32(totalSizeBytes), VMA_MEMORY_USAGE_CPU_TO_GPU, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT))
 	{
 		printf("Could not allocate vertex memory buffer.");
 		return false;
@@ -96,7 +84,7 @@ bool Mesh::allocateIndexAttributes(VkMesh& graphicsMesh, const VmaAllocator& vma
 
 	VkBuffer iBuffer;
 	VmaAllocation iMemRange;
-	if (!allocateBufferAndMemory(iBuffer, iMemRange, vmaAllocator, as_uint32(totalSize), VK_BUFFER_USAGE_INDEX_BUFFER_BIT))
+	if (!vkinit::MemoryBuffer::allocateBufferAndMemory(iBuffer, iMemRange, vmaAllocator, as_uint32(totalSize), VMA_MEMORY_USAGE_CPU_TO_GPU, VK_BUFFER_USAGE_INDEX_BUFFER_BIT))
 	{
 		printf("Could not allocate index memory buffer.");
 		return false;

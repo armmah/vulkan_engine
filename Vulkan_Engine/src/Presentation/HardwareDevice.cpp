@@ -55,6 +55,9 @@ namespace Presentation
 		VkPhysicalDeviceProperties deviceProperties;
 		vkGetPhysicalDeviceProperties(device, &deviceProperties);
 
+		VkPhysicalDeviceFeatures supportedFeatures;
+		vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
+
 		QueueFamilyIndices queueFamily;
 		vkinit::Queue::findQueueFamilies(queueFamily, device, surface);
 		if (!queueFamily.isInitialized())
@@ -79,8 +82,14 @@ namespace Presentation
 			return 0;
 		}
 
+		if (supportedFeatures.samplerAnisotropy)
+		{
+			score += 5;
+		}
+
 		// Discrete GPUs have a significant performance advantage
-		if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+		if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) 
+		{
 			score += 1000;
 		}
 

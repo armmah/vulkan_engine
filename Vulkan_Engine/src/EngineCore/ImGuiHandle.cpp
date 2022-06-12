@@ -51,29 +51,10 @@ ImGuiHandle::ImGuiHandle(VkInstance instance, VkPhysicalDevice activeGPU, const 
 
 	ImGui_ImplVulkan_Init(&init_info, renderPass);
 
+	presentationDevice->submitImmediatelyAndWaitCompletion([=](VkCommandBuffer cmd)
 	{
-		auto cmdPool = presentationDevice->getCommandPool();
-		VkCommandBuffer cmdBuffer;
-		vkinit::Commands::createSingleCommandBuffer(cmdBuffer, cmdPool, device);
-
-		VkFence fence;
-		vkinit::Synchronization::createFence(fence, device, false);
-
-		//execute a gpu command to upload imgui font textures
-		{
-			CommandObjectsWrapper::CommandBufferScope sc(cmdBuffer);
-			ImGui_ImplVulkan_CreateFontsTexture(cmdBuffer);
-		}
-
-		VkSubmitInfo submitInfo{};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &cmdBuffer;
-		vkQueueSubmit(presentationDevice->getGraphicsQueue(), 1, &submitInfo, fence);
-
-		vkWaitForFences(device, 1, &fence, VK_TRUE, UINT64_MAX);
-		vkDestroyFence(device, fence, nullptr);
-	}
+		ImGui_ImplVulkan_CreateFontsTexture(cmd);
+	});
 
 	//clear font textures from cpu data
 	ImGui_ImplVulkan_DestroyFontUploadObjects();

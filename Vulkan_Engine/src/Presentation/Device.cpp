@@ -30,6 +30,7 @@ namespace Presentation
 	bool Device::createLogicalDevice(VkPhysicalDevice physicalDevice)
 	{
 		VkPhysicalDeviceFeatures deviceFeatures{};
+		deviceFeatures.samplerAnisotropy = VK_TRUE;
 
 		vkinit::Queue::findQueueFamilies(m_queueIndices, physicalDevice, m_surface);
 		float queuePriority = 1.0;

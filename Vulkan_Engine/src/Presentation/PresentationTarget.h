@@ -27,7 +27,7 @@ namespace Presentation
 		VkFramebuffer getSwapchainFrameBuffers(uint32_t index) const { return m_swapChainFrameBuffers[index]; }
 
 		bool createPresentationTarget(const HardwareDevice& presentationHardware, const Device& presentationDevice, uint32_t swapchainCount = 3u);
-		bool createGraphicsPipeline(VkDevice device, const VertexBinding& vBinding, VkCullModeFlagBits faceCullingMode = VK_CULL_MODE_BACK_BIT);
+		bool createGraphicsPipeline(VkDevice device, const VertexBinding& vBinding, VkDescriptorSetLayout descriptorSetLayout, VkCullModeFlagBits faceCullingMode = VK_CULL_MODE_BACK_BIT);
 
 		void releasePipeline(VkDevice device);
 		void release(VkDevice device);

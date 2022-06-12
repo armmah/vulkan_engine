@@ -139,5 +139,8 @@
     <ClInclude Include="src\EngineCore\ImGuiHandle.h">
       <Filter>Header Files\EngineCore</Filter>
     </ClInclude>
+    <ClInclude Include="src\EngineCore\Texture.h">
+      <Filter>Header Files\EngineCore</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

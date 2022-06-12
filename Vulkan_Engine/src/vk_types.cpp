@@ -85,14 +85,14 @@ CommandObjectsWrapper::RenderPassScope::~RenderPassScope()
 	vkCmdEndRenderPass(commandBuffer);
 }
 
-CommandObjectsWrapper::CommandBufferScope::CommandBufferScope(VkCommandBuffer commandBuffer)
+CommandObjectsWrapper::CommandBufferScope::CommandBufferScope(VkCommandBuffer commandBuffer, VkCommandBufferUsageFlags flags)
 {
 	this->commandBuffer = commandBuffer;
 
 	VkCommandBufferBeginInfo beginInfo{};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	beginInfo.flags = 0; // Optional
-	beginInfo.pInheritanceInfo = nullptr; // Optional
+	beginInfo.flags = flags;
+	beginInfo.pInheritanceInfo = nullptr;
 
 	if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS)
 		throw std::runtime_error("Failed to begin command buffer");

@@ -98,10 +98,10 @@ void Mesh::makeFace(glm::vec3 pivot, glm::vec3 up, glm::vec3 right, uint16_t fir
 	m_positions.push_back(pivot - up - right);
 	m_positions.push_back(pivot - up + right);
 
-	m_uvs.push_back({ 0.0, 0.0 });
-	m_uvs.push_back({ 1.0, 0.0 });
 	m_uvs.push_back({ 0.0, 1.0 });
 	m_uvs.push_back({ 1.0, 1.0 });
+	m_uvs.push_back({ 0.0, 0.0 });
+	m_uvs.push_back({ 1.0, 0.0 });
 
 	auto normal = glm::normalize(pivot);
 	m_normals.push_back(normal);

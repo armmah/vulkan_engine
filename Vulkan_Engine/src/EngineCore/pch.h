@@ -14,3 +14,4 @@
 #include <assert.h>
 
 #include <optional>
+#include <functional>

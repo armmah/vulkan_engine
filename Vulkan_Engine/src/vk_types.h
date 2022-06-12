@@ -5,20 +5,17 @@
 
 #include "vulkan/vulkan.h"
 
-#include <codeanalysis\warnings.h>
-#pragma warning(push, 0)
-#pragma warning ( disable : ALL_CPPCORECHECK_WARNINGS )
 #include "SDL.h"
 #include "SDL_vulkan.h"
 
 #include "imgui.h"
 #include "imgui_impl_sdl.h"
 #include "imgui_impl_vulkan.h"
-#pragma warning(pop)
 
 #include "EngineCore/pch.h"
 
 #include "EngineCore/Scene.h"
+#include <stb_image.h>
 
 class VulkanValidationLayers
 {
@@ -143,6 +140,59 @@ namespace vkinit
 		}
 	};
 
+	struct Texture
+	{
+		static bool createTextureImageView(VkImageView& imageView, VkDevice device, VkImage image, VkFormat format)
+		{
+			VkImageViewCreateInfo viewInfo{};
+			viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+			viewInfo.image = image;
+			viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+			viewInfo.format = format;
+			viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			viewInfo.subresourceRange.baseMipLevel = 0;
+			viewInfo.subresourceRange.levelCount = 1;
+			viewInfo.subresourceRange.baseArrayLayer = 0;
+			viewInfo.subresourceRange.layerCount = 1;
+
+			if (vkCreateImageView(device, &viewInfo, nullptr, &imageView) != VK_SUCCESS)
+			{
+				printf("Failed to create texture image view!");
+				return false;
+			}
+
+			return true;
+		}
+
+		static bool createTextureSampler(VkSampler& sampler, VkDevice device, bool linearFiltering = true, VkSamplerAddressMode sampleMode = VK_SAMPLER_ADDRESS_MODE_REPEAT, float anisotropySamples = 0.0f)
+		{
+			VkSamplerCreateInfo samplerInfo{};
+			samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+
+			auto filterMode = linearFiltering ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
+			samplerInfo.magFilter = filterMode;
+			samplerInfo.minFilter = filterMode;
+
+			samplerInfo.addressModeU = sampleMode;
+			samplerInfo.addressModeV = sampleMode;
+			samplerInfo.addressModeW = sampleMode;
+
+			samplerInfo.anisotropyEnable = anisotropySamples > 0;
+			samplerInfo.maxAnisotropy = anisotropySamples;
+
+			samplerInfo.unnormalizedCoordinates = VK_FALSE;
+			samplerInfo.compareEnable = VK_FALSE;
+			samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+
+			samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+			samplerInfo.mipLodBias = 0.0f;
+			samplerInfo.minLod = 0.0f;
+			samplerInfo.maxLod = 0.0f;
+
+			return (vkCreateSampler(device, &samplerInfo, nullptr, &sampler) == VK_SUCCESS);
+		}
+	};
+
 	struct MemoryBuffer
 	{
 		static bool createVmaAllocator(VmaAllocator& vmaAllocator, const VkInstance instance, const VkPhysicalDevice physicalDevice, const VkDevice device)
@@ -153,6 +203,19 @@ namespace vkinit
 			allocatorInfo.device = device;
 
 			return vmaCreateAllocator(&allocatorInfo, &vmaAllocator) == VK_SUCCESS;
+		}
+
+		static bool allocateBufferAndMemory(VkBuffer& buffer, VmaAllocation& memRange, const VmaAllocator& vmaAllocator, uint32_t totalSizeBytes, VmaMemoryUsage memUsage, VkBufferUsageFlags flags)
+		{
+			VmaAllocationCreateInfo vmaACI{};
+			vmaACI.usage = memUsage;
+
+			VkBufferCreateInfo bufferInfo{};
+			bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+			bufferInfo.usage = flags;
+			bufferInfo.size = totalSizeBytes;
+
+			return vmaCreateBuffer(vmaAllocator, &bufferInfo, &vmaACI, &buffer, &memRange, nullptr) == VK_SUCCESS;
 		}
 		
 		static bool createBuffer(VkBuffer& buffer, VkDeviceMemory& memory, VkPhysicalDevice physicalDevice, VkDevice device, uint32_t bufferSize)
@@ -278,6 +341,15 @@ struct Shader
 	}
 };
 
+struct VkTexture
+{
+	VkImage image;
+	VmaAllocation memoryRange;
+
+	VkImageView imageView;
+	VkSampler sampler;
+};
+
 class Camera
 {
 public:
@@ -382,7 +454,7 @@ struct CommandObjectsWrapper
 		VkCommandBuffer commandBuffer;
 
 	public:
-		CommandBufferScope(VkCommandBuffer commandBuffer);
+		CommandBufferScope(VkCommandBuffer commandBuffer, VkCommandBufferUsageFlags flags = 0);
 		~CommandBufferScope();
 
 		CommandBufferScope(const CommandBufferScope&) = delete;
@@ -438,7 +510,8 @@ struct CommandObjectsWrapper
 	}
 
 	static void renderIndexedMeshes(VkCommandBuffer commandBuffer, VkPipeline pipeline, VkPipelineLayout pipelineLayout, VkRenderPass m_renderPass, 
-		VkFramebuffer frameBuffer, VkExtent2D extent, Camera& cam, const std::vector<UNQ<VkMesh>>& meshes, uint32_t frameNumber)
+		VkFramebuffer frameBuffer, VkExtent2D extent, Camera& cam, const std::vector<UNQ<VkMesh>>& meshes, 
+		const std::vector<VkDescriptorSet>& descriptorSets, const VkTexture& texture, uint32_t frameNumber)
 	{
 		auto cbs = CommandBufferScope(commandBuffer);
 		{
@@ -453,6 +526,8 @@ struct CommandObjectsWrapper
 
 			for (int i = 0; i < meshes.size(); i++)
 			{
+				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[frameNumber % 2], 0, nullptr);
+
 				const auto sign = (i * 2 - 1);
 				drawAt(commandBuffer, *meshes[i], pipelineLayout, cam, frameNumber, sign * (i * 10.0f + 0.2f), glm::vec3(sign * 0.2f , sign * 0.2f, 0.0f));
 			}

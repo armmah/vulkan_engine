@@ -1,5 +1,6 @@
 #pragma once
 #include <vk_types.h>
+#include <functional>
 
 namespace Presentation
 {
@@ -16,6 +17,30 @@ namespace Presentation
 		VkQueue getPresentQueue() const { return m_presentQueue; }
 		VkCommandPool getCommandPool() const { return m_commandPool; }
 		const SDL_Window* getWindowRef() const { return m_window; }
+
+		void submitImmediatelyAndWaitCompletion(const std::function<void(VkCommandBuffer cmd)>&& commandForExecution) const
+		{
+			auto cmdPool = getCommandPool();
+			VkCommandBuffer cmdBuffer;
+			vkinit::Commands::createSingleCommandBuffer(cmdBuffer, cmdPool, m_vkdevice);
+
+			VkFence fence;
+			vkinit::Synchronization::createFence(fence, m_vkdevice, false);
+
+			{
+				CommandObjectsWrapper::CommandBufferScope sc(cmdBuffer);
+				commandForExecution(cmdBuffer);
+			}
+
+			VkSubmitInfo submitInfo{};
+			submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+			submitInfo.commandBufferCount = 1;
+			submitInfo.pCommandBuffers = &cmdBuffer;
+			vkQueueSubmit(getGraphicsQueue(), 1, &submitInfo, fence);
+
+			vkWaitForFences(m_vkdevice, 1, &fence, VK_TRUE, UINT64_MAX);
+			vkDestroyFence(m_vkdevice, fence, nullptr);
+		}
 
 		void release();
 

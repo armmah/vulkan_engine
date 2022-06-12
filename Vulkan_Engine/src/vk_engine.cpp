@@ -7,6 +7,8 @@
 #include <assert.h>
 #include <cassert>
 
+#include <stb_image.h>
+
 void VulkanEngine::initializeTheWindow()
 {
 	SDL_Init(SDL_INIT_VIDEO);
@@ -50,12 +52,89 @@ void VulkanEngine::init(bool requestValidationLayers)
 	{
 		throw std::runtime_error("Failed to load the scene!");
 	}
-	m_presentationTarget->createGraphicsPipeline(m_presentationDevice->getDevice(), m_openScene->getVertexBinding());
 
 	// Camera
 	m_cam = MAKEUNQ<Camera>(70.f, m_presentationTarget->getSwapchainExtent());
 	m_cam->setPosition({ 0.f, 0.f, -4.f });
 	m_cam->setRotation({ -0.2f, -0.66f, 0.12f });
+
+	// Texture
+	m_texture = MAKEUNQ<VkTexture>();
+	if (!Texture::loadImage(*m_texture, "C:/Git/Vulkan_Engine/Resources/vulkan_tutorial_texture.jpg", m_memoryAllocator, m_presentationDevice.get()))
+	{
+		printf("Failed to create VKTexture\n");
+	}
+
+	/*		========================== DESCRIPTOR POOL ========================		*/
+	auto imageCount = m_framePresentation->getImageCount();
+	VkDescriptorPoolSize poolSize{};
+	poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	poolSize.descriptorCount = imageCount;
+
+	VkDescriptorPoolCreateInfo poolInfo{};
+	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	poolInfo.poolSizeCount = 1;
+	poolInfo.pPoolSizes = &poolSize;
+	poolInfo.maxSets = imageCount;
+	if (vkCreateDescriptorPool(m_presentationDevice->getDevice(), &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) 
+	{
+		throw std::runtime_error("failed to create descriptor pool!");
+	}
+
+	/*		====================== Descriptor set Layout ====================		*/
+	VkDescriptorSetLayoutBinding samplerLayoutBinding{};
+	samplerLayoutBinding.binding = 0;
+	samplerLayoutBinding.descriptorCount = 1;
+	samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	samplerLayoutBinding.pImmutableSamplers = nullptr;
+	samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+	VkDescriptorSetLayoutCreateInfo layoutInfo{};
+	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layoutInfo.bindingCount = 1;
+	layoutInfo.pBindings = &samplerLayoutBinding;
+
+	if (vkCreateDescriptorSetLayout(m_presentationDevice->getDevice(), &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) 
+	{
+		throw std::runtime_error("failed to create descriptor set layout!");
+	}
+
+	/*		====================== Graphics Pipeline ====================		*/
+	m_presentationTarget->createGraphicsPipeline(m_presentationDevice->getDevice(), m_openScene->getVertexBinding(), descriptorSetLayout);
+
+	/*		======================= Descriptor set =====================		*/
+	std::vector<VkDescriptorSetLayout> layouts(imageCount, descriptorSetLayout);
+	VkDescriptorSetAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	allocInfo.descriptorPool = descriptorPool;
+	allocInfo.descriptorSetCount = imageCount;
+	allocInfo.pSetLayouts = layouts.data();
+
+	descriptorSets.resize(imageCount);
+	if (vkAllocateDescriptorSets(m_presentationDevice->getDevice(), &allocInfo, descriptorSets.data()) != VK_SUCCESS) 
+	{
+		throw std::runtime_error("failed to allocate descriptor sets!");
+	}
+
+	for (size_t i = 0; i < imageCount; i++) 
+	{
+		VkDescriptorImageInfo imageInfo{};
+		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		imageInfo.imageView = m_texture->imageView;
+		imageInfo.sampler = m_texture->sampler;
+
+		VkWriteDescriptorSet descriptorWrite{};
+
+		descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrite.dstSet = descriptorSets[i];
+		descriptorWrite.dstBinding = 0;
+		descriptorWrite.dstArrayElement = 0;
+		descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		descriptorWrite.descriptorCount = 1;
+		descriptorWrite.pImageInfo = &imageInfo;
+
+		vkUpdateDescriptorSets(m_presentationDevice->getDevice(), 1, &descriptorWrite, 0, nullptr);
+	}
 }
 
 bool VulkanEngine::init_vulkan(SDL_Window* window)
@@ -130,7 +209,7 @@ void VulkanEngine::draw()
 	vkResetCommandBuffer(buffer, 0);
 	
 	CommandObjectsWrapper::renderIndexedMeshes(buffer, m_presentationTarget->getPipeline(), m_presentationTarget->getPipelineLayout(), m_presentationTarget->getRenderPass(),
-		m_presentationTarget->getSwapchainFrameBuffers(imageIndex), m_presentationTarget->getSwapchainExtent(), *m_cam, m_openScene->getGraphicsMeshes(), m_frameNumber);
+		m_presentationTarget->getSwapchainFrameBuffers(imageIndex), m_presentationTarget->getSwapchainExtent(), *m_cam, m_openScene->getGraphicsMeshes(), descriptorSets, *m_texture, m_frameNumber);
 
 	frame.resetAcquireFence(m_presentationDevice->getDevice());
 	frame.submitToQueue(m_presentationDevice->getGraphicsQueue());
@@ -163,6 +242,10 @@ void VulkanEngine::cleanup()
 {
 	if (m_instance)
 	{
+		vkDestroySampler(m_presentationDevice->getDevice(), m_texture->sampler, nullptr);
+		vkDestroyImageView(m_presentationDevice->getDevice(), m_texture->imageView, nullptr);
+		vmaDestroyImage(m_memoryAllocator, m_texture->image, m_texture->memoryRange);
+
 		m_imgui->release(m_presentationDevice->getDevice());
 
 		m_openScene->release(m_memoryAllocator);
@@ -171,7 +254,10 @@ void VulkanEngine::cleanup()
 
 		m_framePresentation->releaseFrameResources();
 
+		vkDestroyDescriptorPool(m_presentationDevice->getDevice(), descriptorPool, nullptr);
+		vkDestroyDescriptorSetLayout(m_presentationDevice->getDevice(), descriptorSetLayout, nullptr);
 		m_presentationTarget->releasePipeline(m_presentationDevice->getDevice());
+
 		m_presentationTarget->release(m_presentationDevice->getDevice());
 		m_presentationDevice->release();
 

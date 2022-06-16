@@ -1,6 +1,9 @@
 #pragma once
-#include <vk_types.h>
+#include "pch.h"
+#include "VkTypes/InitializersUtility.h"
 #include <Presentation/Device.h>
+#include "vk_mem_alloc.h"
+#include "VkTypes/VkTexture.h"
 
 struct Texture
 {
@@ -32,11 +35,11 @@ struct Texture
 
 		static void getStagingBufferState(_PipelineBarrierArg& src, _PipelineBarrierArg& dst)
 		{
-			src.stages = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 			src.accesses = 0;
+			src.stages = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 
-			dst.stages = VK_PIPELINE_STAGE_TRANSFER_BIT;
 			dst.accesses = VK_ACCESS_TRANSFER_WRITE_BIT;
+			dst.stages = VK_PIPELINE_STAGE_TRANSFER_BIT;
 		}
 
 		static void getImageFragShaderState(_PipelineBarrierArg& src, _PipelineBarrierArg& dst)
@@ -97,11 +100,11 @@ struct Texture
 		});
 	}
 
-	static bool loadImage(VkTexture& textureResource, std::string path, const VmaAllocator& allocator, const Presentation::Device* presentationDevice)
+	static bool loadImage(VkTexture2D& textureResource, std::string path, const VmaAllocator& allocator, const Presentation::Device* presentationDevice)
 	{
 		int width, height, channels;
 		stbi_uc* const pixels = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
-		VkDeviceSize imageSize = width * height * 4;
+		size_t imageSize = static_cast<size_t>(width) * static_cast<size_t>(height) * 4;
 
 		if (imageSize <= 0 || !pixels)
 		{
@@ -116,41 +119,27 @@ struct Texture
 
 		void* data;
 		vmaMapMemory(allocator, stagingAllocation, &data);
-		memcpy(data, pixels, static_cast<size_t>(imageSize));
+		memcpy(data, pixels, imageSize);
 		vmaUnmapMemory(allocator, stagingAllocation);
 		stbi_image_free(static_cast<void*>(pixels));
 
-		VkImageCreateInfo imageInfo{};
-		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-		imageInfo.imageType = VK_IMAGE_TYPE_2D;
-		imageInfo.extent.width = static_cast<uint32_t>(width);
-		imageInfo.extent.height = static_cast<uint32_t>(height);
-		imageInfo.extent.depth = 1;
-		imageInfo.mipLevels = 1;
-		imageInfo.arrayLayers = 1;
-		imageInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
-		imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-		imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-		imageInfo.flags = 0;
+		auto format = VK_FORMAT_R8G8B8A8_SRGB;
 
-		VmaAllocationCreateInfo dimg_allocinfo = {};
-		dimg_allocinfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+		auto imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+		auto vmaci = VkMemoryAllocator::getInstance()->createAllocationDescriptor(VMA_MEMORY_USAGE_GPU_ONLY);
+		vkinit::Texture::createImage(textureResource.image, textureResource.memoryRange, vmaci, format, imageUsage, as_uint32(width), as_uint32(height));
 
-		if (vmaCreateImage(allocator, &imageInfo, &dimg_allocinfo, &textureResource.image, &textureResource.memoryRange, nullptr) != VK_SUCCESS)
-			return false;
-
-		transitionImageLayout(presentationDevice, textureResource.image, imageInfo.format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+		transitionImageLayout(presentationDevice, textureResource.image, format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 		copyBufferToImage(presentationDevice, stagingBuffer, textureResource.image, as_uint32(width), as_uint32(height));
 
-		transitionImageLayout(presentationDevice, textureResource.image, imageInfo.format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		transitionImageLayout(presentationDevice, textureResource.image, format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-		vkinit::Texture::createTextureImageView(textureResource.imageView, presentationDevice->getDevice(), textureResource.image, imageInfo.format);
-		vkinit::Texture::createTextureSampler(textureResource.sampler, presentationDevice->getDevice(), true, VK_SAMPLER_ADDRESS_MODE_REPEAT, 4.0f);
+		vkinit::Texture::createTextureImageView(textureResource.imageView, presentationDevice->getDevice(), textureResource.image, format);
+		vkinit::Texture::createTextureSampler(textureResource.sampler, presentationDevice->getDevice(), true, VK_SAMPLER_ADDRESS_MODE_REPEAT, c_anisotropySamples);
 
 		vmaDestroyBuffer(allocator, stagingBuffer, stagingAllocation);
 		return true;
 	}
+
+	constexpr static float c_anisotropySamples = 4.0f;
 };

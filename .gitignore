@@ -10,6 +10,7 @@
 # Precompiled Headers
 *.gch
 *.pch
+*.ipch
 
 # Compiled Dynamic libraries
 *.so
@@ -31,6 +32,7 @@
 *.out
 *.app
 /x64
+/.vs/Vulkan_Engine/v17/
 /.vs/Vulkan_Engine/v17/ipch/AutoPCH
 /.vs/Vulkan_Engine/v17/Solution.VC.db-wal
 /.vs/Vulkan_Engine/v17/Solution.VC.db-shm
@@ -39,3 +41,7 @@
 /.vs/Vulkan_Engine/v17/Browse.VC.opendb
 /.vs/Vulkan_Engine/v17/Browse.VC.db-wal
 /.vs/Vulkan_Engine/v17/Browse.VC.db-shm
+*.scor
+*.incl
+*.t0000
+*.json

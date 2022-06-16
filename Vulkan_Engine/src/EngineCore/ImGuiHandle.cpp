@@ -1,5 +1,7 @@
 #include "pch.h"
 #include "ImGuiHandle.h"
+#include "Common.h"
+#include "Camera.h"
 
 ImGuiHandle::ImGuiHandle(VkInstance instance, VkPhysicalDevice activeGPU, const Presentation::Device* presentationDevice, VkRenderPass renderPass, uint32_t imageCount, SDL_Window* window)
 {

@@ -1,5 +1,6 @@
 ﻿#include "pch.h"
-#include <vk_types.h>
+#include "VkTypes/InitializersUtility.h"
+#include "VkTypes/VulkanValidationLayers.h"
 
 namespace vkinit
 {

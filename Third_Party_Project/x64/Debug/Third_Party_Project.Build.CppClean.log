@@ -6,6 +6,8 @@ c:\git\vulkan_engine\third_party_project\x64\debug\imgui_impl_vulkan.obj
 c:\git\vulkan_engine\third_party_project\x64\debug\imgui_impl_sdl.obj
 c:\git\vulkan_engine\third_party_project\x64\debug\imgui_draw.obj
 c:\git\vulkan_engine\third_party_project\x64\debug\imgui.obj
+c:\git\vulkan_engine\third_party_project\x64\debug\vma_implementation.obj
+c:\git\vulkan_engine\third_party_project\x64\debug\stb_implementation.obj
 c:\git\vulkan_engine\x64\debug\third_party_project.lib
 c:\git\vulkan_engine\third_party_project\x64\debug\third_pa.7c06a47f.tlog\cl.command.1.tlog
 c:\git\vulkan_engine\third_party_project\x64\debug\third_pa.7c06a47f.tlog\cl.read.1.tlog

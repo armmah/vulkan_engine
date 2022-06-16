@@ -2,6 +2,12 @@
 #include "Scene.h"
 #include "Color.h"
 
+#include "vk_mem_alloc.h"
+
+#include "VertexBinding.h"
+#include "VkMesh.h"
+#include "Mesh.h"
+
 void Mesh::clear()
 {
 	m_positions.clear();
@@ -59,4 +65,42 @@ bool Mesh::isValid()
 #endif
 
 	return true;
+}
+
+bool Scene::load(const VmaAllocator& vmaAllocator)
+{
+	meshes.resize(1);
+	meshes[0] = MAKEUNQ<Mesh>(Mesh::getPrimitiveCube());
+
+	auto defaultMeshDescriptor = Mesh::defaultMeshDescriptor;
+
+	const auto count = meshes.size();
+	graphicsMeshes.resize(count);
+	for (int i = 0; i < count; i++)
+	{
+		if (!meshes[i]->allocateGraphicsMesh(graphicsMeshes[i], vmaAllocator) || !meshes[i]->isValid())
+			return false;
+
+		if (defaultMeshDescriptor != meshes[i]->getMeshDescriptor())
+		{
+			printf("Mesh metadata does not match - can not bind to the same pipeline.");
+			return false;
+		}
+	}
+
+	return true;
+}
+
+void Scene::release(const VmaAllocator& allocator)
+{
+	for (auto& mesh : meshes)
+	{
+		mesh->clear();
+		mesh.release();
+	}
+
+	for (auto& gmesh : graphicsMeshes)
+	{
+		gmesh->release(allocator);
+	}
 }

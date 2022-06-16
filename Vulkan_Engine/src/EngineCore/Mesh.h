@@ -1,7 +1,6 @@
 #pragma once
 
-#include <glm/ext/vector_float2.hpp>
-#include <glm/ext/vector_float3.hpp>
+#include "pch.h"
 
 #include "Common.h"
 #include "CollectionUtility.h"
@@ -24,24 +23,13 @@ public:
 	void clear();
 	bool isValid();
 
-	struct MeshDescriptor
-	{
-	public:
-		static const size_t descriptorCount = 4;
-		size_t lengths[descriptorCount];
-		size_t elementByteSizes[descriptorCount];
-
-		bool operator ==(const MeshDescriptor& other) const;
-		bool operator !=(const MeshDescriptor& other) const;
-	};
-
 	template<typename T>
-	void mapAndCopyBuffer(VmaAllocator vmaAllocator, VmaAllocation& memRange, const T* source, size_t elementCount, size_t totalByteSize, const char* message);
+	void mapAndCopyBuffer(const VmaAllocator& vmaAllocator, VmaAllocation& memRange, const T* source, size_t elementCount, size_t totalByteSize, const char* message);
 
 	static VkFormat pickDataFormat(size_t size);
 	static bool validateOptionalBufferSize(size_t vectorSize, size_t vertexCount, char const* name);
 	static void copyInterleavedNoCheck(std::vector<float>& interleavedVertexData, const void* src, size_t elementByteSize, size_t iterStride, size_t offset);
-	static void initializeBindings(UNQ<VertexBinding>& vbinding, const MeshDescriptor& meshDescriptor);
+	static VertexBinding initializeBindings(const MeshDescriptor& meshDescriptor);
 
 	bool allocateGraphicsMesh(UNQ<VkMesh>& graphicsMesh, const VmaAllocator& vmaAllocator);
 	bool allocateIndexAttributes(VkMesh& graphicsMesh, const VmaAllocator& vmaAllocator);
@@ -53,6 +41,9 @@ public:
 	static Mesh getPrimitiveTriangle();
 
 	const MeshDescriptor& getMeshDescriptor() { return metaData; }
+
+	inline static MeshDescriptor defaultMeshDescriptor = MeshDescriptor();
+	inline static VertexBinding defaultVertexBinding = VertexBinding(defaultMeshDescriptor);
 
 private:
 	Mesh(size_t vertN, size_t indexN)

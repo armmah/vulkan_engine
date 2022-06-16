@@ -1,9 +1,9 @@
 #include "pch.h"
 #include "Common.h"
 #include "Mesh.h"
-#include <vk_types.h>
+#include "VkTypes/InitializersUtility.h"
 
-bool Mesh::MeshDescriptor::operator ==(const MeshDescriptor& other) const
+bool MeshDescriptor::operator ==(const MeshDescriptor& other) const
 {
 	for (int i = 0; i < descriptorCount; i++)
 	{
@@ -14,10 +14,10 @@ bool Mesh::MeshDescriptor::operator ==(const MeshDescriptor& other) const
 	return true;
 }
 
-bool Mesh::MeshDescriptor::operator !=(const MeshDescriptor& other) const { return !(*this == other); }
+bool MeshDescriptor::operator !=(const MeshDescriptor& other) const { return !(*this == other); }
 
 template<typename T>
-inline void Mesh::mapAndCopyBuffer(VmaAllocator vmaAllocator, VmaAllocation& memRange, const T* source, size_t elementCount, size_t totalByteSize, const char* message)
+inline void Mesh::mapAndCopyBuffer(const VmaAllocator& vmaAllocator, VmaAllocation& memRange, const T* source, size_t elementCount, size_t totalByteSize, const char* message)
 {
 	void* data;
 	vmaMapMemory(vmaAllocator, memRange, &data);
@@ -134,7 +134,7 @@ void Mesh::copyInterleavedNoCheck(std::vector<float>& interleavedVertexData, con
 	}
 }
 
-void Mesh::initializeBindings(UNQ<VertexBinding>& vbinding, const MeshDescriptor& meshDescriptor)
+VertexBinding Mesh::initializeBindings(const MeshDescriptor& meshDescriptor)
 {
 	VkVertexInputBindingDescription bindingDescription;
 	std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
@@ -161,7 +161,7 @@ void Mesh::initializeBindings(UNQ<VertexBinding>& vbinding, const MeshDescriptor
 	bindingDescription.stride = as_uint32(offset);
 	bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-	vbinding = MAKEUNQ<VertexBinding>(bindingDescription, attributeDescriptions);
+	return VertexBinding(bindingDescription, attributeDescriptions);
 }
 
 bool Mesh::allocateGraphicsMesh(UNQ<VkMesh>& graphicsMesh, const VmaAllocator& vmaAllocator)

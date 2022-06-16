@@ -1,67 +1,14 @@
 #include "pch.h"
 #include "vk_types.h"
+#include "EngineCore/VkMesh.h"
+#include "Camera.h"
+#include "VkTypes/PushConstantTypes.h"
+#include "VertexAttributes.h"
+#include "IndexAttributes.h"
+#include "VkMesh.h"
+#include <Presentation/Device.h>
 
-#include "Presentation/HardwareDevice.h"
-#include "Presentation/Device.h"
-#include "Presentation/PresentationTarget.h"
-#include "Presentation/Frame.h"
-#include "Presentation/FrameCollection.h"
-
-bool VulkanValidationLayers::checkValidationLayerSupport()
-{
-	uint32_t layerCount;
-	vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
-
-	std::vector<VkLayerProperties> availableLayers(layerCount);
-	vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
-
-	for (const auto& layerProperties : availableLayers) 
-	{
-		if (strcmp(m_validationLayerName, layerProperties.layerName) == 0)
-		{
-			return true;
-		}
-	}
-
-	return false;
-}
-
-bool VulkanValidationLayers::checkValidationLayersFailed() { return !checkValidationLayerSupport(); }
-
-void VulkanValidationLayers::applyValidationLayers(VkInstanceCreateInfo& createInfo) const
-{
-	createInfo.enabledLayerCount = 1u;
-	createInfo.ppEnabledLayerNames = &m_validationLayerName;
-
-	printf("	=====[Validation layers enabled]=====\n");
-}
-
-void VulkanValidationLayers::applyValidationLayers(VkDeviceCreateInfo& createInfo) const
-{
-	createInfo.enabledLayerCount = 1u;
-	createInfo.ppEnabledLayerNames = &m_validationLayerName;
-}
-
-std::vector<char> FileIO::readFile(const std::string& filename)
-{
-	std::ifstream file(filename.c_str(), std::ios::ate | std::ios::binary);
-
-	if (!file.good() || file.fail() || !file.is_open())
-	{
-		throw std::runtime_error("failed to open file!");
-	}
-
-	size_t fileSize = (size_t)file.tellg();
-	std::vector<char> buffer(fileSize);
-	file.seekg(0);
-	file.read(buffer.data(), fileSize);
-
-	file.close();
-
-	return buffer;
-}
-
-CommandObjectsWrapper::RenderPassScope::RenderPassScope(VkCommandBuffer commandBuffer, VkRenderPass m_renderPass, VkFramebuffer swapChainFramebuffer, VkExtent2D extent)
+CommandObjectsWrapper::RenderPassScope::RenderPassScope(VkCommandBuffer commandBuffer, VkRenderPass m_renderPass, VkFramebuffer swapChainFramebuffer, VkExtent2D extent, bool hasDepthAttachment)
 {
 	this->commandBuffer = commandBuffer;
 
@@ -73,9 +20,12 @@ CommandObjectsWrapper::RenderPassScope::RenderPassScope(VkCommandBuffer commandB
 	renderPassInfo.renderArea.offset = { 0, 0 };
 	renderPassInfo.renderArea.extent = extent;
 
-	VkClearValue clearColor = { { { 0.0f, 0.0f, 0.0f, 1.0f } } };
-	renderPassInfo.clearValueCount = 1;
-	renderPassInfo.pClearValues = &clearColor;
+	std::array<VkClearValue, 2> clearValues{};
+	clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
+	clearValues[1].depthStencil = { 1.0f, 0 };
+
+	renderPassInfo.clearValueCount = hasDepthAttachment ? 2u : 1u;
+	renderPassInfo.pClearValues = clearValues.data();
 
 	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 }
@@ -104,3 +54,62 @@ CommandObjectsWrapper::CommandBufferScope::~CommandBufferScope()
 		printf("Failed to record command buffer!\n");
 }
 
+void CommandObjectsWrapper::HelloTriangleCommand(VkCommandBuffer buffer, VkPipeline m_pipeline, VkRenderPass m_renderPass, VkFramebuffer frameBuffer, VkExtent2D extent, VkBuffer vertexBuffer, uint32_t size)
+{
+	auto cbs = CommandBufferScope(buffer);
+	{
+		auto rps = RenderPassScope(buffer, m_renderPass, frameBuffer, extent, false);
+
+		vkCmdBindPipeline(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
+
+		if (vertexBuffer != nullptr)
+		{
+			VkBuffer vertexBuffers[] = { vertexBuffer };
+			const VkDeviceSize offsets[] = { 0 };
+			vkCmdBindVertexBuffers(buffer, 0, 1, vertexBuffers, offsets);
+		}
+
+		vkCmdDraw(buffer, size, 1, 0, 0);
+	}
+}
+
+void CommandObjectsWrapper::drawAt(VkCommandBuffer commandBuffer, const VkMesh& mesh, VkPipelineLayout layout, const Camera& cam, uint32_t frameNumber, float freq, glm::vec3 pos)
+{
+	const glm::mat4 model =
+		glm::translate(glm::mat4(1.f), pos) *
+		glm::rotate(glm::mat4{ 1.0f }, glm::radians(frameNumber * 0.01f * freq), glm::vec3(0, 1, 0));
+
+	TransformPushConstant pushConstant{};
+	pushConstant.mvp_matrix = cam.getViewProjectionMatrix() * model;
+
+	mesh.vAttributes->bind(commandBuffer);
+	mesh.iAttributes->bind(commandBuffer);
+
+	vkCmdPushConstants(commandBuffer, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(TransformPushConstant), &pushConstant);
+	vkCmdDrawIndexed(commandBuffer, mesh.iCount, 1, 0, 0, 0);
+}
+
+void CommandObjectsWrapper::renderIndexedMeshes(VkCommandBuffer commandBuffer, VkPipeline pipeline, VkPipelineLayout pipelineLayout, VkRenderPass m_renderPass,
+	VkFramebuffer frameBuffer, VkExtent2D extent, Camera& cam, const std::vector<UNQ<VkMesh>>& meshes, 
+	const std::array<VkDescriptorSet, SWAPCHAIN_IMAGE_COUNT>& descriptorSets, uint32_t frameNumber)
+{
+	auto cbs = CommandBufferScope(commandBuffer);
+	{
+		cam.updateWindowExtent(extent);
+
+		vkCmdSetViewport(commandBuffer, 0, 1, &cam.getViewport());
+		vkCmdSetScissor(commandBuffer, 0, 1, &cam.getScissorRect());
+
+		auto rps = RenderPassScope(commandBuffer, m_renderPass, frameBuffer, extent, true);
+
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+
+		for (int i = 0; i < meshes.size(); i++)
+		{
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[frameNumber % SWAPCHAIN_IMAGE_COUNT], 0, nullptr);
+			drawAt(commandBuffer, *meshes[i], pipelineLayout, cam, frameNumber, 10.0f, glm::vec3(0.0f, 0.0f, 0.0f));
+		}
+
+		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+	}
+}

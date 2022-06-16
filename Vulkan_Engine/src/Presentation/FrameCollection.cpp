@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "Common.h"
 #include "FrameCollection.h"
 
 namespace Presentation
@@ -18,7 +19,7 @@ namespace Presentation
 
 	Frame FrameCollection::getNextFrame()
 	{
-		m_currentFrameIndex = (m_currentFrameIndex + 1) % m_frameCollection.size();
+		m_currentFrameIndex = (m_currentFrameIndex + 1u) % as_uint32(m_frameCollection.size());
 		return m_frameCollection[m_currentFrameIndex];
 	}
 

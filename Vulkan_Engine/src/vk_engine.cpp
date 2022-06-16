@@ -1,13 +1,14 @@
 ﻿#include "pch.h"
-#include <vk_types.h>
+#include "vk_types.h"
 #include "vk_engine.h"
 
-#include <iostream>
-#include <vector>
-#include <assert.h>
-#include <cassert>
+#include "ShaderSource.h"
 
-#include <stb_image.h>
+#include "Scene.h"
+#include "Mesh.h"
+#include "VkTypes/InitializersUtility.h"
+#include "VkTypes/VulkanValidationLayers.h"
+#include "VkTypes/VkTexture.h"
 
 void VulkanEngine::initializeTheWindow()
 {
@@ -24,6 +25,41 @@ void VulkanEngine::initializeTheWindow()
 		window_flags
 	);
 }
+
+
+struct TextureSource
+{
+	std::string path;
+	// Texture type
+	// Texture format
+	// Sampler type
+	// Other params
+};
+
+struct VkMaterialVariant
+{
+	//const Material* sourceMat;
+
+	VkTexture texture;
+
+
+	VkPipeline pipeline;
+	VkPipelineLayout pipelineLayout;
+};
+
+// MaterialResourceManager
+class Descriptor
+{
+
+};
+
+class Material
+{
+
+private:
+	ShaderSource shaderSourcesOnDisk;
+	TextureSource textureOnDisk;
+};
 
 void VulkanEngine::init(bool requestValidationLayers)
 {
@@ -48,93 +84,29 @@ void VulkanEngine::init(bool requestValidationLayers)
 
 	// Scene
 	m_openScene = MAKEUNQ<Scene>();
-	if (!m_openScene->load(m_memoryAllocator))
+	if (!m_openScene->load(m_memoryAllocator->m_allocator))
 	{
 		throw std::runtime_error("Failed to load the scene!");
 	}
 
 	// Camera
 	m_cam = MAKEUNQ<Camera>(70.f, m_presentationTarget->getSwapchainExtent());
-	m_cam->setPosition({ 0.f, 0.f, -4.f });
+	m_cam->setPosition({ 0.f, 0.f, -3.f });
 	m_cam->setRotation({ -0.2f, -0.66f, 0.12f });
 
 	// Texture
-	m_texture = MAKEUNQ<VkTexture>();
-	if (!Texture::loadImage(*m_texture, "C:/Git/Vulkan_Engine/Resources/vulkan_tutorial_texture.jpg", m_memoryAllocator, m_presentationDevice.get()))
+	m_texture = MAKEUNQ<VkTexture2D>();
+	if (!Texture::loadImage(*m_texture, "C:/Git/Vulkan_Engine/Resources/vulkan_tutorial_texture.jpg", m_memoryAllocator->m_allocator, m_presentationDevice.get()))
 	{
 		printf("Failed to create VKTexture\n");
 	}
 
-	/*		========================== DESCRIPTOR POOL ========================		*/
-	auto imageCount = m_framePresentation->getImageCount();
-	VkDescriptorPoolSize poolSize{};
-	poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	poolSize.descriptorCount = imageCount;
-
-	VkDescriptorPoolCreateInfo poolInfo{};
-	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-	poolInfo.poolSizeCount = 1;
-	poolInfo.pPoolSizes = &poolSize;
-	poolInfo.maxSets = imageCount;
-	if (vkCreateDescriptorPool(m_presentationDevice->getDevice(), &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) 
-	{
-		throw std::runtime_error("failed to create descriptor pool!");
-	}
-
-	/*		====================== Descriptor set Layout ====================		*/
-	VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-	samplerLayoutBinding.binding = 0;
-	samplerLayoutBinding.descriptorCount = 1;
-	samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	samplerLayoutBinding.pImmutableSamplers = nullptr;
-	samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-	VkDescriptorSetLayoutCreateInfo layoutInfo{};
-	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	layoutInfo.bindingCount = 1;
-	layoutInfo.pBindings = &samplerLayoutBinding;
-
-	if (vkCreateDescriptorSetLayout(m_presentationDevice->getDevice(), &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) 
-	{
-		throw std::runtime_error("failed to create descriptor set layout!");
-	}
-
-	/*		====================== Graphics Pipeline ====================		*/
-	m_presentationTarget->createGraphicsPipeline(m_presentationDevice->getDevice(), m_openScene->getVertexBinding(), descriptorSetLayout);
-
-	/*		======================= Descriptor set =====================		*/
-	std::vector<VkDescriptorSetLayout> layouts(imageCount, descriptorSetLayout);
-	VkDescriptorSetAllocateInfo allocInfo{};
-	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	allocInfo.descriptorPool = descriptorPool;
-	allocInfo.descriptorSetCount = imageCount;
-	allocInfo.pSetLayouts = layouts.data();
-
-	descriptorSets.resize(imageCount);
-	if (vkAllocateDescriptorSets(m_presentationDevice->getDevice(), &allocInfo, descriptorSets.data()) != VK_SUCCESS) 
-	{
-		throw std::runtime_error("failed to allocate descriptor sets!");
-	}
-
-	for (size_t i = 0; i < imageCount; i++) 
-	{
-		VkDescriptorImageInfo imageInfo{};
-		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		imageInfo.imageView = m_texture->imageView;
-		imageInfo.sampler = m_texture->sampler;
-
-		VkWriteDescriptorSet descriptorWrite{};
-
-		descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptorWrite.dstSet = descriptorSets[i];
-		descriptorWrite.dstBinding = 0;
-		descriptorWrite.dstArrayElement = 0;
-		descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		descriptorWrite.descriptorCount = 1;
-		descriptorWrite.pImageInfo = &imageInfo;
-
-		vkUpdateDescriptorSets(m_presentationDevice->getDevice(), 1, &descriptorWrite, 0, nullptr);
-	}
+	constexpr auto imageCount = SWAPCHAIN_IMAGE_COUNT;
+	vkinit::Descriptor::createDescriptorPool(descriptorPool, m_presentationDevice->getDevice(), imageCount);
+	vkinit::Descriptor::createDescriptorSetLayout(descriptorSetLayout, m_presentationDevice->getDevice());
+	m_presentationTarget->createGraphicsPipeline(m_presentationDevice->getDevice(), Mesh::defaultVertexBinding, descriptorSetLayout, VK_CULL_MODE_BACK_BIT, m_presentationTarget->hasDepthAttachement());
+	vkinit::Descriptor::createDescriptorSets(descriptorSets, m_presentationDevice->getDevice(), descriptorPool, descriptorSetLayout, *m_texture);
+	
 }
 
 bool VulkanEngine::init_vulkan(SDL_Window* window)
@@ -159,14 +131,16 @@ bool VulkanEngine::init_vulkan(SDL_Window* window)
 	m_presentationHardware = MAKEUNQ<Presentation::HardwareDevice>(m_instance, surface);
 	m_presentationDevice = MAKEUNQ<Presentation::Device>(m_presentationHardware->getActiveGPU(), surface, window, m_validationLayers.get());
 
-	m_presentationTarget = MAKEUNQ<Presentation::PresentationTarget>(*m_presentationHardware, *m_presentationDevice);
-	m_framePresentation = MAKEUNQ<Presentation::FrameCollection>(m_presentationDevice->getDevice(), m_presentationDevice->getCommandPool());
+	m_memoryAllocator = MAKEUNQ<VkMemoryAllocator>(m_instance, m_presentationHardware->getActiveGPU(), m_presentationDevice->getDevice());
 
-	if (!vkinit::MemoryBuffer::createVmaAllocator(m_memoryAllocator, m_instance, m_presentationHardware->getActiveGPU(), m_presentationDevice->getDevice()))
-		return false;
+	m_presentationTarget = MAKEUNQ<Presentation::PresentationTarget>(*m_presentationHardware, *m_presentationDevice, true);
+	m_framePresentation = MAKEUNQ<Presentation::FrameCollection>(m_presentationDevice->getDevice(), m_presentationDevice->getCommandPool());
 	
 	return m_presentationHardware->isInitialized() &&
 		m_presentationDevice->isInitialized() &&
+
+		m_memoryAllocator->isInitialized() &&
+
 		m_presentationTarget->isInitialized() &&
 		m_framePresentation->isInitialized();
 }
@@ -209,7 +183,7 @@ void VulkanEngine::draw()
 	vkResetCommandBuffer(buffer, 0);
 	
 	CommandObjectsWrapper::renderIndexedMeshes(buffer, m_presentationTarget->getPipeline(), m_presentationTarget->getPipelineLayout(), m_presentationTarget->getRenderPass(),
-		m_presentationTarget->getSwapchainFrameBuffers(imageIndex), m_presentationTarget->getSwapchainExtent(), *m_cam, m_openScene->getGraphicsMeshes(), descriptorSets, *m_texture, m_frameNumber);
+		m_presentationTarget->getSwapchainFrameBuffers(imageIndex), m_presentationTarget->getSwapchainExtent(), *m_cam, m_openScene->getGraphicsMeshes(), descriptorSets, m_frameNumber);
 
 	frame.resetAcquireFence(m_presentationDevice->getDevice());
 	frame.submitToQueue(m_presentationDevice->getGraphicsQueue());
@@ -242,15 +216,11 @@ void VulkanEngine::cleanup()
 {
 	if (m_instance)
 	{
-		vkDestroySampler(m_presentationDevice->getDevice(), m_texture->sampler, nullptr);
-		vkDestroyImageView(m_presentationDevice->getDevice(), m_texture->imageView, nullptr);
-		vmaDestroyImage(m_memoryAllocator, m_texture->image, m_texture->memoryRange);
+		m_texture->release(m_presentationDevice->getDevice());
 
 		m_imgui->release(m_presentationDevice->getDevice());
 
-		m_openScene->release(m_memoryAllocator);
-
-		vmaDestroyAllocator(m_memoryAllocator);
+		m_openScene->release(m_memoryAllocator->m_allocator);
 
 		m_framePresentation->releaseFrameResources();
 
@@ -259,6 +229,8 @@ void VulkanEngine::cleanup()
 		m_presentationTarget->releasePipeline(m_presentationDevice->getDevice());
 
 		m_presentationTarget->release(m_presentationDevice->getDevice());
+
+		vmaDestroyAllocator(m_memoryAllocator->m_allocator);
 		m_presentationDevice->release();
 
 		vkDestroySurfaceKHR(m_instance, m_presentationDevice->getSurface(), nullptr);

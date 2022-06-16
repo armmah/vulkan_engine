@@ -1,6 +1,5 @@
 ﻿#pragma once
-
-#include "vk_types.h"
+#include "pch.h"
 
 #include "Presentation/HardwareDevice.h"
 #include "Presentation/Device.h"
@@ -8,13 +7,12 @@
 #include "Presentation/Frame.h"
 #include "Presentation/FrameCollection.h"
 
-#include <vector>
-#include <optional>
-#include <string>
-
 #include "EngineCore/Scene.h"
+#include "Camera.h"
+#include "VkTypes/VkTexture.h"
 #include "EngineCore/ImGuiHandle.h"
 #include "Texture.h"
+#include "VkTypes/VkMemoryAllocator.h"
 
 class VulkanEngine
 {
@@ -23,7 +21,7 @@ public:
 	std::string m_applicationName = "Basic VK Engine";
 
 	VkInstance m_instance{}; // Vulkan library handle
-	VmaAllocator m_memoryAllocator{};
+	UNQ<VkMemoryAllocator> m_memoryAllocator;
 
 	UNQ<VulkanValidationLayers> m_validationLayers;
 	//VkDebugUtilsMessengerEXT _debug_messenger; // Vulkan debug output handle
@@ -37,10 +35,10 @@ public:
 
 	UNQ<Scene> m_openScene;
 	UNQ<Camera> m_cam;
-	UNQ<VkTexture> m_texture;
-	VkDescriptorPool descriptorPool;
-	std::vector<VkDescriptorSet> descriptorSets;
-	VkDescriptorSetLayout descriptorSetLayout;
+	UNQ<VkTexture2D> m_texture;
+	VkDescriptorPool descriptorPool{};
+	VkDescriptorSetLayout descriptorSetLayout{};
+	std::array<VkDescriptorSet, SWAPCHAIN_IMAGE_COUNT> descriptorSets;
 
 	bool m_isInitialized { false };
 

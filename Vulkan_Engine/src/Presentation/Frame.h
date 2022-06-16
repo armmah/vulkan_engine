@@ -1,5 +1,6 @@
 #pragma once
-#include <vk_types.h>
+#include "pch.h"
+#include "Interfaces/IRequireInitialization.h"
 
 namespace Presentation
 {

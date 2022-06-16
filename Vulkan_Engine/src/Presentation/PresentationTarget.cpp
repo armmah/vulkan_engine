@@ -1,12 +1,19 @@
 #include "pch.h"
 #include "PresentationTarget.h"
+#include "VkTypes/VkShader.h"
+#include "VkTypes/InitializersUtility.h"
+#include "VertexBinding.h"
+#include "VkTypes/PushConstantTypes.h"
+#include "VkTypes/VkMemoryAllocator.h"
 
 namespace Presentation
 {
-	bool PresentationTarget::createGraphicsPipeline(VkDevice device, const VertexBinding& vBinding, VkDescriptorSetLayout descriptorSetLayout, VkCullModeFlagBits faceCullingMode)
+	bool PresentationTarget::createGraphicsPipeline(VkDevice device, const VertexBinding& vBinding, VkDescriptorSetLayout descriptorSetLayout, VkCullModeFlagBits faceCullingMode, bool depthStencilAttachement)
 	{
-		Shader shader(device, ShaderSource::getDefaultShader());
+		vBinding.runValidations();
 		auto vertexInputInfo = vBinding.getVertexInputCreateInfo();
+
+		Shader shader(device, ShaderSource::getDefaultShader());
 
 		VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
 		vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -78,6 +85,21 @@ namespace Presentation
 		colorBlending.attachmentCount = 1;
 		colorBlending.pAttachments = &colorBlendAttachment;
 
+		VkPipelineDepthStencilStateCreateInfo depthStencil{};
+		if (depthStencilAttachement)
+		{
+			depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+			depthStencil.depthTestEnable = VK_TRUE;
+			depthStencil.depthWriteEnable = VK_TRUE;
+			depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+			depthStencil.depthBoundsTestEnable = VK_FALSE;
+			depthStencil.minDepthBounds = 0.0f;
+			depthStencil.maxDepthBounds = 1.0f;
+			depthStencil.stencilTestEnable = VK_FALSE;
+			depthStencil.front = {};
+			depthStencil.back = {};
+		}
+
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipelineLayoutInfo.setLayoutCount = 1;
@@ -109,7 +131,7 @@ namespace Presentation
 		pipelineInfo.pViewportState = &viewportState;
 		pipelineInfo.pRasterizationState = &rasterizer;
 		pipelineInfo.pMultisampleState = &multisampling;
-		pipelineInfo.pDepthStencilState = nullptr;
+		pipelineInfo.pDepthStencilState = depthStencilAttachement ? &depthStencil : nullptr;
 		pipelineInfo.pColorBlendState = &colorBlending;
 
 		// Dynamic state - currently hardcoding for viewport and scissor rect, to be able to easily recreate the swapchain.
@@ -152,6 +174,11 @@ namespace Presentation
 	{
 		vkDestroyRenderPass(device, m_renderPass, nullptr);
 
+		if (m_depthImage.has_value())
+		{
+			m_depthImage.value().release(device);
+		}
+
 		int count = static_cast<uint32_t>(m_swapChainImageViews.size());
 		assert(m_swapChainImageViews.size() == m_swapChainFrameBuffers.size() && "Frame buffer count should be equal to image view count.");
 		for (int i = 0; i < count; i++)
@@ -170,7 +197,7 @@ namespace Presentation
 
 		auto vkdevice = presentationDevice.getDevice();
 
-		return createSwapChain(swapchainCount, presentationHardware, presentationDevice) &&
+		return createSwapChain(swapchainCount, presentationHardware, presentationDevice, m_hasDepthAttachment) &&
 			createSwapChainImageViews(vkdevice) &&
 			createRenderPass(vkdevice) &&
 			createFramebuffers(vkdevice);
@@ -199,33 +226,32 @@ namespace Presentation
 		}
 	}
 
-	bool PresentationTarget::createSwapChain(uint32_t imageCount, const HardwareDevice& swapChainDetails, const Device& device)
+	bool PresentationTarget::createSwapChain(uint32_t imageCount, const HardwareDevice& hardware, const Device& device, bool createDepthAttachement)
 	{
-		auto surfaceFormat = swapChainDetails.chooseSwapSurfaceFormat();
-		auto presentationMode = swapChainDetails.chooseSwapPresentMode();
+		auto surfaceFormat = hardware.chooseSwapSurfaceFormat();
+		auto presentationMode = hardware.chooseSwapPresentMode();
 		auto extent = chooseSwapExtent(device.getWindowRef());
 
 		imageCount = std::max(imageCount, m_capabilities.minImageCount);
 		if (m_capabilities.maxImageCount != 0)
 			imageCount = std::min(imageCount, m_capabilities.maxImageCount);
 
-		VkSwapchainCreateInfoKHR createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-		createInfo.surface = device.getSurface();
-		createInfo.minImageCount = imageCount;
-		createInfo.imageFormat = surfaceFormat.format;
-		createInfo.imageColorSpace = surfaceFormat.colorSpace;
-		createInfo.imageExtent = extent;
-		createInfo.imageArrayLayers = 1;
-		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-		createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		createInfo.preTransform = m_capabilities.currentTransform;
-		createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-		createInfo.presentMode = presentationMode;
-		createInfo.clipped = VK_TRUE;
-		createInfo.oldSwapchain = VK_NULL_HANDLE;
+		bool isSuccess = vkinit::Texture::createSwapchain(m_swapchain, device.getDevice(), device.getSurface(),
+			imageCount, extent, presentationMode, surfaceFormat, m_capabilities.currentTransform);
 
-		bool isSuccess = vkCreateSwapchainKHR(device.getDevice(), &createInfo, nullptr, &m_swapchain) == VK_SUCCESS;
+		if (createDepthAttachement)
+		{
+			VkTexture tex;
+			auto maci = VkMemoryAllocator::getInstance()->createAllocationDescriptor(VMA_MEMORY_USAGE_GPU_ONLY, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+			if (vkinit::Texture::createImage(tex.image, tex.memoryRange, maci, VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, extent.width, extent.height) &&
+				vkinit::Texture::createTextureImageView(tex.imageView, device.getDevice(), tex.image, VK_FORMAT_D32_SFLOAT, VK_IMAGE_ASPECT_DEPTH_BIT))
+			{
+				m_depthImage = std::optional<VkTexture>{ tex };
+			}
+		}
+		else m_depthImage = std::nullopt;
+
 
 		if (isSuccess)
 		{
@@ -242,16 +268,24 @@ namespace Presentation
 
 	bool PresentationTarget::createRenderPass(VkDevice device)
 	{
+		auto hasDepthAttachement = m_depthImage.has_value();
+		auto attachementCount = 1;
+
+		VkPipelineStageFlags srcStageBit = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		VkPipelineStageFlags dstStageBit = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		VkAccessFlags dstAccessBit = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+		VkSubpassDescription subpass{};
+		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		subpass.colorAttachmentCount = attachementCount;
+
 		VkAttachmentDescription colorAttachment{};
 		colorAttachment.format = m_swapChainImageFormat;
 		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-
 		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-
 		colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-
 		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
@@ -259,25 +293,48 @@ namespace Presentation
 		colorAttachmentRef.attachment = 0;
 		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-		VkSubpassDescription subpass{};
-		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpass.colorAttachmentCount = 1;
 		subpass.pColorAttachments = &colorAttachmentRef;
 
+		VkAttachmentDescription depthAttachment{};
+		if (hasDepthAttachement)
+		{
+			depthAttachment.format = VK_FORMAT_D32_SFLOAT;
+			depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+			depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+			depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+			depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+			depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+			depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+			VkAttachmentReference depthAttachmentRef{};
+			depthAttachmentRef.attachment = 1;
+			depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+			subpass.pDepthStencilAttachment = &depthAttachmentRef;
+
+			srcStageBit |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+			dstStageBit |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+			dstAccessBit |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+			attachementCount += 1;
+		}
+
+		std::array<VkAttachmentDescription, 2> attachments = { colorAttachment, depthAttachment };
 		VkRenderPassCreateInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		renderPassInfo.attachmentCount = 1;
-		renderPassInfo.pAttachments = &colorAttachment;
+		renderPassInfo.attachmentCount = attachementCount;
+		renderPassInfo.pAttachments = attachments.data();
 		renderPassInfo.subpassCount = 1;
 		renderPassInfo.pSubpasses = &subpass;
 
 		VkSubpassDependency dependency{};
 		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
 		dependency.dstSubpass = 0;
-		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependency.srcStageMask = srcStageBit;
 		dependency.srcAccessMask = 0;
-		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		dependency.dstStageMask = dstStageBit;
+		dependency.dstAccessMask = dstAccessBit;
 
 		renderPassInfo.dependencyCount = 1;
 		renderPassInfo.pDependencies = &dependency;
@@ -304,13 +361,23 @@ namespace Presentation
 		auto imageViewSize = m_swapChainImageViews.size();
 		m_swapChainFrameBuffers.resize(imageViewSize);
 
+		std::array<VkImageView, 2> attachments;
+		auto attachmentCount = 1;
+		if (m_depthImage.has_value())
+		{
+			attachments[1] = m_depthImage.value().imageView;
+			attachmentCount += 1;
+		}
+
 		for (size_t i = 0; i < imageViewSize; i++)
 		{
+			attachments[0] = m_swapChainImageViews[i];
+
 			VkFramebufferCreateInfo framebufferInfo{};
 			framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 			framebufferInfo.renderPass = m_renderPass;
-			framebufferInfo.attachmentCount = 1;
-			framebufferInfo.pAttachments = &m_swapChainImageViews[i];
+			framebufferInfo.attachmentCount = attachmentCount;
+			framebufferInfo.pAttachments = attachments.data();
 			framebufferInfo.width = m_swapChainExtent.width;
 			framebufferInfo.height = m_swapChainExtent.height;
 			framebufferInfo.layers = 1;

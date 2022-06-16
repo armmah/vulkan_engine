@@ -1,5 +1,7 @@
 #include "pch.h"
 #include "HardwareDevice.h"
+#include "VkTypes/InitializersUtility.h"
+#include "VkTypes/vkInitQueueFamily.h"
 
 namespace Presentation
 {

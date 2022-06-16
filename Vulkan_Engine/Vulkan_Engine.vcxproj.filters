@@ -21,6 +21,15 @@
     <Filter Include="Source Files\EngineCore">
       <UniqueIdentifier>{61c71138-4e25-4bb3-82c5-e7387226576f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\VkTypes">
+      <UniqueIdentifier>{ce4e0535-644f-4860-b074-73c52cefcf6f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Interfaces">
+      <UniqueIdentifier>{88c8becb-34d7-4e54-b1fc-993f297864c3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\VkTypes">
+      <UniqueIdentifier>{5c938d00-9d83-4a5e-8fc9-2fded315aa6a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -83,6 +92,12 @@
     <ClCompile Include="src\EngineCore\ImGuiHandle.cpp">
       <Filter>Source Files\EngineCore</Filter>
     </ClCompile>
+    <ClCompile Include="src\VkTypes\VulkanValidationLayers.cpp">
+      <Filter>Source Files\VkTypes</Filter>
+    </ClCompile>
+    <ClCompile Include="src\VkTypes\VkMemoryAllocator.cpp">
+      <Filter>Source Files\VkTypes</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\vk_engine.h">
@@ -140,6 +155,36 @@
       <Filter>Header Files\EngineCore</Filter>
     </ClInclude>
     <ClInclude Include="src\EngineCore\Texture.h">
+      <Filter>Header Files\EngineCore</Filter>
+    </ClInclude>
+    <ClInclude Include="src\EngineCore\Camera.h">
+      <Filter>Header Files\EngineCore</Filter>
+    </ClInclude>
+    <ClInclude Include="src\EngineCore\ShaderSource.h">
+      <Filter>Header Files\EngineCore</Filter>
+    </ClInclude>
+    <ClInclude Include="src\VkTypes\VkShader.h">
+      <Filter>Header Files\VkTypes</Filter>
+    </ClInclude>
+    <ClInclude Include="src\VkTypes\InitializersUtility.h">
+      <Filter>Header Files\VkTypes</Filter>
+    </ClInclude>
+    <ClInclude Include="src\VkTypes\VulkanValidationLayers.h">
+      <Filter>Header Files\VkTypes</Filter>
+    </ClInclude>
+    <ClInclude Include="src\VkTypes\VkTexture.h">
+      <Filter>Header Files\VkTypes</Filter>
+    </ClInclude>
+    <ClInclude Include="src\VkTypes\vkInitQueueFamily.h">
+      <Filter>Header Files\VkTypes</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Interfaces\IRequireInitialization.h">
+      <Filter>Header Files\Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="src\VkTypes\PushConstantTypes.h">
+      <Filter>Header Files\VkTypes</Filter>
+    </ClInclude>
+    <ClInclude Include="src\VkTypes\VkMemoryAllocator.h">
       <Filter>Header Files\EngineCore</Filter>
     </ClInclude>
   </ItemGroup>

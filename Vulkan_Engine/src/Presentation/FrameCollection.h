@@ -1,5 +1,5 @@
 #pragma once
-#include <vk_types.h>
+#include "pch.h"
 #include "Presentation/Device.h"
 #include "Presentation/Frame.h"
 
@@ -8,7 +8,7 @@ namespace Presentation
 	class FrameCollection : IRequireInitialization
 	{
 	public:
-		FrameCollection(VkDevice device, VkCommandPool pool, uint32_t frameCount = 2);
+		FrameCollection(VkDevice device, VkCommandPool pool, uint32_t frameCount = SWAPCHAIN_IMAGE_COUNT);
 
 		bool IRequireInitialization::isInitialized() const override { return m_fullyInitialized; }
 
@@ -26,6 +26,6 @@ namespace Presentation
 
 		VkDevice m_device;
 		std::vector<Frame> m_frameCollection;
-		int m_currentFrameIndex = 0;
+		uint32_t m_currentFrameIndex = 0;
 	};
 }

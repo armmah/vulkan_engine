@@ -1,10 +1,9 @@
 #include "pch.h"
-#include "vk_types.h"
-#include <vector>
+#include "VkTypes/vkInitQueueFamily.h"
 
 namespace vkinit
 {
-	bool Queue::satisfiesQueueRequirements(VkQueueFlags flags) { return flags & requiredFlags; }
+	constexpr bool Queue::satisfiesQueueRequirements(VkQueueFlags flags) { return flags & requiredFlags; }
 
 	void Queue::findQueueFamilies(QueueFamilyIndices& indices, VkPhysicalDevice device, VkSurfaceKHR surface)
 	{

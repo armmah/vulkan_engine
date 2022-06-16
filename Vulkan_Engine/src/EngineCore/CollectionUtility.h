@@ -20,7 +20,7 @@ static size_t normalizedSize(const typename std::vector<T>& vec)
 }
 
 template<typename T>
-static size_t vectorElementsizeof(const typename std::vector<T>& vec)
+constexpr static size_t vectorElementsizeof(const typename std::vector<T>& vec)
 {
 	return sizeof(T);
 }

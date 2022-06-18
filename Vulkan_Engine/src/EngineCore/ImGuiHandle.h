@@ -4,17 +4,20 @@
 #include "Presentation/Device.h"
 
 class Camera;
+class Window;
 
 class ImGuiHandle
 {
 public:
-	ImGuiHandle(VkInstance instance, VkPhysicalDevice activeGPU, const Presentation::Device* presentationDevice, VkRenderPass renderPass, uint32_t imageCount, SDL_Window* window);
+	ImGuiHandle(VkInstance instance, VkPhysicalDevice activeGPU, const Presentation::Device* presentationDevice, VkRenderPass renderPass, uint32_t imageCount, Window* window);
 
-	void draw(SDL_Window* window, Camera* cam);
+	void draw(Camera* cam);
 
 	void release(VkDevice device);
 
 private:
 	const uint32_t DESC_POOL_SIZE = 100u;
 	VkDescriptorPool m_descriptorPool;
+
+	const Window* m_window;
 };

@@ -6,6 +6,8 @@
 #include "Presentation/Device.h"
 #include "VkMemoryAllocator.h"
 
+class Window;
+
 namespace vkinit
 {
 
@@ -13,16 +15,13 @@ namespace vkinit
 	{
 		static const std::vector<const char*> requiredExtensions;
 
-		static bool getRequiredExtensionsForPlatform(SDL_Window* window, unsigned int* extCount, const char** extensionNames);
+		static bool getRequiredExtensionsForPlatform(Window const* window, unsigned int* extCount, const char** extensionNames);
 		static bool createInstance(VkInstance& instance, std::string applicationName, std::vector<const char*> extNames, const VulkanValidationLayers* validationLayers);
 	};
 
 	struct Surface
 	{
-		static bool createSurface(VkSurfaceKHR& surface, VkInstance instance, SDL_Window* window)
-		{
-			return SDL_Vulkan_CreateSurface(window, instance, &surface);
-		}
+		static bool createSurface(VkSurfaceKHR& surface, VkInstance instance, Window* window);
 	};
 
 	struct Commands

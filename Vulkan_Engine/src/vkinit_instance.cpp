@@ -1,4 +1,5 @@
 ﻿#include "pch.h"
+#include "Engine/Window.h"
 #include "VkTypes/InitializersUtility.h"
 #include "VkTypes/VulkanValidationLayers.h"
 
@@ -8,9 +9,9 @@ namespace vkinit
 		   VK_KHR_SWAPCHAIN_EXTENSION_NAME
 	};
 
-	bool Instance::getRequiredExtensionsForPlatform(SDL_Window* window, unsigned int* extCount, const char** extensionNames)
+	bool Instance::getRequiredExtensionsForPlatform(Window const* window, unsigned int* extCount, const char** extensionNames)
 	{
-		return SDL_Vulkan_GetInstanceExtensions(window, extCount, extensionNames);
+		return SDL_Vulkan_GetInstanceExtensions(window->get(), extCount, extensionNames);
 	}
 
 	bool Instance::createInstance(VkInstance& instance, std::string applicationName, std::vector<const char*> extNames, const VulkanValidationLayers* validationLayers)

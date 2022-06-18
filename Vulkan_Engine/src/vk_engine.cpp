@@ -10,23 +10,6 @@
 #include "VkTypes/VulkanValidationLayers.h"
 #include "VkTypes/VkTexture.h"
 
-void VulkanEngine::initializeTheWindow()
-{
-	SDL_Init(SDL_INIT_VIDEO);
-
-	SDL_WindowFlags window_flags = static_cast<SDL_WindowFlags>(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
-	
-	m_window = SDL_CreateWindow(
-		m_applicationName.c_str(),
-		SDL_WINDOWPOS_UNDEFINED,
-		SDL_WINDOWPOS_UNDEFINED,
-		m_startingWindowSize.width,
-		m_startingWindowSize.height,
-		window_flags
-	);
-}
-
-
 struct TextureSource
 {
 	std::string path;
@@ -64,7 +47,7 @@ private:
 void VulkanEngine::init(bool requestValidationLayers)
 {
 	// Window
-	initializeTheWindow();
+	m_window = MAKEUNQ<Window>(static_cast<SDL_WindowFlags>(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE), m_applicationName, m_startingWindowSize.width, m_startingWindowSize.height);
 
 	// Vulkan
 	if (requestValidationLayers)
@@ -72,7 +55,7 @@ void VulkanEngine::init(bool requestValidationLayers)
 		m_validationLayers = MAKEUNQ<VulkanValidationLayers>();
 	}
 
-	if (m_isInitialized = init_vulkan(m_window))
+	if (m_isInitialized = init_vulkan())
 	{
 		std::cout << "Successfully created instance." << std::endl;
 	}
@@ -80,7 +63,7 @@ void VulkanEngine::init(bool requestValidationLayers)
 
 	// ImGUI
 	m_imgui = MAKEUNQ<ImGuiHandle>(m_instance, m_presentationHardware->getActiveGPU(), m_presentationDevice.get(), 
-		m_presentationTarget->getRenderPass(), m_framePresentation->getImageCount(), m_window);
+		m_presentationTarget->getRenderPass(), m_framePresentation->getImageCount(), m_window.get());
 
 	// Scene
 	m_openScene = MAKEUNQ<Scene>();
@@ -109,31 +92,31 @@ void VulkanEngine::init(bool requestValidationLayers)
 	
 }
 
-bool VulkanEngine::init_vulkan(SDL_Window* window)
+bool VulkanEngine::init_vulkan()
 {
 	if (m_validationLayers && m_validationLayers->checkValidationLayersFailed())
 		throw std::runtime_error("validation layers requested, but not available!");
 
 	unsigned int extCount = 0;
-	if (!vkinit::Instance::getRequiredExtensionsForPlatform(window, &extCount, nullptr))
+	if (!vkinit::Instance::getRequiredExtensionsForPlatform(m_window.get(), &extCount, nullptr))
 		return false;
 
 	// SDL requires { "VK_KHR_surface", "VK_KHR_win32_surface" } extensions for windows
 	std::vector<const char*> extensions(extCount);
-	if (!vkinit::Instance::getRequiredExtensionsForPlatform(window, &extCount, extensions.data()))
+	if (!vkinit::Instance::getRequiredExtensionsForPlatform(m_window.get(), &extCount, extensions.data()))
 		return false;
 
 	VkSurfaceKHR surface;
 	if (!vkinit::Instance::createInstance(m_instance, m_applicationName, extensions, m_validationLayers.get()) ||
-		!vkinit::Surface::createSurface(surface, m_instance, window))
+		!vkinit::Surface::createSurface(surface, m_instance, m_window.get()))
 		return false;
 
 	m_presentationHardware = MAKEUNQ<Presentation::HardwareDevice>(m_instance, surface);
-	m_presentationDevice = MAKEUNQ<Presentation::Device>(m_presentationHardware->getActiveGPU(), surface, window, m_validationLayers.get());
+	m_presentationDevice = MAKEUNQ<Presentation::Device>(m_presentationHardware->getActiveGPU(), surface, m_window.get(), m_validationLayers.get());
 
 	m_memoryAllocator = MAKEUNQ<VkMemoryAllocator>(m_instance, m_presentationHardware->getActiveGPU(), m_presentationDevice->getDevice());
 
-	m_presentationTarget = MAKEUNQ<Presentation::PresentationTarget>(*m_presentationHardware, *m_presentationDevice, true);
+	m_presentationTarget = MAKEUNQ<Presentation::PresentationTarget>(*m_presentationHardware, * m_presentationDevice, m_window.get(), true);
 	m_framePresentation = MAKEUNQ<Presentation::FrameCollection>(m_presentationDevice->getDevice(), m_presentationDevice->getCommandPool());
 	
 	return m_presentationHardware->isInitialized() &&
@@ -160,7 +143,7 @@ void VulkanEngine::run()
 			if (e.type == SDL_QUIT) quit = true;
 		}
 
-		m_imgui->draw(m_window, m_cam.get());
+		m_imgui->draw(m_cam.get());
 
 		draw();
 	}
@@ -239,6 +222,6 @@ void VulkanEngine::cleanup()
 
 	if (m_window)
 	{
-		SDL_DestroyWindow(m_window);
+		m_window->release();
 	}
 }

@@ -2,8 +2,10 @@
 #include "ImGuiHandle.h"
 #include "Common.h"
 #include "Camera.h"
+#include "Engine/Window.h"
 
-ImGuiHandle::ImGuiHandle(VkInstance instance, VkPhysicalDevice activeGPU, const Presentation::Device* presentationDevice, VkRenderPass renderPass, uint32_t imageCount, SDL_Window* window)
+ImGuiHandle::ImGuiHandle(VkInstance instance, VkPhysicalDevice activeGPU, const Presentation::Device* presentationDevice, VkRenderPass renderPass, uint32_t imageCount, Window* window)
+	: m_window(window)
 {
 	auto device = presentationDevice->getDevice();
 
@@ -38,7 +40,7 @@ ImGuiHandle::ImGuiHandle(VkInstance instance, VkPhysicalDevice activeGPU, const 
 	ImGui::CreateContext();
 
 	//this initializes imgui for SDL
-	ImGui_ImplSDL2_InitForVulkan(window);
+	ImGui_ImplSDL2_InitForVulkan(window->get());
 
 	//this initializes imgui for Vulkan
 	ImGui_ImplVulkan_InitInfo init_info = {};
@@ -62,11 +64,11 @@ ImGuiHandle::ImGuiHandle(VkInstance instance, VkPhysicalDevice activeGPU, const 
 	ImGui_ImplVulkan_DestroyFontUploadObjects();
 }
 
-void ImGuiHandle::draw(SDL_Window* window, Camera* cam)
+void ImGuiHandle::draw(Camera* cam)
 {
 	// imgui new frame
 	ImGui_ImplVulkan_NewFrame();
-	ImGui_ImplSDL2_NewFrame(window);
+	ImGui_ImplSDL2_NewFrame(m_window->get());
 
 	ImGui::NewFrame();
 

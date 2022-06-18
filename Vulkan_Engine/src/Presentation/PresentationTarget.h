@@ -5,13 +5,15 @@
 #include "VertexBinding.h"
 #include "VkTypes/VkTexture.h"
 
+class Window;
+
 namespace Presentation
 {
 	class PresentationTarget : IRequireInitialization
 	{
 	public:
-		PresentationTarget(const HardwareDevice& presentationHardware, const Device& presentationDevice, bool depthAttachment, uint32_t swapchainCount = SWAPCHAIN_IMAGE_COUNT) 
-			: m_hasDepthAttachment(depthAttachment)
+		PresentationTarget(const HardwareDevice& presentationHardware, const Device& presentationDevice, Window const* wnd, bool depthAttachment, uint32_t swapchainCount = SWAPCHAIN_IMAGE_COUNT) 
+			: m_window(wnd), m_hasDepthAttachment(depthAttachment)
 		{
 			m_isInitialized = createPresentationTarget(presentationHardware, presentationDevice, swapchainCount);
 		}
@@ -53,6 +55,8 @@ namespace Presentation
 		std::vector<VkImage> m_swapChainImages;
 		std::vector<VkImageView> m_swapChainImageViews;
 		std::vector<VkFramebuffer> m_swapChainFrameBuffers;
+
+		const Window* m_window;
 
 		bool createSwapChain(uint32_t imageCount, const HardwareDevice& hardware, const Device& device, bool createDepthAttachement = true);
 		bool createRenderPass(VkDevice device);

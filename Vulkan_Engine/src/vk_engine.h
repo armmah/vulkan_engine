@@ -13,6 +13,7 @@
 #include "EngineCore/ImGuiHandle.h"
 #include "Texture.h"
 #include "VkTypes/VkMemoryAllocator.h"
+#include "Engine/Window.h"
 
 class VulkanEngine
 {
@@ -42,9 +43,9 @@ public:
 
 	bool m_isInitialized { false };
 
+	UNQ<Window> m_window;
 	VkExtent2D m_startingWindowSize{ 800 , 600 };
 	uint32_t m_frameNumber{ 0 };
-	struct SDL_Window* m_window{ nullptr };
 
 
 	//initializes everything in the engine
@@ -62,9 +63,7 @@ public:
 
 private:
 
-	void initializeTheWindow();
-
-	bool init_vulkan(SDL_Window* window);
+	bool init_vulkan();
 	
 	bool handleFailedToAcquireImageIfNecessary(VkResult imageAcquireResult);
 };

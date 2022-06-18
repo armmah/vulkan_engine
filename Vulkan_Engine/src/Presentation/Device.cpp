@@ -3,10 +3,11 @@
 #include "VkTypes/InitializersUtility.h"
 #include "vk_types.h"
 #include "VkTypes/VulkanValidationLayers.h"
+#include "Engine/Window.h"
 
 namespace Presentation
 {
-	Device::Device(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, const SDL_Window* windowPtr, const VulkanValidationLayers* validationLayers)
+	Device::Device(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, const Window* windowPtr, const VulkanValidationLayers* validationLayers)
 		: m_surface(surface), m_window(windowPtr), m_validationLayers(validationLayers)
 	{
 		m_isInitialized =

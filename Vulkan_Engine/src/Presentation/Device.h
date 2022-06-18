@@ -4,13 +4,14 @@
 #include "VkTypes/vkInitQueueFamily.h"
 
 class VulkanValidationLayers;
+class Window;
 
 namespace Presentation
 {
 	class Device : IRequireInitialization
 	{
 	public:
-		Device(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, const SDL_Window* windowPtr, const VulkanValidationLayers* validationLayers);
+		Device(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, const Window* windowPtr, const VulkanValidationLayers* validationLayers);
 
 		bool IRequireInitialization::isInitialized() const override { return m_isInitialized; }
 
@@ -19,7 +20,6 @@ namespace Presentation
 		VkQueue getGraphicsQueue() const { return m_graphicsQueue; }
 		VkQueue getPresentQueue() const { return m_presentQueue; }
 		VkCommandPool getCommandPool() const { return m_commandPool; }
-		const SDL_Window* getWindowRef() const { return m_window; }
 
 		void submitImmediatelyAndWaitCompletion(const std::function<void(VkCommandBuffer cmd)>&& commandForExecution) const;
 
@@ -37,7 +37,7 @@ namespace Presentation
 
 		VkCommandPool m_commandPool;
 
-		const SDL_Window* m_window;
+		const Window* m_window;
 		const VulkanValidationLayers* m_validationLayers;
 
 		bool createCommandPool();

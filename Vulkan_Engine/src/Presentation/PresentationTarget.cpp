@@ -5,6 +5,7 @@
 #include "VertexBinding.h"
 #include "VkTypes/PushConstantTypes.h"
 #include "VkTypes/VkMemoryAllocator.h"
+#include "Engine/Window.h"
 
 namespace Presentation
 {
@@ -193,7 +194,7 @@ namespace Presentation
 	bool PresentationTarget::createPresentationTarget(const HardwareDevice& presentationHardware, const Device& presentationDevice, uint32_t swapchainCount)
 	{
 		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(presentationHardware.getActiveGPU(), presentationDevice.getSurface(), &m_capabilities);
-		m_swapChainExtent = chooseSwapExtent(presentationDevice.getWindowRef());
+		m_swapChainExtent = chooseSwapExtent(m_window->get());
 
 		auto vkdevice = presentationDevice.getDevice();
 
@@ -230,7 +231,7 @@ namespace Presentation
 	{
 		auto surfaceFormat = hardware.chooseSwapSurfaceFormat();
 		auto presentationMode = hardware.chooseSwapPresentMode();
-		auto extent = chooseSwapExtent(device.getWindowRef());
+		auto extent = chooseSwapExtent(m_window->get());
 
 		imageCount = std::max(imageCount, m_capabilities.minImageCount);
 		if (m_capabilities.maxImageCount != 0)

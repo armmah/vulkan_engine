@@ -30,6 +30,12 @@
     <Filter Include="Source Files\VkTypes">
       <UniqueIdentifier>{5c938d00-9d83-4a5e-8fc9-2fded315aa6a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Engine">
+      <UniqueIdentifier>{b9081682-bc6e-445c-ad1e-22868a079aa1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Engine">
+      <UniqueIdentifier>{ab91a252-6334-449c-926f-833abfb036c2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -97,6 +103,12 @@
     </ClCompile>
     <ClCompile Include="src\VkTypes\VkMemoryAllocator.cpp">
       <Filter>Source Files\VkTypes</Filter>
+    </ClCompile>
+    <ClCompile Include="src\VkTypes\InitializersUtility.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Engine\Window.cpp">
+      <Filter>Source Files\Engine</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -186,6 +198,9 @@
     </ClInclude>
     <ClInclude Include="src\VkTypes\VkMemoryAllocator.h">
       <Filter>Header Files\EngineCore</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Engine\Window.h">
+      <Filter>Header Files\Engine</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

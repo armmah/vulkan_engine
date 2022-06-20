@@ -89,25 +89,15 @@ void VulkanEngine::init(bool requestValidationLayers)
 	vkinit::Descriptor::createDescriptorSetLayout(descriptorSetLayout, m_presentationDevice->getDevice());
 	m_presentationTarget->createGraphicsPipeline(m_presentationDevice->getDevice(), Mesh::defaultVertexBinding, descriptorSetLayout, VK_CULL_MODE_BACK_BIT, m_presentationTarget->hasDepthAttachement());
 	vkinit::Descriptor::createDescriptorSets(descriptorSets, m_presentationDevice->getDevice(), descriptorPool, descriptorSetLayout, *m_texture);
-	
 }
 
 bool VulkanEngine::init_vulkan()
 {
 	if (m_validationLayers && m_validationLayers->checkValidationLayersFailed())
-		throw std::runtime_error("validation layers requested, but not available!");
-
-	unsigned int extCount = 0;
-	if (!vkinit::Instance::getRequiredExtensionsForPlatform(m_window.get(), &extCount, nullptr))
-		return false;
-
-	// SDL requires { "VK_KHR_surface", "VK_KHR_win32_surface" } extensions for windows
-	std::vector<const char*> extensions(extCount);
-	if (!vkinit::Instance::getRequiredExtensionsForPlatform(m_window.get(), &extCount, extensions.data()))
-		return false;
+		throw std::runtime_error("Validation layers requested, but not available!");
 
 	VkSurfaceKHR surface;
-	if (!vkinit::Instance::createInstance(m_instance, m_applicationName, extensions, m_validationLayers.get()) ||
+	if (!vkinit::Instance::createInstance(m_instance, m_window.get(), m_validationLayers.get()) ||
 		!vkinit::Surface::createSurface(surface, m_instance, m_window.get()))
 		return false;
 

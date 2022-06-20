@@ -16,7 +16,8 @@ namespace vkinit
 		static const std::vector<const char*> requiredExtensions;
 
 		static bool getRequiredExtensionsForPlatform(Window const* window, unsigned int* extCount, const char** extensionNames);
-		static bool createInstance(VkInstance& instance, std::string applicationName, std::vector<const char*> extNames, const VulkanValidationLayers* validationLayers);
+		static bool createInstance(VkInstance& instance, const char* applicationName, std::vector<const char*> extNames, const VulkanValidationLayers* validationLayers);
+		static bool createInstance(VkInstance& instance, const Window* window, const VulkanValidationLayers* validationLayers);
 	};
 
 	struct Surface

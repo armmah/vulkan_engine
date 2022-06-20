@@ -101,21 +101,11 @@ bool VulkanEngine::init_vulkan()
 		!vkinit::Surface::createSurface(surface, m_instance, m_window.get()))
 		return false;
 
-	m_presentationHardware = MAKEUNQ<Presentation::HardwareDevice>(m_instance, surface);
-	m_presentationDevice = MAKEUNQ<Presentation::Device>(m_presentationHardware->getActiveGPU(), surface, m_window.get(), m_validationLayers.get());
-
-	m_memoryAllocator = MAKEUNQ<VkMemoryAllocator>(m_instance, m_presentationHardware->getActiveGPU(), m_presentationDevice->getDevice());
-
-	m_presentationTarget = MAKEUNQ<Presentation::PresentationTarget>(*m_presentationHardware, * m_presentationDevice, m_window.get(), true);
-	m_framePresentation = MAKEUNQ<Presentation::FrameCollection>(m_presentationDevice->getDevice(), m_presentationDevice->getCommandPool());
-	
-	return m_presentationHardware->isInitialized() &&
-		m_presentationDevice->isInitialized() &&
-
-		m_memoryAllocator->isInitialized() &&
-
-		m_presentationTarget->isInitialized() &&
-		m_framePresentation->isInitialized();
+	return tryInitialize<Presentation::HardwareDevice>(m_presentationHardware, m_instance, surface) &&
+		tryInitialize<Presentation::Device>(m_presentationDevice, m_presentationHardware->getActiveGPU(), surface, m_window.get(), m_validationLayers.get()) &&
+		tryInitialize<VkMemoryAllocator>(m_memoryAllocator, m_instance, m_presentationHardware->getActiveGPU(), m_presentationDevice->getDevice()) &&
+		tryInitialize<Presentation::PresentationTarget>(m_presentationTarget, *m_presentationHardware, *m_presentationDevice, m_window.get(), true) &&
+		tryInitialize<Presentation::FrameCollection>(m_framePresentation, m_presentationDevice->getDevice(), m_presentationDevice->getCommandPool());
 }
 
 void VulkanEngine::run()

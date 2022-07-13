@@ -3,10 +3,11 @@
 #include "EngineCore/VkMesh.h"
 #include "Camera.h"
 #include "VkTypes/PushConstantTypes.h"
+#include "VkMesh.h"
 #include "VertexAttributes.h"
 #include "IndexAttributes.h"
-#include "VkMesh.h"
 #include <Presentation/Device.h>
+#include <VkTypes/VkMaterialVariant.h>
 
 CommandObjectsWrapper::RenderPassScope::RenderPassScope(VkCommandBuffer commandBuffer, VkRenderPass m_renderPass, VkFramebuffer swapChainFramebuffer, VkExtent2D extent, bool hasDepthAttachment)
 {
@@ -89,9 +90,8 @@ void CommandObjectsWrapper::drawAt(VkCommandBuffer commandBuffer, const VkMesh& 
 	vkCmdDrawIndexed(commandBuffer, mesh.iCount, 1, 0, 0, 0);
 }
 
-void CommandObjectsWrapper::renderIndexedMeshes(VkCommandBuffer commandBuffer, VkPipeline pipeline, VkPipelineLayout pipelineLayout, VkRenderPass m_renderPass,
-	VkFramebuffer frameBuffer, VkExtent2D extent, Camera& cam, const std::vector<UNQ<VkMesh>>& meshes, 
-	const std::array<VkDescriptorSet, SWAPCHAIN_IMAGE_COUNT>& descriptorSets, uint32_t frameNumber)
+void CommandObjectsWrapper::renderIndexedMeshes(VkCommandBuffer commandBuffer, VkRenderPass m_renderPass,
+	VkFramebuffer frameBuffer, VkExtent2D extent, Camera& cam, const std::vector<UNQ<VkMesh>>& meshes, const VkMaterialVariant& variant, uint32_t frameNumber)
 {
 	auto cbs = CommandBufferScope(commandBuffer);
 	{
@@ -102,12 +102,12 @@ void CommandObjectsWrapper::renderIndexedMeshes(VkCommandBuffer commandBuffer, V
 
 		auto rps = RenderPassScope(commandBuffer, m_renderPass, frameBuffer, extent, true);
 
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, variant.pipeline);
 
 		for (int i = 0; i < meshes.size(); i++)
 		{
-			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[frameNumber % SWAPCHAIN_IMAGE_COUNT], 0, nullptr);
-			drawAt(commandBuffer, *meshes[i], pipelineLayout, cam, frameNumber, 10.0f, glm::vec3(0.0f, 0.0f, 0.0f));
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, variant.pipelineLayout, 0, 1, &variant.descriptorSets[frameNumber % SWAPCHAIN_IMAGE_COUNT], 0, nullptr);
+			drawAt(commandBuffer, *meshes[i], variant.pipelineLayout, cam, frameNumber, 10.0f, glm::vec3(0.0f, 0.0f, 0.0f));
 		}
 
 		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);

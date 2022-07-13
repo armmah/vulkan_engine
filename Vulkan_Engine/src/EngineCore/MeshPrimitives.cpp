@@ -45,6 +45,18 @@ Mesh Mesh::getPrimitiveTriangle()
 	return Mesh(positions, uvs, normals, colors, indices);
 }
 
+Mesh::Mesh(size_t vertN, size_t indexN)
+{
+	m_positions.reserve(vertN);
+	m_uvs.reserve(vertN);
+	m_normals.reserve(vertN);
+	m_colors.reserve(vertN);
+
+	m_indices.reserve(indexN);
+
+	updateMetaData();
+}
+
 Mesh Mesh::getPrimitiveQuad()
 {
 	std::vector<glm::vec3> positions;

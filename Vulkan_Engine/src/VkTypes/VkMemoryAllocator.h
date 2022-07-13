@@ -25,6 +25,7 @@ public:
 	virtual bool isInitialized() const override { return m_isInitialized; }
 
 	VkMemoryAllocator(VkInstance instance, VkPhysicalDevice hardware, VkDevice device);
+	void release();
 
 	MemAllocationInfo createAllocationDescriptor(VmaMemoryUsage usage, VmaAllocationCreateFlags flags = 0) const;
 

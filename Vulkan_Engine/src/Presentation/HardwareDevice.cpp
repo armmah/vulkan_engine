@@ -1,10 +1,15 @@
 #include "pch.h"
-#include "HardwareDevice.h"
 #include "VkTypes/InitializersUtility.h"
 #include "VkTypes/vkInitQueueFamily.h"
+#include "HardwareDevice.h"
 
 namespace Presentation
 {
+	HardwareDevice::HardwareDevice(VkInstance instance, VkSurfaceKHR surface)
+	{
+		m_isInitialized = pickPhysicalDevice(instance, surface);
+	}
+	
 	VkSurfaceFormatKHR HardwareDevice::chooseSwapSurfaceFormat() const
 	{
 		for (const auto& availableFormat : m_formats)

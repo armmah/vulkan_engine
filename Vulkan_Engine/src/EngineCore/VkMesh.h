@@ -1,16 +1,17 @@
 #pragma once
-
 #include "pch.h"
 #include "Common.h"
-#include "VertexAttributes.h"
-#include "IndexAttributes.h"
+//#include "IndexAttributes.h"
 
 struct VmaAllocator_T;
+struct VertexAttributes;
+struct IndexAttributes;
 
 struct VkMesh
 {
 public:
-	VkMesh() : vAttributes(nullptr), vCount(0), iAttributes(nullptr), iCount(0) { }
+	VkMesh();
+	~VkMesh();
 
 	void release(const VmaAllocator& allocator);
 

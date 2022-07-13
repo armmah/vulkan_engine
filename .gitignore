@@ -45,3 +45,4 @@
 *.incl
 *.t0000
 *.json
+/Resources

@@ -4,6 +4,7 @@
 #include "Common.h"
 #include "vulkan/vulkan.h"
 #include "Presentation/Device.h"
+#include "VkTypes/VkMaterialVariant.h"
 
 class Camera;
 struct VkMesh;
@@ -39,7 +40,7 @@ struct CommandObjectsWrapper
 	static void drawAt(VkCommandBuffer commandBuffer, const VkMesh& mesh, VkPipelineLayout layout,
 		const Camera& cam, uint32_t frameNumber, float freq, glm::vec3 pos);
 
-	static void renderIndexedMeshes(VkCommandBuffer commandBuffer, VkPipeline pipeline, VkPipelineLayout pipelineLayout, VkRenderPass m_renderPass, 
+	static void renderIndexedMeshes(VkCommandBuffer commandBuffer, VkRenderPass m_renderPass, 
 		VkFramebuffer frameBuffer, VkExtent2D extent, Camera& cam, const std::vector<UNQ<VkMesh>>& meshes, 
-		const std::array<VkDescriptorSet, SWAPCHAIN_IMAGE_COUNT>& descriptorSets, uint32_t frameNumber);
+		const VkMaterialVariant& variant, uint32_t frameNumber);
 };

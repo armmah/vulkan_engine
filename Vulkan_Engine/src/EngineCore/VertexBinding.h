@@ -1,11 +1,6 @@
 #pragma once
-
 #include "pch.h"
-#include <set>
 #include "Common.h"
-#include <array>
-
-#include "vulkan/vulkan.h"
 
 struct MeshDescriptor
 {

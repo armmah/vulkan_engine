@@ -1,20 +1,20 @@
 #include "pch.h"
-#include "PresentationTarget.h"
+#include "Presentation/Device.h"
+#include "Presentation/HardwareDevice.h"
 #include "VkTypes/VkShader.h"
 #include "VkTypes/InitializersUtility.h"
 #include "VertexBinding.h"
 #include "VkTypes/PushConstantTypes.h"
-#include "VkTypes/VkMemoryAllocator.h"
 #include "Engine/Window.h"
+#include "VkTypes/VkTexture.h"
+#include "PresentationTarget.h"
 
 namespace Presentation
 {
-	bool PresentationTarget::createGraphicsPipeline(VkDevice device, const VertexBinding& vBinding, VkDescriptorSetLayout descriptorSetLayout, VkCullModeFlagBits faceCullingMode, bool depthStencilAttachement)
+	bool PresentationTarget::createGraphicsPipeline(VkPipeline& pipeline, VkPipelineLayout& layout, const Shader& shader, VkDevice device, const VertexBinding& vBinding, VkDescriptorSetLayout descriptorSetLayout, VkCullModeFlagBits faceCullingMode, bool depthStencilAttachement) const
 	{
 		vBinding.runValidations();
 		auto vertexInputInfo = vBinding.getVertexInputCreateInfo();
-
-		Shader shader(device, ShaderSource::getDefaultShader());
 
 		VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
 		vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -113,7 +113,7 @@ namespace Presentation
 		pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 		pipelineLayoutInfo.pushConstantRangeCount = 1;
 
-		if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &m_pipelineLayout) != VK_SUCCESS)
+		if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &layout) != VK_SUCCESS)
 		{
 			throw std::runtime_error("failed to create pipeline layout!");
 		}
@@ -146,7 +146,7 @@ namespace Presentation
 		dynamicStateInfo.pDynamicStates = dynamicStates;
 		pipelineInfo.pDynamicState = &dynamicStateInfo;
 
-		pipelineInfo.layout = m_pipelineLayout;
+		pipelineInfo.layout = layout;
 
 		pipelineInfo.renderPass = m_renderPass;
 		pipelineInfo.subpass = 0;
@@ -155,29 +155,21 @@ namespace Presentation
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 		pipelineInfo.basePipelineIndex = -1;
 
-		if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_pipeline) != VK_SUCCESS)
+		if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS)
 		{
 			throw std::runtime_error("failed to create graphics pipeline!");
 		}
 
-		shader.release();
-
 		return true;
-	}
-
-	void PresentationTarget::releasePipeline(VkDevice device)
-	{
-		vkDestroyPipeline(device, m_pipeline, nullptr);
-		vkDestroyPipelineLayout(device, m_pipelineLayout, nullptr);
 	}
 
 	void PresentationTarget::release(VkDevice device)
 	{
 		vkDestroyRenderPass(device, m_renderPass, nullptr);
 
-		if (m_depthImage.has_value())
+		if (hasDepthAttachement())
 		{
-			m_depthImage.value().release(device);
+			m_depthImage->release(device);
 		}
 
 		int count = static_cast<uint32_t>(m_swapChainImageViews.size());
@@ -190,6 +182,16 @@ namespace Presentation
 
 		vkDestroySwapchainKHR(device, m_swapchain, nullptr);
 	}
+
+	PresentationTarget::PresentationTarget(const HardwareDevice& presentationHardware, const Device& presentationDevice, Window const* wnd, bool depthAttachment, uint32_t swapchainCount)
+		: m_window(wnd), m_hasDepthAttachment(depthAttachment)
+	{
+		m_isInitialized = createPresentationTarget(presentationHardware, presentationDevice, swapchainCount);
+	}
+
+	PresentationTarget::~PresentationTarget() {}
+
+	bool PresentationTarget::hasDepthAttachement() { return m_depthImage ? true : false; }
 
 	bool PresentationTarget::createPresentationTarget(const HardwareDevice& presentationHardware, const Device& presentationDevice, uint32_t swapchainCount)
 	{
@@ -242,17 +244,10 @@ namespace Presentation
 
 		if (createDepthAttachement)
 		{
-			VkTexture tex;
 			auto maci = VkMemoryAllocator::getInstance()->createAllocationDescriptor(VMA_MEMORY_USAGE_GPU_ONLY, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-			if (vkinit::Texture::createImage(tex.image, tex.memoryRange, maci, VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, extent.width, extent.height) &&
-				vkinit::Texture::createTextureImageView(tex.imageView, device.getDevice(), tex.image, VK_FORMAT_D32_SFLOAT, VK_IMAGE_ASPECT_DEPTH_BIT))
-			{
-				m_depthImage = std::optional<VkTexture>{ tex };
-			}
+			m_depthImage = MAKEUNQ<VkTexture>(device.getDevice(), maci, VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_ASPECT_DEPTH_BIT, extent);
 		}
-		else m_depthImage = std::nullopt;
-
+		else m_depthImage = nullptr;
 
 		if (isSuccess)
 		{
@@ -269,7 +264,6 @@ namespace Presentation
 
 	bool PresentationTarget::createRenderPass(VkDevice device)
 	{
-		auto hasDepthAttachement = m_depthImage.has_value();
 		auto attachementCount = 1;
 
 		VkPipelineStageFlags srcStageBit = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -297,7 +291,7 @@ namespace Presentation
 		subpass.pColorAttachments = &colorAttachmentRef;
 
 		VkAttachmentDescription depthAttachment{};
-		if (hasDepthAttachement)
+		if (hasDepthAttachement())
 		{
 			depthAttachment.format = VK_FORMAT_D32_SFLOAT;
 			depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -364,9 +358,9 @@ namespace Presentation
 
 		std::array<VkImageView, 2> attachments;
 		auto attachmentCount = 1;
-		if (m_depthImage.has_value())
+		if (hasDepthAttachement())
 		{
-			attachments[1] = m_depthImage.value().imageView;
+			attachments[1] = m_depthImage->imageView;
 			attachmentCount += 1;
 		}
 

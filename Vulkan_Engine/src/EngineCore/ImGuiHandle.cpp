@@ -3,6 +3,7 @@
 #include "Common.h"
 #include "Camera.h"
 #include "Engine/Window.h"
+#include "Presentation/Device.h"
 
 ImGuiHandle::ImGuiHandle(VkInstance instance, VkPhysicalDevice activeGPU, const Presentation::Device* presentationDevice, VkRenderPass renderPass, uint32_t imageCount, Window* window)
 	: m_window(window)

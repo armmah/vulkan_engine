@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "CollectionUtility.h"
 #include "VertexBinding.h"
 #include "Mesh.h"
 

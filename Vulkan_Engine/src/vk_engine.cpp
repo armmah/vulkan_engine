@@ -1,48 +1,23 @@
 ﻿#include "pch.h"
+#include "Presentation/HardwareDevice.h"
+#include "Presentation/Device.h"
+#include "Presentation/FrameCollection.h"
+#include "Presentation/Frame.h"
+#include "Presentation/PresentationTarget.h"
+
 #include "vk_types.h"
+#include "VkTypes/VulkanValidationLayers.h"
+#include "EngineCore/ImGuiHandle.h"
+
+#include "Engine/Window.h"
+#include "EngineCore/Scene.h"
+#include "Camera.h"
+
+#include <EngineCore/Material.h>
 #include "vk_engine.h"
 
-#include "ShaderSource.h"
-
-#include "Scene.h"
-#include "Mesh.h"
-#include "VkTypes/InitializersUtility.h"
-#include "VkTypes/VulkanValidationLayers.h"
-#include "VkTypes/VkTexture.h"
-
-struct TextureSource
-{
-	std::string path;
-	// Texture type
-	// Texture format
-	// Sampler type
-	// Other params
-};
-
-struct VkMaterialVariant
-{
-	//const Material* sourceMat;
-
-	VkTexture texture;
-
-
-	VkPipeline pipeline;
-	VkPipelineLayout pipelineLayout;
-};
-
-// MaterialResourceManager
-class Descriptor
-{
-
-};
-
-class Material
-{
-
-private:
-	ShaderSource shaderSourcesOnDisk;
-	TextureSource textureOnDisk;
-};
+VulkanEngine::VulkanEngine() { }
+VulkanEngine::~VulkanEngine() { }
 
 void VulkanEngine::init(bool requestValidationLayers)
 {
@@ -77,18 +52,13 @@ void VulkanEngine::init(bool requestValidationLayers)
 	m_cam->setPosition({ 0.f, 0.f, -3.f });
 	m_cam->setRotation({ -0.2f, -0.66f, 0.12f });
 
-	// Texture
-	m_texture = MAKEUNQ<VkTexture2D>();
-	if (!Texture::loadImage(*m_texture, "C:/Git/Vulkan_Engine/Resources/vulkan_tutorial_texture.jpg", m_memoryAllocator->m_allocator, m_presentationDevice.get()))
-	{
-		printf("Failed to create VKTexture\n");
-	}
+	// Descriptor pools
+	m_descriptorPoolManager = MAKEUNQ<DescriptorPoolManager>(m_presentationDevice->getDevice());
+	auto descPool = m_descriptorPoolManager->createNewPool(SWAPCHAIN_IMAGE_COUNT);
 
-	constexpr auto imageCount = SWAPCHAIN_IMAGE_COUNT;
-	vkinit::Descriptor::createDescriptorPool(descriptorPool, m_presentationDevice->getDevice(), imageCount);
-	vkinit::Descriptor::createDescriptorSetLayout(descriptorSetLayout, m_presentationDevice->getDevice());
-	m_presentationTarget->createGraphicsPipeline(m_presentationDevice->getDevice(), Mesh::defaultVertexBinding, descriptorSetLayout, VK_CULL_MODE_BACK_BIT, m_presentationTarget->hasDepthAttachement());
-	vkinit::Descriptor::createDescriptorSets(descriptorSets, m_presentationDevice->getDevice(), descriptorPool, descriptorSetLayout, *m_texture);
+	// Material (texture & shader)
+	MaterialSource msrc = {};
+	m_material = MAKEUNQ<Material>(m_presentationDevice.get(), m_presentationTarget.get(), descPool, msrc);
 }
 
 bool VulkanEngine::init_vulkan()
@@ -145,8 +115,8 @@ void VulkanEngine::draw()
 	auto buffer = frame.getCommandBuffer();
 	vkResetCommandBuffer(buffer, 0);
 	
-	CommandObjectsWrapper::renderIndexedMeshes(buffer, m_presentationTarget->getPipeline(), m_presentationTarget->getPipelineLayout(), m_presentationTarget->getRenderPass(),
-		m_presentationTarget->getSwapchainFrameBuffers(imageIndex), m_presentationTarget->getSwapchainExtent(), *m_cam, m_openScene->getGraphicsMeshes(), descriptorSets, m_frameNumber);
+	CommandObjectsWrapper::renderIndexedMeshes(buffer, m_presentationTarget->getRenderPass(), m_presentationTarget->getSwapchainFrameBuffers(imageIndex),
+		m_presentationTarget->getSwapchainExtent(), *m_cam, m_openScene->getGraphicsMeshes(), *m_material->variant.get(), m_frameNumber);
 
 	frame.resetAcquireFence(m_presentationDevice->getDevice());
 	frame.submitToQueue(m_presentationDevice->getGraphicsQueue());
@@ -179,17 +149,15 @@ void VulkanEngine::cleanup()
 {
 	if (m_instance)
 	{
-		m_texture->release(m_presentationDevice->getDevice());
-
 		m_imgui->release(m_presentationDevice->getDevice());
+
+		m_material->release(m_presentationDevice->getDevice());
 
 		m_openScene->release(m_memoryAllocator->m_allocator);
 
 		m_framePresentation->releaseFrameResources();
 
-		vkDestroyDescriptorPool(m_presentationDevice->getDevice(), descriptorPool, nullptr);
-		vkDestroyDescriptorSetLayout(m_presentationDevice->getDevice(), descriptorSetLayout, nullptr);
-		m_presentationTarget->releasePipeline(m_presentationDevice->getDevice());
+		m_descriptorPoolManager->release();
 
 		m_presentationTarget->release(m_presentationDevice->getDevice());
 

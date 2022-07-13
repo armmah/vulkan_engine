@@ -1,23 +1,62 @@
 ﻿#pragma once
 #include "pch.h"
+#include "VkTypes/InitializersUtility.h"
 
-#include "Presentation/HardwareDevice.h"
-#include "Presentation/Device.h"
-#include "Presentation/PresentationTarget.h"
-#include "Presentation/Frame.h"
-#include "Presentation/FrameCollection.h"
+class DescriptorPoolManager
+{
+public:
 
-#include "EngineCore/Scene.h"
-#include "Camera.h"
-#include "VkTypes/VkTexture.h"
-#include "EngineCore/ImGuiHandle.h"
-#include "Texture.h"
-#include "VkTypes/VkMemoryAllocator.h"
-#include "Engine/Window.h"
+	DescriptorPoolManager(VkDevice device)
+		: m_device(device), m_poolCollection()
+	{
+		createNewPool(SWAPCHAIN_IMAGE_COUNT);
+	}
+
+	VkDescriptorPool createNewPool(uint32_t size)
+	{
+		VkDescriptorPool pool{};
+		if (!vkinit::Descriptor::createDescriptorPool(pool, m_device, size))
+		{
+			printf("Was not able to allocate a new descriptor pool!\n");
+			return VK_NULL_HANDLE;
+		}
+
+		m_poolCollection.push_back(pool);
+		return m_poolCollection.back();
+	}
+
+	void release()
+	{
+		for (auto& pool : m_poolCollection)
+		{
+			vkDestroyDescriptorPool(m_device, pool, nullptr);
+		}
+	}
+
+private:
+	VkDevice m_device;
+	std::vector<VkDescriptorPool> m_poolCollection;
+};
+
+class ImGuiHandle;
+class Scene;
+class Camera;
+class DescriptorPoolManager;
+class Material;
+class Window;
+namespace Presentation
+{
+	class Device;
+	class PresentationTarget;
+	class FrameCollection;
+	class HardwareDevice;
+}
 
 class VulkanEngine
 {
 public:
+	VulkanEngine();
+	~VulkanEngine();
 
 	std::string m_applicationName = "Basic VK Engine";
 
@@ -36,10 +75,9 @@ public:
 
 	UNQ<Scene> m_openScene;
 	UNQ<Camera> m_cam;
-	UNQ<VkTexture2D> m_texture;
-	VkDescriptorPool descriptorPool{};
-	VkDescriptorSetLayout descriptorSetLayout{};
-	std::array<VkDescriptorSet, SWAPCHAIN_IMAGE_COUNT> descriptorSets;
+
+	UNQ<DescriptorPoolManager> m_descriptorPoolManager;
+	UNQ<Material> m_material;
 
 	bool m_isInitialized { false };
 
@@ -60,9 +98,7 @@ public:
 	//run main loop
 	void run();
 
-
 private:
-
 	bool init_vulkan();
 	
 	bool handleFailedToAcquireImageIfNecessary(VkResult imageAcquireResult);

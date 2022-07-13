@@ -1,40 +1,37 @@
 #pragma once
 #include "pch.h"
-#include "Presentation/HardwareDevice.h"
-#include "Presentation/Device.h"
-#include "VertexBinding.h"
-#include "VkTypes/VkTexture.h"
+#include "Common.h"
 
 class Window;
+struct VkTexture;
+struct Shader;
+struct VertexBinding;
 
 namespace Presentation
 {
+	class Device;
+	class HardwareDevice;
+
 	class PresentationTarget : IRequireInitialization
 	{
 	public:
-		PresentationTarget(const HardwareDevice& presentationHardware, const Device& presentationDevice, Window const* wnd, bool depthAttachment, uint32_t swapchainCount = SWAPCHAIN_IMAGE_COUNT) 
-			: m_window(wnd), m_hasDepthAttachment(depthAttachment)
-		{
-			m_isInitialized = createPresentationTarget(presentationHardware, presentationDevice, swapchainCount);
-		}
+		PresentationTarget(const HardwareDevice& presentationHardware, const Device& presentationDevice, Window const* wnd, bool depthAttachment, uint32_t swapchainCount = SWAPCHAIN_IMAGE_COUNT);
+		~PresentationTarget();
 
 		bool IRequireInitialization::isInitialized() const override { return m_isInitialized; }
 
 		VkSwapchainKHR getSwapchain() const { return m_swapchain; }
 		VkExtent2D getSwapchainExtent() const { return m_swapChainExtent; }
 		VkRenderPass getRenderPass() const { return m_renderPass; }
-		VkPipeline getPipeline() const { return m_pipeline; }
-		VkPipelineLayout getPipelineLayout() const { return m_pipelineLayout; }
 
 		VkImage getSwapchainImage(uint32_t index) const { return m_swapChainImages[index]; }
 		VkImageView getSwapchainImageView(uint32_t index) const { return m_swapChainImageViews[index]; }
 		VkFramebuffer getSwapchainFrameBuffers(uint32_t index) const { return m_swapChainFrameBuffers[index]; }
-		bool hasDepthAttachement() { return m_depthImage.has_value(); }
+		bool hasDepthAttachement();
 
 		bool createPresentationTarget(const HardwareDevice& presentationHardware, const Device& presentationDevice, uint32_t swapchainCount = 3u);
-		bool createGraphicsPipeline(VkDevice device, const VertexBinding& vBinding, VkDescriptorSetLayout descriptorSetLayout, VkCullModeFlagBits faceCullingMode = VK_CULL_MODE_NONE, bool depthStencilAttachement = true); //VK_CULL_MODE_BACK_BIT);
+		bool createGraphicsPipeline(VkPipeline& pipeline, VkPipelineLayout& layout, const Shader& shader, VkDevice device, const VertexBinding& vBinding, VkDescriptorSetLayout descriptorSetLayout, VkCullModeFlagBits faceCullingMode = VK_CULL_MODE_BACK_BIT, bool depthStencilAttachement = true) const;
 
-		void releasePipeline(VkDevice device);
 		void release(VkDevice device);
 
 	private:
@@ -43,14 +40,12 @@ namespace Presentation
 
 		VkSurfaceCapabilitiesKHR m_capabilities;
 		VkSwapchainKHR m_swapchain;
-		std::optional<VkTexture> m_depthImage;
+		UNQ<VkTexture> m_depthImage;
 
 		VkFormat m_swapChainImageFormat;
 		VkExtent2D m_swapChainExtent;
 
 		VkRenderPass m_renderPass;
-		VkPipeline m_pipeline;
-		VkPipelineLayout m_pipelineLayout;
 
 		std::vector<VkImage> m_swapChainImages;
 		std::vector<VkImageView> m_swapChainImageViews;

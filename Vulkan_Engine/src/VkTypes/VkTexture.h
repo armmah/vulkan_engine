@@ -2,28 +2,31 @@
 #include "pch.h"
 #include "VkMemoryAllocator.h"
 
+namespace Presentation
+{
+	class Device;
+}
+
 struct VkTexture
 {
+public:
 	VkImage image;
 	VmaAllocation memoryRange;
 
 	VkImageView imageView;
 
-	virtual void release(VkDevice device)
-	{
-		vkDestroyImageView(device, imageView, nullptr);
-		vmaDestroyImage(VkMemoryAllocator::getInstance()->m_allocator, image, memoryRange);
-	}
+	VkTexture(VkDevice device, MemAllocationInfo maci, VkFormat imageFormat, VkImageUsageFlags imageUsage, VkImageAspectFlags imageViewFormat, VkExtent2D extent);
+	virtual void release(VkDevice device);
+
+protected:
+	VkTexture() : image(VK_NULL_HANDLE), memoryRange(VK_NULL_HANDLE), imageView(VK_NULL_HANDLE) { }
 };
 
 struct VkTexture2D : public VkTexture
 {
 	VkSampler sampler;
 
-	void release(VkDevice device) override
-	{
-		VkTexture::release(device);
+	VkTexture2D(std::string path, const VmaAllocator& allocator, const Presentation::Device* presentationDevice);
 
-		vkDestroySampler(device, sampler, nullptr);
-	}
+	void release(VkDevice device) override;
 };

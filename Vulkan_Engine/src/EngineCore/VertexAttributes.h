@@ -1,8 +1,6 @@
 #pragma once
-
 #include "pch.h"
 #include "Common.h"
-#include "vulkan/vulkan.h"
 #include "vk_mem_alloc.h"
 
 struct VertexAttributes

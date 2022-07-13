@@ -104,11 +104,29 @@
     <ClCompile Include="src\VkTypes\VkMemoryAllocator.cpp">
       <Filter>Source Files\VkTypes</Filter>
     </ClCompile>
-    <ClCompile Include="src\VkTypes\InitializersUtility.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\Engine\Window.cpp">
       <Filter>Source Files\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="src\VkTypes\VkMaterialVariant.cpp">
+      <Filter>Source Files\VkTypes</Filter>
+    </ClCompile>
+    <ClCompile Include="src\EngineCore\Material.cpp">
+      <Filter>Source Files\EngineCore</Filter>
+    </ClCompile>
+    <ClCompile Include="src\VkTypes\VkTexture.cpp">
+      <Filter>Source Files\VkTypes</Filter>
+    </ClCompile>
+    <ClCompile Include="src\VkTypes\InitializersUtility.cpp">
+      <Filter>Source Files\VkTypes</Filter>
+    </ClCompile>
+    <ClCompile Include="src\EngineCore\Camera.cpp">
+      <Filter>Source Files\EngineCore</Filter>
+    </ClCompile>
+    <ClCompile Include="src\EngineCore\Texture.cpp">
+      <Filter>Source Files\EngineCore</Filter>
+    </ClCompile>
+    <ClCompile Include="src\VkTypes\VkShader.cpp">
+      <Filter>Source Files\VkTypes</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -201,6 +219,12 @@
     </ClInclude>
     <ClInclude Include="src\Engine\Window.h">
       <Filter>Header Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="src\VkTypes\VkMaterialVariant.h">
+      <Filter>Header Files\VkTypes</Filter>
+    </ClInclude>
+    <ClInclude Include="src\EngineCore\Material.h">
+      <Filter>Header Files\EngineCore</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

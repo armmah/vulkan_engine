@@ -1,5 +1,4 @@
 #pragma once
-
 #include "pch.h"
 
 #define UNQ std::unique_ptr

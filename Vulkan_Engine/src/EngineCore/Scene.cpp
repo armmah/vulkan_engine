@@ -8,6 +8,12 @@
 #include "VkMesh.h"
 #include "Mesh.h"
 
+Mesh::Mesh(std::vector<glm::vec3>& positions, std::vector<glm::vec2>& uvs, std::vector<glm::vec3>& normals, std::vector<glm::vec3>& colors, std::vector<uint16_t>& indices)
+	: m_positions(std::move(positions)), m_uvs(std::move(uvs)), m_normals(std::move(normals)), m_colors(std::move(colors)), m_indices(std::move(indices))
+{
+	updateMetaData();
+}
+
 void Mesh::clear()
 {
 	m_positions.clear();
@@ -104,3 +110,6 @@ void Scene::release(const VmaAllocator& allocator)
 		gmesh->release(allocator);
 	}
 }
+
+const std::vector<UNQ<Mesh>>& Scene::getMeshes() const { return meshes; }
+const std::vector<UNQ<VkMesh>>& Scene::getGraphicsMeshes() const { return graphicsMeshes; }

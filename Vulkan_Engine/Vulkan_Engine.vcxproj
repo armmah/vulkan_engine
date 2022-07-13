@@ -130,7 +130,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>C:\Git\Vulkan_Engine\Vulkan_Engine\src;C:\Git\Vulkan_Engine\Vulkan_Engine\src\EngineCore;C:\Git\Vulkan_Engine\Vulkan_Engine\src\Presentation;C:\Git\Vulkan_Engine\third_party\SDL2-2.0.22\include;C:\VulkanSDK\1.3.211.0\Include;C:\Git\Vulkan_Engine\third_party\glm\glm;C:\Git\Vulkan_Engine\third_party\imgui;C:\Git\Vulkan_Engine\third_party\stb_image;C:\Git\Vulkan_Engine\third_party\tinyobjloader;C:\Git\Vulkan_Engine\third_party\vma;C:\Git\Vulkan_Engine\third_party\volk;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
       <DisableAnalyzeExternal>true</DisableAnalyzeExternal>
@@ -171,6 +171,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\EngineCore\Camera.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="src\EngineCore\Color.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
@@ -182,6 +185,9 @@
     <ClCompile Include="src\EngineCore\IndexAttributes.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="src\EngineCore\Material.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="src\EngineCore\Mesh.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
@@ -198,6 +204,9 @@
     <ClCompile Include="src\EngineCore\Scene.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="src\EngineCore\Texture.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="src\EngineCore\VertexAttributes.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
@@ -259,9 +268,16 @@
     <ClCompile Include="src\VkTypes\InitializersUtility.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="src\VkTypes\VkMaterialVariant.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="src\VkTypes\VkMemoryAllocator.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="src\VkTypes\VkShader.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="src\VkTypes\VkTexture.cpp" />
     <ClCompile Include="src\VkTypes\VulkanValidationLayers.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
     </ClCompile>
@@ -281,6 +297,7 @@
     <ClInclude Include="src\EngineCore\Common.h" />
     <ClInclude Include="src\EngineCore\ImGuiHandle.h" />
     <ClInclude Include="src\EngineCore\IndexAttributes.h" />
+    <ClInclude Include="src\EngineCore\Material.h" />
     <ClInclude Include="src\EngineCore\Mesh.h" />
     <ClInclude Include="src\EngineCore\pch.h" />
     <ClInclude Include="src\EngineCore\Scene.h" />
@@ -299,6 +316,7 @@
     <ClInclude Include="src\VkTypes\InitializersUtility.h" />
     <ClInclude Include="src\VkTypes\PushConstantTypes.h" />
     <ClInclude Include="src\VkTypes\vkInitQueueFamily.h" />
+    <ClInclude Include="src\VkTypes\VkMaterialVariant.h" />
     <ClInclude Include="src\VkTypes\VkMemoryAllocator.h" />
     <ClInclude Include="src\VkTypes\VkShader.h" />
     <ClInclude Include="src\VkTypes\VkTexture.h" />

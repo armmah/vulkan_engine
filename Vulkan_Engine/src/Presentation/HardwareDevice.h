@@ -7,10 +7,7 @@ namespace Presentation
 	class HardwareDevice : IRequireInitialization
 	{
 	public:
-		HardwareDevice(VkInstance instance, VkSurfaceKHR surface)
-		{
-			m_isInitialized = pickPhysicalDevice(instance, surface);
-		}
+		HardwareDevice(VkInstance instance, VkSurfaceKHR surface);
 
 		bool IRequireInitialization::isInitialized() const override { return m_isInitialized; }
 

@@ -1,7 +1,11 @@
 #include "pch.h"
 #include "Common.h"
+#include "CollectionUtility.h"
+#include "VkMesh.h"
 #include "Mesh.h"
 #include "VkTypes/InitializersUtility.h"
+#include "VertexAttributes.h"
+#include "IndexAttributes.h"
 
 bool MeshDescriptor::operator ==(const MeshDescriptor& other) const
 {

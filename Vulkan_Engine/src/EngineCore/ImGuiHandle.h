@@ -1,10 +1,13 @@
 #pragma once
 #include "pch.h"
 #include "vulkan/vulkan.h"
-#include "Presentation/Device.h"
 
 class Camera;
 class Window;
+namespace Presentation
+{
+	class Device;
+}
 
 class ImGuiHandle
 {

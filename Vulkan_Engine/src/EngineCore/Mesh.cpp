@@ -26,7 +26,18 @@ void reinterpretCopy(std::vector<F>& src, std::vector<T>& dst)
 	F* r_src = (F*)src.data();
 	T* r_dst = (T*)dst.data();
 
-	memcpy(r_dst, r_src, src.size() * sizeof(F));
+	auto byteSize_src = src.size() * sizeof(F);
+	auto byteSize_dst = dst.size() * sizeof(T);
+	auto minSize = byteSize_dst < byteSize_src ? byteSize_dst: byteSize_src;
+
+	// Copy the contents of src to dst until dst is filled.
+	memcpy(r_dst, r_src, minSize);
+
+	// Fill the rest, if necessary.
+	for (int i = minSize / sizeof(T); i < dst.size(); i++)
+	{
+		dst[i] = T();
+	}
 }
 
 bool loadObjAsMesh(UNQ<Mesh>& mesh, const std::string& path)
@@ -59,16 +70,17 @@ bool loadObjAsMesh(UNQ<Mesh>& mesh, const std::string& path)
 		return false;
 	}
 
-	std::vector<glm::vec3> vertices(attrib.vertices.size() / 3);
+	auto vn = attrib.vertices.size() / (sizeof(MeshDescriptor::TVertexPosition) / sizeof(float));
+	std::vector<MeshDescriptor::TVertexPosition> vertices(vn);
 	reinterpretCopy(attrib.vertices, vertices);
 
-	std::vector<glm::vec3> normals(attrib.normals.size() / 3);
+	std::vector<MeshDescriptor::TVertexNormal> normals(vn);
 	reinterpretCopy(attrib.normals, normals);
 
-	std::vector<glm::vec2> uvs(attrib.texcoords.size() / 2);
+	std::vector<MeshDescriptor::TVertexUV> uvs(vn);
 	reinterpretCopy(attrib.texcoords, uvs);
 
-	std::vector<glm::vec3> colors(attrib.colors.size() / 3);
+	std::vector<MeshDescriptor::TVertexColor> colors(vn);
 	reinterpretCopy(attrib.colors, colors);
 
 	auto& firstShapeIndices = shapes[0].mesh.indices;

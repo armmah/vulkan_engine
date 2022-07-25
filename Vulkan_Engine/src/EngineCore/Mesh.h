@@ -40,12 +40,12 @@ public:
 private:
 	Mesh(size_t vertN, size_t indexN);
 
-	std::vector<glm::vec3> m_positions;
-	std::vector<glm::vec2> m_uvs;
-	std::vector<glm::vec3> m_normals;
-	std::vector<glm::vec3> m_colors;
+	std::vector<MeshDescriptor::TVertexPosition> m_positions;
+	std::vector<MeshDescriptor::TVertexUV> m_uvs;
+	std::vector<MeshDescriptor::TVertexNormal> m_normals;
+	std::vector<MeshDescriptor::TVertexColor> m_colors;
 
-	std::vector<uint16_t> m_indices;
+	std::vector<MeshDescriptor::TVertexIndices> m_indices;
 
 	MeshDescriptor metaData;
 	void* vectors[MeshDescriptor::descriptorCount];

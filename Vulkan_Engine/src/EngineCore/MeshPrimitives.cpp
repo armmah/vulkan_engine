@@ -5,11 +5,11 @@
 
 Mesh Mesh::getPrimitiveQuad()
 {
-	std::vector<glm::vec3> positions;
-	std::vector<glm::vec2> uvs;
-	std::vector<glm::vec3> normals;
-	std::vector<glm::vec3> colors;
-	std::vector<uint16_t> indices;
+	std::vector<MeshDescriptor::TVertexPosition> positions;
+	std::vector<MeshDescriptor::TVertexUV> uvs;
+	std::vector<MeshDescriptor::TVertexNormal> normals;
+	std::vector<MeshDescriptor::TVertexColor> colors;
+	std::vector<MeshDescriptor::TVertexIndices> indices;
 
 	float extent = 0.5f;
 	positions = {
@@ -112,11 +112,11 @@ Mesh Mesh::getPrimitiveCube()
 
 Mesh Mesh::getPrimitiveTriangle()
 {
-	std::vector<glm::vec3> positions;
-	std::vector<glm::vec2> uvs;
-	std::vector<glm::vec3> normals;
-	std::vector<glm::vec3> colors;
-	std::vector<uint16_t> indices;
+	std::vector<MeshDescriptor::TVertexPosition> positions;
+	std::vector<MeshDescriptor::TVertexUV> uvs;
+	std::vector<MeshDescriptor::TVertexNormal> normals;
+	std::vector<MeshDescriptor::TVertexColor> colors;
+	std::vector<MeshDescriptor::TVertexIndices> indices;
 
 	float extentX = 0.5f;
 	float extentY = extentX / 3.0f;

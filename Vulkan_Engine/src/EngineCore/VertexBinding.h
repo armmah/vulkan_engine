@@ -5,14 +5,21 @@
 struct MeshDescriptor
 {
 public:
+	using TVertexPosition = glm::vec3;
+	using TVertexUV = glm::vec2;
+	using TVertexNormal = glm::vec3;
+	using TVertexColor = glm::vec3;
+
+	using TVertexIndices = uint16_t;
+
 	static constexpr size_t descriptorCount = 4;
 
 	MeshDescriptor() : lengths(), elementByteSizes()
 	{
-		lengths[0] = 1; lengths[1] = 0; lengths[2] = 1; lengths[3] = 1;
+		lengths[0] = 1; lengths[1] = 1; lengths[2] = 1; lengths[3] = 1;
 
-		elementByteSizes[0] = sizeof(glm::vec3); elementByteSizes[1] = sizeof(glm::vec2);
-		elementByteSizes[2] = sizeof(glm::vec3); elementByteSizes[3] = sizeof(glm::vec3);
+		elementByteSizes[0] = sizeof(TVertexPosition); elementByteSizes[1] = sizeof(TVertexUV);
+		elementByteSizes[2] = sizeof(TVertexNormal); elementByteSizes[3] = sizeof(TVertexColor);
 	}
 
 	size_t lengths[descriptorCount];

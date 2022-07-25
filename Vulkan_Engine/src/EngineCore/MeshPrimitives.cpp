@@ -3,60 +3,6 @@
 #include "Color.h"
 #include <glm/ext/quaternion_geometric.hpp>
 
-Mesh Mesh::getPrimitiveTriangle()
-{
-	std::vector<glm::vec3> positions;
-	std::vector<glm::vec2> uvs;
-	std::vector<glm::vec3> normals;
-	std::vector<glm::vec3> colors;
-	std::vector<uint16_t> indices;
-
-	float extentX = 0.5f;
-	float extentY = extentX / 3.0f;
-	positions = {
-		{ 0.0f, -extentY * 2.f, 0.0f },
-		{ extentX, extentY, 0.0f },
-		{ -extentX, extentY, 0.0f },
-	};
-
-	uvs = {
-		{ 0.5, 0 },
-		{ 1.0, 1.0 },
-		{ 0.0, 1.0 }
-	};
-
-	glm::vec3 forward(0.0f, 0.0f, 1.0f);
-	normals = {
-		forward,
-		forward,
-		forward
-	};
-
-	colors = {
-		Color::red().v4() * 0.5f + glm::vec4(0.5f),
-		Color::green().v4() * 0.5f + glm::vec4(0.5f),
-		Color::blue().v4() * 0.5f + glm::vec4(0.5f)
-	};
-
-	indices = {
-		0, 1, 2
-	};
-
-	return Mesh(positions, uvs, normals, colors, indices);
-}
-
-Mesh::Mesh(size_t vertN, size_t indexN)
-{
-	m_positions.reserve(vertN);
-	m_uvs.reserve(vertN);
-	m_normals.reserve(vertN);
-	m_colors.reserve(vertN);
-
-	m_indices.reserve(indexN);
-
-	updateMetaData();
-}
-
 Mesh Mesh::getPrimitiveQuad()
 {
 	std::vector<glm::vec3> positions;
@@ -162,4 +108,46 @@ Mesh Mesh::getPrimitiveCube()
 
 	mesh.updateMetaData();
 	return mesh;
+}
+
+Mesh Mesh::getPrimitiveTriangle()
+{
+	std::vector<glm::vec3> positions;
+	std::vector<glm::vec2> uvs;
+	std::vector<glm::vec3> normals;
+	std::vector<glm::vec3> colors;
+	std::vector<uint16_t> indices;
+
+	float extentX = 0.5f;
+	float extentY = extentX / 3.0f;
+	positions = {
+		{ 0.0f, -extentY * 2.f, 0.0f },
+		{ extentX, extentY, 0.0f },
+		{ -extentX, extentY, 0.0f },
+	};
+
+	uvs = {
+		{ 0.5, 0 },
+		{ 1.0, 1.0 },
+		{ 0.0, 1.0 }
+	};
+
+	glm::vec3 forward(0.0f, 0.0f, 1.0f);
+	normals = {
+		forward,
+		forward,
+		forward
+	};
+
+	colors = {
+		Color::red().v4() * 0.5f + glm::vec4(0.5f),
+		Color::green().v4() * 0.5f + glm::vec4(0.5f),
+		Color::blue().v4() * 0.5f + glm::vec4(0.5f)
+	};
+
+	indices = {
+		0, 1, 2
+	};
+
+	return Mesh(positions, uvs, normals, colors, indices);
 }

@@ -52,6 +52,8 @@ void Camera::updateWindowExtent(VkExtent2D newExtent)
 }
 
 const glm::mat4& Camera::getViewProjectionMatrix() const { return cachedViewProjectionMatrix; }
+const glm::mat4& Camera::getViewMatrix() const { return cachedViewMatrix; }
+const glm::mat4& Camera::getPerspectiveMatrix() const { return cachedProjectionMatrix; }
 
 glm::mat4 Camera::calculateViewMatrix()
 {

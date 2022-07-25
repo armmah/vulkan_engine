@@ -121,7 +121,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)\third_party\SDL2-2.0.22\include;C:\VulkanSDK\1.3.211.0\Include;$(SolutionDir)\third_party\stb_image;$(SolutionDir)\third_party\vma;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\third_party\SDL2-2.0.22\include;C:\VulkanSDK\1.3.211.0\Include;$(SolutionDir)\third_party\stb_image;$(SolutionDir)\third_party\vma;$(SolutionDir)\third_party\tinyobjloader;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
       <DisableAnalyzeExternal>true</DisableAnalyzeExternal>
     </ClCompile>
@@ -260,6 +260,7 @@
       <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">TurnOffAllWarnings</WarningLevel>
     </ClCompile>
     <ClCompile Include="stb_implementation.cpp" />
+    <ClCompile Include="tinyobjloader_implementation.cpp" />
     <ClCompile Include="vma_implementation.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -19,7 +19,10 @@ public:
 	void setNearFarZ(float near, float far);
 	void setFieldOfView(float fov_degrees);
 	void updateWindowExtent(VkExtent2D newExtent);
+	
 	const glm::mat4& getViewProjectionMatrix() const;
+	const glm::mat4& getViewMatrix() const;
+	const glm::mat4& getPerspectiveMatrix() const;
 
 private:
 	float fov_radians;

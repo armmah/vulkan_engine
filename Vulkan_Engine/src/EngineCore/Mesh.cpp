@@ -6,6 +6,99 @@
 #include "VkTypes/InitializersUtility.h"
 #include "VertexAttributes.h"
 #include "IndexAttributes.h"
+#include "tiny_obj_loader.h"
+
+Mesh::Mesh(size_t vertN, size_t indexN)
+{
+	m_positions.reserve(vertN);
+	m_uvs.reserve(vertN);
+	m_normals.reserve(vertN);
+	m_colors.reserve(vertN);
+
+	m_indices.reserve(indexN);
+
+	updateMetaData();
+}
+
+template <typename F, typename T>
+void reinterpretCopy(std::vector<F>& src, std::vector<T>& dst)
+{
+	F* r_src = (F*)src.data();
+	T* r_dst = (T*)dst.data();
+
+	memcpy(r_dst, r_src, src.size() * sizeof(F));
+}
+
+bool loadObjAsMesh(UNQ<Mesh>& mesh, const std::string& path)
+{
+	//attrib will contain the vertex arrays of the file
+	tinyobj::attrib_t attrib;
+	//shapes contains the info for each separate object in the file
+	std::vector<tinyobj::shape_t> shapes;
+	//materials contains the information about the material of each shape, but we won't use it.
+	std::vector<tinyobj::material_t> materials;
+
+	//error and warning output from the load function
+	std::string warn;
+	std::string err;
+
+	//load the OBJ file
+	tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, path.c_str(), nullptr);
+
+	//make sure to output the warnings to the console, in case there are issues with the file
+	if (!warn.empty()) 
+	{
+		printf("warning: %s\n", warn.c_str());
+	}
+
+	//if we have any error, print it to the console, and break the mesh loading.
+	//This happens if the file can't be found or is malformed
+	if (!err.empty())
+	{
+		printf("Error: %s\n", err.c_str());
+		return false;
+	}
+
+	std::vector<glm::vec3> vertices(attrib.vertices.size() / 3);
+	reinterpretCopy(attrib.vertices, vertices);
+
+	std::vector<glm::vec3> normals(attrib.normals.size() / 3);
+	reinterpretCopy(attrib.normals, normals);
+
+	std::vector<glm::vec2> uvs(attrib.texcoords.size() / 2);
+	reinterpretCopy(attrib.texcoords, uvs);
+
+	std::vector<glm::vec3> colors(attrib.colors.size() / 3);
+	reinterpretCopy(attrib.colors, colors);
+
+	auto& firstShapeIndices = shapes[0].mesh.indices;
+	std::vector<uint16_t> indices(firstShapeIndices.size());
+	
+	for(size_t i = 0; i < firstShapeIndices.size(); i++)
+	{
+		indices[i] = firstShapeIndices[i].vertex_index;
+	}
+	mesh = MAKEUNQ<Mesh>(vertices, uvs, normals, colors, indices);
+	printf("\tLoaded obj mesh '%s'.\n", shapes[0].name.c_str());
+
+	for (size_t i = 1; i < shapes.size(); i++)
+	{
+		printf("\tSkipped submesh '%s' from '%s'.\n", shapes[i].name.c_str(), path.c_str());
+	}
+
+	return true;
+}
+
+bool Mesh::tryLoadFromFile(UNQ<Mesh>& mesh, const std::string& path)
+{
+	const std::string supportedFormat = ".obj";
+	if (path.length() > supportedFormat.length() && std::equal(supportedFormat.rbegin(), supportedFormat.rend(), path.rbegin()))
+	{
+		return loadObjAsMesh(mesh, path);
+	}
+
+	return false;
+}
 
 bool MeshDescriptor::operator ==(const MeshDescriptor& other) const
 {

@@ -23,7 +23,7 @@ CommandObjectsWrapper::RenderPassScope::RenderPassScope(VkCommandBuffer commandB
 
 	std::array<VkClearValue, 2> clearValues{};
 	clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
-	clearValues[1].depthStencil = { 1.0f, 0 };
+	clearValues[1].depthStencil = { 0.0f, 0 };
 
 	renderPassInfo.clearValueCount = hasDepthAttachment ? 2u : 1u;
 	renderPassInfo.pClearValues = clearValues.data();
@@ -81,7 +81,9 @@ void CommandObjectsWrapper::drawAt(VkCommandBuffer commandBuffer, const VkMesh& 
 		glm::rotate(glm::mat4{ 1.0f }, glm::radians(frameNumber * 0.01f * freq), glm::vec3(0, 1, 0));
 
 	TransformPushConstant pushConstant{};
-	pushConstant.mvp_matrix = cam.getViewProjectionMatrix() * model;
+	pushConstant.model_matrix = model;
+	pushConstant.view_matrix = cam.getViewMatrix();
+	pushConstant.persp_matrix = cam.getPerspectiveMatrix();
 
 	mesh.vAttributes->bind(commandBuffer);
 	mesh.iAttributes->bind(commandBuffer);
@@ -97,7 +99,10 @@ void CommandObjectsWrapper::renderIndexedMeshes(VkCommandBuffer commandBuffer, V
 	{
 		cam.updateWindowExtent(extent);
 
-		vkCmdSetViewport(commandBuffer, 0, 1, &cam.getViewport());
+		auto inv_vp = cam.getViewport();
+		inv_vp.y += inv_vp.height;
+		inv_vp.height *= -1;
+		vkCmdSetViewport(commandBuffer, 0, 1, &inv_vp);
 		vkCmdSetScissor(commandBuffer, 0, 1, &cam.getScissorRect());
 
 		auto rps = RenderPassScope(commandBuffer, m_renderPass, frameBuffer, extent, true);

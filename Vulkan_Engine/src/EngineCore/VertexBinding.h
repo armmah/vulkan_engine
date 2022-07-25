@@ -9,7 +9,7 @@ public:
 
 	MeshDescriptor() : lengths(), elementByteSizes()
 	{
-		lengths[0] = 1; lengths[1] = 1; lengths[2] = 1; lengths[3] = 1;
+		lengths[0] = 1; lengths[1] = 0; lengths[2] = 1; lengths[3] = 1;
 
 		elementByteSizes[0] = sizeof(glm::vec3); elementByteSizes[1] = sizeof(glm::vec2);
 		elementByteSizes[2] = sizeof(glm::vec3); elementByteSizes[3] = sizeof(glm::vec3);

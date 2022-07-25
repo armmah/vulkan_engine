@@ -40,4 +40,5 @@
 #include "imgui_impl_vulkan.h"
 
 #include <stb_image.h>
+#include "tiny_obj_loader.h"
 #pragma warning(pop)

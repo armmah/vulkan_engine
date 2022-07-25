@@ -76,7 +76,9 @@ bool Mesh::isValid()
 bool Scene::load(const VmaAllocator& vmaAllocator)
 {
 	meshes.resize(1);
-	meshes[0] = MAKEUNQ<Mesh>(Mesh::getPrimitiveCube());
+	Mesh::tryLoadFromFile(meshes[0], "C:/Git/Vulkan_Engine/Resources/dragon.obj");
+
+	//meshes[0] = MAKEUNQ<Mesh>(Mesh::getPrimitiveCube());
 
 	auto defaultMeshDescriptor = Mesh::defaultMeshDescriptor;
 

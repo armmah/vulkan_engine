@@ -1,6 +1,12 @@
 #pragma once
 #include "pch.h"
 
+const float YAW = 90.0f;
+const float PITCH = 0.0f;
+const float SPEED = 0.00025f;
+const float SENSITIVITY = 50.0f;
+const float ZOOM = 45.0f;
+
 class Camera
 {
 public:
@@ -24,14 +30,32 @@ public:
 	const glm::mat4& getViewMatrix() const;
 	const glm::mat4& getPerspectiveMatrix() const;
 
+	void enqueueMouseMovement(int x, int y);
+	void enqueueMouseScroll(int extent);
+	void enqueueMovement(glm::vec3 direction);
+
+	void processFrameEvents(float dt);
+
 private:
 	float fov_radians;
 	float aspectRatio;
 	float nearZ;
 	float farZ;
 
+	// Camera Attributes
 	glm::vec3 pos;
 	glm::quat rot;
+
+	glm::vec3 movement;
+
+	// Euler Angles
+	float yaw;
+	float pitch;
+
+	// Camera options
+	float movementSpeed;
+	float mouseSensitivity;
+	float zoom;
 
 	VkExtent2D windowExtent;
 	VkViewport viewport;

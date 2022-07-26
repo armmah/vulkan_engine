@@ -5,9 +5,11 @@
 Camera::Camera(float fov_degrees, VkExtent2D windowSize, float nearZ, float farZ) :
 	fov_radians(glm::radians(fov_degrees)),
 	nearZ(nearZ), farZ(farZ),
-	pos(0.f), rot(glm::vec3(0.f, 0.f, 0.f))
+	pos(0.f), rot(glm::vec3(0.f, 0.f, 0.f)),
+	yaw(YAW), pitch(PITCH), movement(), zoom(ZOOM), movementSpeed(SPEED), mouseSensitivity(SENSITIVITY)
 {
-	calculateViewMatrix();
+	//calculateViewMatrix();
+	processFrameEvents(0.f);
 	updateWindowExtent(windowSize);
 }
 
@@ -54,6 +56,44 @@ void Camera::updateWindowExtent(VkExtent2D newExtent)
 const glm::mat4& Camera::getViewProjectionMatrix() const { return cachedViewProjectionMatrix; }
 const glm::mat4& Camera::getViewMatrix() const { return cachedViewMatrix; }
 const glm::mat4& Camera::getPerspectiveMatrix() const { return cachedProjectionMatrix; }
+
+void Camera::enqueueMouseMovement(int x, int y)
+{
+	yaw += (x / static_cast<float>(windowExtent.width)) * mouseSensitivity;
+	pitch += (y / static_cast<float>(windowExtent.height)) * mouseSensitivity;
+	pitch = std::clamp(pitch, -89.f, 89.f);
+}
+
+void Camera::enqueueMouseScroll(int extent) { zoom = std::clamp((float)extent, 1.f, 45.f); }
+void Camera::enqueueMovement(glm::vec3 direction) 
+{
+	glm::vec4 dir = cachedViewMatrix * glm::vec4(direction, 0.0f);
+
+	movement.x += dir.x;
+	movement.y += dir.y;
+	movement.z += dir.z;
+}
+
+void Camera::processFrameEvents(float dt)
+{
+	pos += movement * movementSpeed * dt;
+	movement = glm::vec3();
+
+	// calculate the new Front vector
+	glm::vec3 front;
+	front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+	front.y = sin(glm::radians(pitch));
+	front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+	front = glm::normalize(front);
+
+	// also re-calculate the Right and Up vector
+	// normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
+	auto right = glm::normalize(glm::cross(front, glm::vec3(0.f, 1.f, 0.f)));
+	auto up = glm::normalize(glm::cross(right, front));
+
+	cachedViewMatrix = glm::lookAt(pos, pos + front, up);
+	calculateProjectionMatrix();
+}
 
 glm::mat4 Camera::calculateViewMatrix()
 {

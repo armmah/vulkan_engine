@@ -82,6 +82,15 @@ void VulkanEngine::run()
 {
 	SDL_Event e;
 	bool quit = false;
+	bool mouseHeld = false;
+
+	float curFrameTime = SDL_GetTicks();
+	float prevFrameTime = 0.f;
+	float deltaTime = curFrameTime - prevFrameTime;
+	prevFrameTime = curFrameTime;
+
+	int prevMsX = -1, prevMsY = -1;
+	int deltaMsX = 0, deltaMsY = 0;
 
 	// Main loop
 	while (!quit)
@@ -89,11 +98,60 @@ void VulkanEngine::run()
 		// Handle events on queue
 		while (SDL_PollEvent(&e) != 0)
 		{
-			// close the window when user alt-f4s or clicks the X button			
-			if (e.type == SDL_QUIT) quit = true;
+			auto& eType = e.type;
+			auto& keyCode = e.key.keysym.sym;
+			if (eType == SDL_QUIT || (eType == SDL_KEYDOWN && keyCode == SDLK_ESCAPE))
+				quit = true;
+
+			if (eType == SDL_KEYDOWN)
+			{
+				if (keyCode == SDLK_w)
+					m_cam->enqueueMovement(glm::vec3(0.f, 0.f, -1.f));
+				if (keyCode == SDLK_s)
+					m_cam->enqueueMovement(glm::vec3(0.f, 0.f, 1.f));
+				if (keyCode == SDLK_a)
+					m_cam->enqueueMovement(glm::vec3(-1.f, 0.f, 0.f));
+				if (keyCode == SDLK_d)
+					m_cam->enqueueMovement(glm::vec3(1.f, 0.f, 0.f));
+			}
+
+			if (eType == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT)
+			{
+				mouseHeld = true;
+				SDL_GetMouseState(&prevMsX, &prevMsY);
+			}
+			if (eType == SDL_MOUSEBUTTONUP && e.button.button == SDL_BUTTON_LEFT)
+			{
+				mouseHeld = false;
+			}
+
+			if (mouseHeld)
+			{
+				int x, y;
+				SDL_GetMouseState(&x, &y);
+
+				deltaMsX = x - prevMsX;
+				deltaMsY = y - prevMsY;
+				prevMsX = x;
+				prevMsY = y;
+			}
+
+			/*
+			if (e.wheel.y > 0)
+			{
+				m_cam->enqueueMouseScroll(e.wheel.y);
+			}*/
 		}
 
-		m_imgui->draw(m_cam.get());
+		if (mouseHeld)
+		{
+			m_cam->enqueueMouseMovement(-deltaMsX, deltaMsY);
+			deltaMsX = 0;
+			deltaMsY = 0;
+		}
+		m_cam->processFrameEvents(deltaTime);
+
+		//m_imgui->draw(m_cam.get());
 
 		draw();
 	}

@@ -76,9 +76,7 @@ void CommandObjectsWrapper::HelloTriangleCommand(VkCommandBuffer buffer, VkPipel
 
 void CommandObjectsWrapper::drawAt(VkCommandBuffer commandBuffer, const VkMesh& mesh, VkPipelineLayout layout, const Camera& cam, uint32_t frameNumber, float freq, glm::vec3 pos)
 {
-	const glm::mat4 model =
-		glm::translate(glm::mat4(1.f), pos) *
-		glm::rotate(glm::mat4{ 1.0f }, glm::radians(frameNumber * 0.01f * freq), glm::vec3(0, 1, 0));
+	const glm::mat4 model = glm::translate(glm::mat4(1.f), pos);// *glm::rotate(glm::mat4{ 1.0f }, glm::radians(frameNumber * 0.01f * freq), glm::vec3(0, 1, 0));
 
 	TransformPushConstant pushConstant{};
 	pushConstant.model_matrix = model;
@@ -115,6 +113,9 @@ void CommandObjectsWrapper::renderIndexedMeshes(VkCommandBuffer commandBuffer, V
 			drawAt(commandBuffer, *meshes[i], variant.pipelineLayout, cam, frameNumber, 10.0f, glm::vec3(0.0f, 0.0f, 0.0f));
 		}
 
-		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+		if (ImGui::GetDrawData())
+		{
+			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+		}
 	}
 }

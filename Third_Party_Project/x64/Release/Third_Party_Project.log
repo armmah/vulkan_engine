@@ -5,5 +5,6 @@
   imgui_tables.cpp
   imgui_widgets.cpp
   stb_implementation.cpp
+  tinyobjloader_implementation.cpp
   vma_implementation.cpp
   Third_Party_Project.vcxproj -> C:\Git\Vulkan_Engine\x64\Release\Third_Party_Project.lib

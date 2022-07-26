@@ -49,5 +49,3 @@ private:
 	VkVertexInputBindingDescription bindingDescription;
 	std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
 };
-
-

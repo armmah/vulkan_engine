@@ -23,7 +23,7 @@ void main()
     mat4 render_matrix = PushConstants.persp_matrix * PushConstants.view_matrix * PushConstants.model_matrix;
     gl_Position = render_matrix * vec4(inPosition.xyz, 1.0);
 
-    viewDirection = normalize(vec3(0.0, 0.75, 0.25));
+    viewDirection = normalize(vec3(0.0, -0.75, -0.25));
 
     fragColor = inColor;
 

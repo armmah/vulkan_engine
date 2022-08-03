@@ -29,7 +29,7 @@ bool Mesh::validateOptionalBufferSize(size_t vectorSize, size_t vertexCount, cha
 	// Optional vector, but if it exists the size should match the position array.
 	if (vectorSize > 0 && vectorSize != vertexCount)
 	{
-		printf("%s array size '%zu' does not match the position array size '%zu'.", name, vectorSize, vertexCount);
+		printf("%s array size '%zu' does not match the position array size '%zu'.\n", name, vectorSize, vertexCount);
 		return false;
 	}
 
@@ -42,14 +42,14 @@ bool Mesh::isValid()
 
 	if (n == 0)
 	{
-		printf("The vertex array can not have 0 length.");
+		printf("The vertex array can not have 0 length.\n");
 		return false;
 	}
 
 	// We won't support more than 65535 verts for now due to 16bit indexing
 	if (n >= std::numeric_limits<uint16_t>::max())
 	{
-		printf("The vertex array size '%zu' exceeds the allowed capacity '%i'.", n, std::numeric_limits<uint16_t>::max());
+		printf("The vertex array size '%zu' exceeds the allowed capacity '%i'.\n", n, std::numeric_limits<uint16_t>::max());
 		return false;
 	}
 
@@ -64,7 +64,7 @@ bool Mesh::isValid()
 		auto index = m_indices[i];
 		if (index < 0 || index >= n)
 		{
-			printf("An incorrect index '%i' detected at position indices[%zu], should be in {0, %zu} range.", index, i, n);
+			printf("An incorrect index '%i' detected at position indices[%zu], should be in {0, %zu} range.\n", index, i, n);
 			return false;
 		}
 	}
@@ -75,10 +75,7 @@ bool Mesh::isValid()
 
 bool Scene::load(const VmaAllocator& vmaAllocator)
 {
-	meshes.resize(1);
-	Mesh::tryLoadFromFile(meshes[0], "C:/Git/Vulkan_Engine/Resources/dragon.obj");
-
-	//meshes[0] = MAKEUNQ<Mesh>(Mesh::getPrimitiveCube());
+	Mesh::tryLoadFromFile(meshes, "C:/Git/Vulkan_Engine/Resources/sponza.obj");
 
 	auto defaultMeshDescriptor = Mesh::defaultMeshDescriptor;
 
@@ -91,7 +88,7 @@ bool Scene::load(const VmaAllocator& vmaAllocator)
 
 		if (defaultMeshDescriptor != meshes[i]->getMeshDescriptor())
 		{
-			printf("Mesh metadata does not match - can not bind to the same pipeline.");
+			printf("Mesh metadata does not match - can not bind to the same pipeline.\n");
 			return false;
 		}
 	}

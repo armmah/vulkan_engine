@@ -44,12 +44,12 @@ void VulkanEngine::init(bool requestValidationLayers)
 	m_openScene = MAKEUNQ<Scene>();
 	if (!m_openScene->load(m_memoryAllocator->m_allocator))
 	{
-		throw std::runtime_error("Failed to load the scene!");
+		printf("Failed to load the scene!");
 	}
 
 	// Camera
-	m_cam = MAKEUNQ<Camera>(70.f, m_presentationTarget->getSwapchainExtent());
-	m_cam->setPosition({ 0.f, -0.5f, -3.f });
+	m_cam = MAKEUNQ<Camera>(60.f, m_presentationTarget->getSwapchainExtent());
+	m_cam->setPosition({ 0.f, 7.5f, -30.f });
 	m_cam->setRotation({ -0.65f, -0.f, 0.f });
 
 	// Descriptor pools
@@ -135,12 +135,6 @@ void VulkanEngine::run()
 				prevMsX = x;
 				prevMsY = y;
 			}
-
-			/*
-			if (e.wheel.y > 0)
-			{
-				m_cam->enqueueMouseScroll(e.wheel.y);
-			}*/
 		}
 
 		if (mouseHeld)

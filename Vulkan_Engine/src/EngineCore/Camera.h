@@ -3,14 +3,14 @@
 
 const float YAW = 90.0f;
 const float PITCH = 0.0f;
-const float SPEED = 0.00025f;
-const float SENSITIVITY = 50.0f;
+const float SPEED = 0.0025f;
+const float SENSITIVITY = 150.0f;
 const float ZOOM = 45.0f;
 
 class Camera
 {
 public:
-	Camera(float fov_degrees, VkExtent2D windowSize, float nearZ = 1.0f, float farZ = 100.0f);
+	Camera(float fov_degrees, VkExtent2D windowSize, float nearZ = 1.0f, float farZ = 10000.0f);
 
 	const glm::vec3& getPosition() const;
 	const glm::quat& getRotation() const;

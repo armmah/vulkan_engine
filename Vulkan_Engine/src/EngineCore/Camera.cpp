@@ -8,9 +8,8 @@ Camera::Camera(float fov_degrees, VkExtent2D windowSize, float nearZ, float farZ
 	pos(0.f), rot(glm::vec3(0.f, 0.f, 0.f)),
 	yaw(YAW), pitch(PITCH), movement(), zoom(ZOOM), movementSpeed(SPEED), mouseSensitivity(SENSITIVITY)
 {
-	//calculateViewMatrix();
-	processFrameEvents(0.f);
 	updateWindowExtent(windowSize);
+	processFrameEvents(0.f);
 }
 
 const glm::vec3& Camera::getPosition() const { return pos; }
@@ -67,18 +66,11 @@ void Camera::enqueueMouseMovement(int x, int y)
 void Camera::enqueueMouseScroll(int extent) { zoom = std::clamp((float)extent, 1.f, 45.f); }
 void Camera::enqueueMovement(glm::vec3 direction) 
 {
-	glm::vec4 dir = cachedViewMatrix * glm::vec4(direction, 0.0f);
-
-	movement.x += dir.x;
-	movement.y += dir.y;
-	movement.z += dir.z;
+	movement += direction;
 }
 
 void Camera::processFrameEvents(float dt)
 {
-	pos += movement * movementSpeed * dt;
-	movement = glm::vec3();
-
 	// calculate the new Front vector
 	glm::vec3 front;
 	front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
@@ -91,8 +83,18 @@ void Camera::processFrameEvents(float dt)
 	auto right = glm::normalize(glm::cross(front, glm::vec3(0.f, 1.f, 0.f)));
 	auto up = glm::normalize(glm::cross(right, front));
 
+	// Redo with sanitized inputs
+	if (movement.x != 0.0)
+		pos += right * -((float)std::signbit(movement.x) * 2.f - 1.f) * movementSpeed * dt;
+	if (movement.y != 0.0)
+		pos += up * ((float)std::signbit(movement.y) * 2.f - 1.f) * movementSpeed * dt;
+	if (movement.z != 0.0)
+		pos += front * ((float)std::signbit(movement.z) * 2.f - 1.f) * movementSpeed * dt;
+
+	movement = glm::vec3();
+
 	cachedViewMatrix = glm::lookAt(pos, pos + front, up);
-	calculateProjectionMatrix();
+	cachedViewProjectionMatrix = calculateViewProjectionMatrix();
 }
 
 glm::mat4 Camera::calculateViewMatrix()
@@ -108,6 +110,8 @@ glm::mat4 Camera::calculateViewMatrix()
 glm::mat4 Camera::calculateProjectionMatrix()
 {
 	cachedProjectionMatrix = glm::perspective(fov_radians, aspectRatio, nearZ, farZ);
+	cachedProjectionMatrix[1][1] *= -1;
+
 	cachedViewProjectionMatrix = calculateViewProjectionMatrix();
 	return cachedProjectionMatrix;
 }

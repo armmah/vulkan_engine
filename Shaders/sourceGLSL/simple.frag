@@ -11,7 +11,7 @@ layout(binding = 0) uniform sampler2D texSampler;
 
 void main() 
 {
-    vec4 color = texture(texSampler, fragTexCoord);
+    vec4 color = vec4(1.0);//texture(texSampler, fragTexCoord);
 
     // fragNormal 
     // viewDirection

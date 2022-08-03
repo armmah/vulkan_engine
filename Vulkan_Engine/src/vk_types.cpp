@@ -23,7 +23,7 @@ CommandObjectsWrapper::RenderPassScope::RenderPassScope(VkCommandBuffer commandB
 
 	std::array<VkClearValue, 2> clearValues{};
 	clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
-	clearValues[1].depthStencil = { 0.0f, 0 };
+	clearValues[1].depthStencil = { 1.0f, 0 };
 
 	renderPassInfo.clearValueCount = hasDepthAttachment ? 2u : 1u;
 	renderPassInfo.pClearValues = clearValues.data();
@@ -97,10 +97,7 @@ void CommandObjectsWrapper::renderIndexedMeshes(VkCommandBuffer commandBuffer, V
 	{
 		cam.updateWindowExtent(extent);
 
-		auto inv_vp = cam.getViewport();
-		inv_vp.y += inv_vp.height;
-		inv_vp.height *= -1;
-		vkCmdSetViewport(commandBuffer, 0, 1, &inv_vp);
+		vkCmdSetViewport(commandBuffer, 0, 1, &cam.getViewport());
 		vkCmdSetScissor(commandBuffer, 0, 1, &cam.getScissorRect());
 
 		auto rps = RenderPassScope(commandBuffer, m_renderPass, frameBuffer, extent, true);

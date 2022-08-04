@@ -11,11 +11,11 @@ layout(binding = 0) uniform sampler2D texSampler;
 
 void main() 
 {
-    vec4 color = vec4(1.0);//texture(texSampler, fragTexCoord);
+    vec4 color = texture(texSampler, fragTexCoord);
 
     // fragNormal 
     // viewDirection
     float attenuation = dot(fragNormal, viewDirection);
 
-    outColor = vec4(1.0, 1.0, 1.0, 1.0) * attenuation;
+    outColor = color * attenuation;
 }

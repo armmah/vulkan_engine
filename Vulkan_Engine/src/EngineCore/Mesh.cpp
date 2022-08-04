@@ -51,6 +51,18 @@ void reinterpretCopy(std::vector<F>& src, std::vector<T>& dst)
 	}
 }
 
+template <typename F, typename T>
+T reinterpretAt(std::vector<F>& src, size_t srcIndex)
+{
+	return *reinterpret_cast<T*>(&src[srcIndex]);
+}
+
+template <typename F, typename T>
+T reinterpretAt_orFallback(std::vector<F>& src, size_t srcIndex)
+{
+	return src.size() > srcIndex ? *reinterpret_cast<T*>(&src[srcIndex]) : T{};
+}
+
 bool loadObjAsMesh(UNQ<Mesh>& mesh, const std::string& path)
 {
 	//attrib will contain the vertex arrays of the file
@@ -146,10 +158,12 @@ bool loadObjAsMesh(std::vector<UNQ<Mesh>>& meshes, const std::string& path, cons
 	}
 
 	std::unordered_map<size_t, uint16_t> indexMapping;
-	for (size_t i = 0; i < shapes.size(); i++)
-	//for (size_t i = 0; i < std::min( static_cast<size_t>(5), shapes.size() ); i++)
+	//for (size_t i = 0; i < shapes.size(); i++)
+	for (size_t i = 0; i < std::min( static_cast<size_t>(10), shapes.size() ); i++)
 	{
-		auto& shapeIndices = shapes[i].mesh.indices;
+		auto& name = shapes[i].name;
+		auto& mesh = shapes[i].mesh;
+		auto& shapeIndices = mesh.indices;
 		std::vector<uint16_t> indices(shapeIndices.size());
 
 		auto index = 0;
@@ -172,58 +186,44 @@ bool loadObjAsMesh(std::vector<UNQ<Mesh>>& meshes, const std::string& path, cons
 		}
 
 		std::set<size_t> uniqueVertIndices;
+
 		std::vector<MeshDescriptor::TVertexPosition> vertices;
 		std::vector<MeshDescriptor::TVertexNormal> normals;
+		std::vector<MeshDescriptor::TVertexUV> uvs;
+
 		vertices.reserve(index);
 		normals.reserve(index);
-		for (size_t i = 0; i < shapeIndices.size(); i++)
-		{
-			auto vi = shapeIndices[i].vertex_index;
-			auto ni = shapeIndices[i].normal_index;
+		uvs.reserve(index);
 
+		if (attrib.normals.size() > attrib.vertices.size() ||
+			attrib.texcoords.size() > attrib.vertices.size())
+		{
+			printf("OBJLoader warning, shape '%s' - The normal count (%i) or uv count (%i) exceeds the vertex count (%i), so they will be discarded.\n",
+				name.c_str(), as_uint32(attrib.normals.size()), as_uint32(attrib.texcoords.size()), as_uint32(attrib.vertices.size()));
+		}
+
+		for (size_t si = 0; si < shapeIndices.size(); si++)
+		{
+			auto vi = shapeIndices[si].vertex_index;
+
+			auto ni = shapeIndices[si].normal_index;
+			auto uvi = shapeIndices[si].texcoord_index;
+			
 			if (uniqueVertIndices.count(vi) > 0)
 				continue;
 			else
 			{
-				vertices.push_back(
-					{
-						attrib.vertices[vi * 3],
-						attrib.vertices[vi * 3 + 1],
-						attrib.vertices[vi * 3 + 2]
-					}
-				);
+				vertices.push_back(reinterpretAt<float, MeshDescriptor::TVertexPosition>(attrib.vertices, vi * 3));
 
-				normals.push_back(
-					{
-						attrib.normals[ni * 3],
-						attrib.normals[ni * 3 + 1],
-						attrib.normals[ni * 3 + 2],
-					}
-				);
+				normals.push_back(reinterpretAt_orFallback<float, MeshDescriptor::TVertexNormal>(attrib.normals, ni * 3));
+				uvs.push_back(reinterpretAt_orFallback<float, MeshDescriptor::TVertexUV>(attrib.texcoords, uvi * 3));
 
 				uniqueVertIndices.insert(vi);
 			}
 		}
 
-		auto vn = vertices.size();
-
-		std::vector<MeshDescriptor::TVertexUV> uvs(vn);
-		fillArrayWithDefaultValue(uvs, 0, vn);
-		
-		std::vector<MeshDescriptor::TVertexColor> colors(vn);
-		fillArrayWithDefaultValue(colors, 0, vn);
-
-		/*
-		auto vn = attrib.vertices.size() / (sizeof(MeshDescriptor::TVertexPosition) / sizeof(float));
-		std::vector<MeshDescriptor::TVertexPosition> vertices(vn);
-		reinterpretCopy(attrib.vertices, vertices);
-
-		reinterpretCopy(attrib.normals, normals);
-
-		reinterpretCopy(attrib.texcoords, uvs);
-
-		reinterpretCopy(attrib.colors, colors);
-		*/
+		std::vector<MeshDescriptor::TVertexColor> colors(vertices.size());
+		fillArrayWithDefaultValue(colors, 0, vertices.size());
 
 		meshes.push_back(MAKEUNQ<Mesh>(vertices, uvs, normals, colors, indices));
 	}

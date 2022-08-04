@@ -13,11 +13,12 @@ public:
 	Camera(float fov_degrees, VkExtent2D windowSize, float nearZ = 1.0f, float farZ = 10000.0f);
 
 	const glm::vec3& getPosition() const;
-	const glm::quat& getRotation() const;
+	// const glm::quat& getRotation() const;
+	float getYaw() const;
+	float getPitch() const;
 
 	void setPosition(const glm::vec3& position);
-	void setRotation(const glm::quat& rotation);
-	void setRotation(const glm::vec3& rotEuler);
+	void setRotation(float yaw, float pitch);
 
 	const VkViewport& getViewport() const;
 	const VkRect2D& getScissorRect() const;
@@ -44,7 +45,7 @@ private:
 
 	// Camera Attributes
 	glm::vec3 pos;
-	glm::quat rot;
+	// glm::quat rot;
 
 	glm::vec3 movement;
 
@@ -65,7 +66,7 @@ private:
 	glm::mat4 cachedProjectionMatrix;
 	glm::mat4 cachedViewProjectionMatrix;
 
-	glm::mat4 calculateViewMatrix();
+	// glm::mat4 calculateViewMatrix();
 	glm::mat4 calculateProjectionMatrix();
 	glm::mat4 calculateViewProjectionMatrix();
 };

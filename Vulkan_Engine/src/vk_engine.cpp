@@ -49,8 +49,8 @@ void VulkanEngine::init(bool requestValidationLayers)
 
 	// Camera
 	m_cam = MAKEUNQ<Camera>(60.f, m_presentationTarget->getSwapchainExtent());
-	m_cam->setPosition({ 0.f, 7.5f, -30.f });
-	m_cam->setRotation({ -0.65f, -0.f, 0.f });
+	m_cam->setPosition({ -150.f, 100.f, -10.f });
+	m_cam->setRotation(0.f, 15.f);
 
 	// Descriptor pools
 	m_descriptorPoolManager = MAKEUNQ<DescriptorPoolManager>(m_presentationDevice->getDevice());
@@ -145,7 +145,7 @@ void VulkanEngine::run()
 		}
 		m_cam->processFrameEvents(deltaTime);
 
-		//m_imgui->draw(m_cam.get());
+		m_imgui->draw(m_cam.get());
 
 		draw();
 	}

@@ -72,15 +72,13 @@ void ImGuiHandle::draw(Camera* cam)
 	ImGui_ImplSDL2_NewFrame(m_window->get());
 
 	ImGui::NewFrame();
-
 	ImGui::Begin("Camera controls");
-	auto rot = glm::eulerAngles(cam->getRotation());
-	auto pi_half = static_cast<float>(M_PI) / 2.0f;
 
-	ImGui::SliderFloat("cam_rot_x", &rot.x, -pi_half, pi_half);
-	ImGui::SliderFloat("cam_rot_y", &rot.y, -pi_half, pi_half);
-	ImGui::SliderFloat("cam_rot_z", &rot.z, -pi_half, pi_half);
-	cam->setRotation(rot);
+	auto pos = glm::vec3(cam->getPosition());
+	ImGui::InputFloat3("Position", &pos[0]);
+
+	auto yaw_pitch = glm::vec2(cam->getYaw(), cam->getPitch());
+	ImGui::InputFloat2("Yaw / Pitch", &yaw_pitch[0]);
 
 	ImGui::End();
 

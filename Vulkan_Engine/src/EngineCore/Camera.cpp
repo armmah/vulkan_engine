@@ -5,7 +5,7 @@
 Camera::Camera(float fov_degrees, VkExtent2D windowSize, float nearZ, float farZ) :
 	fov_radians(glm::radians(fov_degrees)),
 	nearZ(nearZ), farZ(farZ),
-	pos(0.f), rot(glm::vec3(0.f, 0.f, 0.f)),
+	pos(0.f), //rot(glm::vec3(0.f, 0.f, 0.f)),
 	yaw(YAW), pitch(PITCH), movement(), zoom(ZOOM), movementSpeed(SPEED), mouseSensitivity(SENSITIVITY)
 {
 	updateWindowExtent(windowSize);
@@ -13,11 +13,13 @@ Camera::Camera(float fov_degrees, VkExtent2D windowSize, float nearZ, float farZ
 }
 
 const glm::vec3& Camera::getPosition() const { return pos; }
-const glm::quat& Camera::getRotation() const { return rot; }
+//const glm::quat& Camera::getRotation() const { return rot; }
+float Camera::getYaw() const { return yaw; }
+float Camera::getPitch() const { return pitch; }
 
-void Camera::setPosition(const glm::vec3& position) { pos = position; calculateViewMatrix(); }
-void Camera::setRotation(const glm::quat& rotation) { rot = rotation; calculateViewMatrix(); }
-void Camera::setRotation(const glm::vec3& rotEuler) { rot = glm::quat(rotEuler); calculateViewMatrix(); }
+void Camera::setPosition(const glm::vec3& position) { pos = position; }
+//void Camera::setRotation(const glm::quat& rotation) { rot = rotation; calculateViewMatrix(); }
+void Camera::setRotation(float y, float p) { yaw = y; pitch = p; }
 
 const VkViewport& Camera::getViewport() const { return viewport; }
 const VkRect2D& Camera::getScissorRect() const { return scissor; }
@@ -97,6 +99,7 @@ void Camera::processFrameEvents(float dt)
 	cachedViewProjectionMatrix = calculateViewProjectionMatrix();
 }
 
+/*
 glm::mat4 Camera::calculateViewMatrix()
 {
 	const glm::mat4 rotationMatrix = glm::mat4_cast(rot);
@@ -106,7 +109,7 @@ glm::mat4 Camera::calculateViewMatrix()
 	cachedViewProjectionMatrix = calculateViewProjectionMatrix();
 	return cachedViewMatrix;
 }
-
+*/
 glm::mat4 Camera::calculateProjectionMatrix()
 {
 	cachedProjectionMatrix = glm::perspective(fov_radians, aspectRatio, nearZ, farZ);

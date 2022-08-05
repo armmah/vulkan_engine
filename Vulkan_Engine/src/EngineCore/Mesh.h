@@ -27,7 +27,6 @@ public:
 	bool allocateVertexAttributes(VkMesh& graphicsMesh, const VmaAllocator& vmaAllocator);
 
 	void makeFace(glm::vec3 pivot, glm::vec3 up, glm::vec3 right, uint16_t firstIndex);
-	static bool tryLoadFromFile(std::vector<UNQ<Mesh>>& mesh, const std::string& path);
 	static Mesh getPrimitiveCube();
 	static Mesh getPrimitiveQuad();
 	static Mesh getPrimitiveTriangle();

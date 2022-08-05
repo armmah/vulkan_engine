@@ -6,6 +6,7 @@
 
 class VkMemoryAllocator;
 struct VmaAllocator_T;
+class Material;
 
 class Scene
 {
@@ -15,6 +16,8 @@ public:
 
 	bool load(const VmaAllocator& vmaAllocator);
 	void release(const VmaAllocator& allocator);
+
+	static bool tryLoadFromFile(std::vector<UNQ<Mesh>>& mesh, std::vector<UNQ<Material>>& materials, const std::string& path);
 
 private:
 	std::vector<UNQ<Mesh>> meshes;

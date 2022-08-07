@@ -5,8 +5,4 @@
   imgui_tables.cpp
   imgui_widgets.cpp
   Generating Code...
-  stb_implementation.cpp
-  tinyobjloader_implementation.cpp
-  vma_implementation.cpp
-  Generating Code...
   Third_Party_Project.vcxproj -> C:\Git\Vulkan_Engine\x64\Debug\Third_Party_Project.lib

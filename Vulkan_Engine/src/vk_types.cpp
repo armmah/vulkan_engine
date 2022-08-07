@@ -8,6 +8,7 @@
 #include "IndexAttributes.h"
 #include <Presentation/Device.h>
 #include <VkTypes/VkMaterialVariant.h>
+#include "PresentationTarget.h"
 
 CommandObjectsWrapper::RenderPassScope::RenderPassScope(VkCommandBuffer commandBuffer, VkRenderPass m_renderPass, VkFramebuffer swapChainFramebuffer, VkExtent2D extent, bool hasDepthAttachment)
 {
@@ -90,8 +91,20 @@ void CommandObjectsWrapper::drawAt(VkCommandBuffer commandBuffer, const VkMesh& 
 	vkCmdDrawIndexed(commandBuffer, mesh.iCount, 1, 0, 0, 0);
 }
 
-void CommandObjectsWrapper::renderIndexedMeshes(VkCommandBuffer commandBuffer, VkRenderPass m_renderPass,
-	VkFramebuffer frameBuffer, VkExtent2D extent, Camera& cam, const std::vector<UNQ<VkMesh>>& meshes, const VkMaterialVariant& variant, uint32_t frameNumber)
+struct StateChangeStatistics
+{
+	uint32_t pipelineCount;
+	uint32_t descriptorSetCount;
+	uint32_t drawCallCount;
+
+	void print() const
+	{
+		printf("\t\t\tDraw calls = %i. State change (pipeline = %i) | (descriptors = %i).\n", drawCallCount, pipelineCount, descriptorSetCount);
+	}
+};
+
+void CommandObjectsWrapper::renderIndexedMeshes(const std::vector<MeshRenderer>& renderers, Camera& cam, 
+	VkCommandBuffer commandBuffer, VkRenderPass m_renderPass, VkFramebuffer frameBuffer, VkExtent2D extent, uint32_t frameNumber)
 {
 	auto cbs = CommandBufferScope(commandBuffer);
 	{
@@ -102,13 +115,35 @@ void CommandObjectsWrapper::renderIndexedMeshes(VkCommandBuffer commandBuffer, V
 
 		auto rps = RenderPassScope(commandBuffer, m_renderPass, frameBuffer, extent, true);
 
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, variant.pipeline);
-
-		for (int i = 0; i < meshes.size(); i++)
+		StateChangeStatistics stats{};
+		const VkMaterialVariant* prevVariant = nullptr;
+		// To do - Add sorting to minimize state change
+		// To do - Frustrum culling
+		for (auto & renderer : renderers)
 		{
-			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, variant.pipelineLayout, 0, 1, &variant.descriptorSets[frameNumber % SWAPCHAIN_IMAGE_COUNT], 0, nullptr);
-			drawAt(commandBuffer, *meshes[i], variant.pipelineLayout, cam, frameNumber, 10.0f, glm::vec3(0.0f, 0.0f, 0.0f));
+			const auto& variant = *renderer.variant;
+			if (prevVariant != renderer.variant)
+			{
+				auto stateChange = variant.compare(prevVariant);
+
+				if (bitFlagPresent(stateChange, VariantStateChange::Pipeline))
+				{
+					vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, variant.getPipeline());
+					stats.pipelineCount += 1;
+				}
+
+				{
+					vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, variant.getPipelineLayout(), 0, 1, variant.getDescriptorSet(frameNumber), 0, nullptr);
+					stats.descriptorSetCount += 1;
+				}
+
+				prevVariant = &variant;
+			}
+
+			drawAt(commandBuffer, *renderer.mesh, variant.getPipelineLayout(), cam, frameNumber, 10.0f, glm::vec3(0.0f, 0.0f, 0.0f));
+			stats.drawCallCount += 1;
 		}
+		//stats.print();
 
 		if (ImGui::GetDrawData())
 		{

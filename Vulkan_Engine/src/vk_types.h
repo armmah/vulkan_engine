@@ -8,6 +8,7 @@
 
 class Camera;
 struct VkMesh;
+struct MeshRenderer;
 
 struct CommandObjectsWrapper
 {
@@ -40,7 +41,5 @@ struct CommandObjectsWrapper
 	static void drawAt(VkCommandBuffer commandBuffer, const VkMesh& mesh, VkPipelineLayout layout,
 		const Camera& cam, uint32_t frameNumber, float freq, glm::vec3 pos);
 
-	static void renderIndexedMeshes(VkCommandBuffer commandBuffer, VkRenderPass m_renderPass, 
-		VkFramebuffer frameBuffer, VkExtent2D extent, Camera& cam, const std::vector<UNQ<VkMesh>>& meshes, 
-		const VkMaterialVariant& variant, uint32_t frameNumber);
+	static void renderIndexedMeshes(const std::vector<MeshRenderer>& renderers, Camera& cam, VkCommandBuffer commandBuffer, VkRenderPass m_renderPass, VkFramebuffer frameBuffer, VkExtent2D extent, uint32_t frameNumber);
 };

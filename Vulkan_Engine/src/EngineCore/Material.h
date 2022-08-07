@@ -1,7 +1,7 @@
 #pragma once
 #include "pch.h"
-#include "VkTypes/VkShader.h"
 #include "ShaderSource.h"
+#include "VkTypes/VkMaterialVariant.h"
 
 struct TextureSource
 {
@@ -32,22 +32,21 @@ namespace Presentation
 }
 struct VkTexture2D;
 struct VkMaterialVariant;
+struct Shader;
 
 class Material
 {
 public:
-	// Keeping the ref to the abstraction over render pas, swapchain, etc to easily create the graphics pipeline, 
-	// This is however a bad idea and the material should not be tightly coupled to those resources. Will need a refactor at some point.
-	const Presentation::PresentationTarget* presentationTarget;
-
-	Material(const Presentation::Device* device, const Presentation::PresentationTarget* presentationTarget, VkDescriptorPool pool, const MaterialSource& materialSource);
+	Material(const Shader& shader, const VkTexture2D& texture, const VkPipeline pipeline, const VkPipelineLayout pipelineLayout, const VkDescriptorSetLayout descriptorSetLayout, std::array<VkDescriptorSet, SWAPCHAIN_IMAGE_COUNT>& descriptorSets);
 	~Material();
 
+	const VkMaterialVariant& getMaterialVariant() const { return variant; }
 	void release(VkDevice device);
 
-	Shader shader;
-	UNQ<VkTexture2D> texture;
-	UNQ<VkMaterialVariant> variant;
 private:
-	MaterialSource source;
+	const Shader* shader;
+	const VkTexture2D* texture;
+	VkMaterialVariant variant;
+
+	//MaterialSource source;
 };

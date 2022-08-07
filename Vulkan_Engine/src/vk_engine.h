@@ -2,15 +2,13 @@
 #include "pch.h"
 #include "VkTypes/InitializersUtility.h"
 
-class DescriptorPoolManager
+class DescriptorPoolManager : IRequireInitialization
 {
 public:
 
-	DescriptorPoolManager(VkDevice device)
-		: m_device(device), m_poolCollection()
-	{
-		createNewPool(SWAPCHAIN_IMAGE_COUNT);
-	}
+	DescriptorPoolManager(VkDevice device) : m_device(device), m_poolCollection() { }
+
+	virtual bool isInitialized() const override { return true; }
 
 	VkDescriptorPool createNewPool(uint32_t size)
 	{
@@ -77,7 +75,6 @@ public:
 	UNQ<Camera> m_cam;
 
 	UNQ<DescriptorPoolManager> m_descriptorPoolManager;
-	UNQ<Material> m_material;
 
 	bool m_isInitialized { false };
 

@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "Common.h"
 #include "VkShader.h"
 #include "ShaderSource.h"
 
@@ -29,4 +30,26 @@ void Shader::release(VkDevice device)
 {
 	vkDestroyShaderModule(device, vertShader, nullptr);
 	vkDestroyShaderModule(device, fragShader, nullptr);
+}
+
+void Shader::ensureDefaultShader(VkDevice device)
+{
+	if (globalShaderList.size() == 0)
+	{
+		auto defaultShader = Shader(device, ShaderSource::getDefaultShader());
+		globalShaderList.push_back(MAKEUNQ<Shader>(defaultShader));
+	}
+}
+
+void Shader::releaseGlobalShaderList(VkDevice device)
+{
+	if (globalShaderList.size() == 0)
+		return;
+
+	for (auto& shader : globalShaderList)
+	{
+		shader->release(device);
+	}
+
+	globalShaderList.clear();
 }

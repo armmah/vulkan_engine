@@ -7,7 +7,10 @@
 #include "VkTypes/PushConstantTypes.h"
 #include "Engine/Window.h"
 #include "VkTypes/VkTexture.h"
+#include "VkTypes/VkMaterialVariant.h"
+#include "Material.h"
 #include "PresentationTarget.h"
+#include "Mesh.h"
 
 namespace Presentation
 {
@@ -168,6 +171,18 @@ namespace Presentation
 
 	void PresentationTarget::release(VkDevice device)
 	{
+		for (auto& descLayout : globalDescriptorSetLayoutList)
+		{
+			vkDestroyDescriptorSetLayout(device, descLayout.second, nullptr);
+		}
+		
+		for (auto& graphicsPipeline : globalPipelineList)
+		{
+			vkDestroyPipelineLayout(device, graphicsPipeline.second.pipelineLayout, nullptr);
+			vkDestroyPipeline(device, graphicsPipeline.second.pipeline, nullptr);
+		}
+		//globalPipelineList.clear();
+
 		vkDestroyRenderPass(device, m_renderPass, nullptr);
 
 		if (hasDepthAttachement())
@@ -207,6 +222,35 @@ namespace Presentation
 			createSwapChainImageViews(vkdevice) &&
 			createRenderPass(vkdevice) &&
 			createFramebuffers(vkdevice);
+	}
+
+	bool PresentationTarget::createMaterial(UNQ<Material>& material, VkDevice device, VkDescriptorPool descPool, const Shader* shader, const VkTexture2D* texture)
+	{
+		VkDescriptorSetLayout descriptorSetLayout;
+		if (globalDescriptorSetLayoutList.count(shader) == 0)
+		{
+			if (!vkinit::Descriptor::createDescriptorSetLayout(descriptorSetLayout, device))
+				return false;
+
+			globalDescriptorSetLayoutList[shader] = descriptorSetLayout;
+		}
+		else descriptorSetLayout = globalDescriptorSetLayoutList[shader];
+		
+		VkGraphicsPipeline graphicsPipeline;
+		if (globalPipelineList.count(shader) == 0)
+		{
+			if (!createGraphicsPipeline(graphicsPipeline.pipeline, graphicsPipeline.pipelineLayout, *shader, device, Mesh::defaultVertexBinding, descriptorSetLayout, VK_CULL_MODE_BACK_BIT, m_hasDepthAttachment))
+				return false;
+			globalPipelineList[shader] = graphicsPipeline;
+		}
+		else graphicsPipeline = globalPipelineList[shader];
+
+		std::array<VkDescriptorSet, SWAPCHAIN_IMAGE_COUNT> descriptorSets;
+		vkinit::Descriptor::createDescriptorSets(descriptorSets, device, descPool, descriptorSetLayout, *texture);
+
+		material = MAKEUNQ<Material>(*shader, *texture, globalPipelineList[shader].pipeline, globalPipelineList[shader].pipelineLayout, globalDescriptorSetLayoutList[shader], descriptorSets);
+
+		return true;
 	}
 
 	VkExtent2D PresentationTarget::chooseSwapExtent(const SDL_Window* window)

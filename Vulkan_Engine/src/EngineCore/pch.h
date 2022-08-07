@@ -6,6 +6,7 @@
 #include <unordered_map>
 
 #include <memory>
+#include <filesystem>
 #include <fstream>
 
 #include <string>

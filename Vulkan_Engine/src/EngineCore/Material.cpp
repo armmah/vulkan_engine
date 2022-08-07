@@ -6,21 +6,19 @@
 #include "PresentationTarget.h"
 #include <EngineCore/Texture.h>
 #include "VkTypes/VkTexture.h"
+#include "VkTypes/VkShader.h"
 
-Material::Material(const Presentation::Device* device, const Presentation::PresentationTarget* presentationTarget, VkDescriptorPool pool, const MaterialSource& materialSource)
-	: presentationTarget(presentationTarget), source(materialSource), shader(device->getDevice(), materialSource.shaderSourcesOnDisk)
+Material::Material(const Shader& shader, const VkTexture2D& texture, const VkPipeline pipeline, const VkPipelineLayout pipelineLayout, const VkDescriptorSetLayout descriptorSetLayout, std::array<VkDescriptorSet, SWAPCHAIN_IMAGE_COUNT>& descriptorSets)
+	: shader(&shader), texture(&texture), variant(pipeline, pipelineLayout, descriptorSetLayout, descriptorSets)
 {
-	texture = MAKEUNQ<VkTexture2D>(materialSource.textureOnDisk.path, VkMemoryAllocator::getInstance()->m_allocator, device);
-
-	variant = MAKEUNQ<VkMaterialVariant>(this, device->getDevice(), pool, true);
 }
 
 Material::~Material() {}
 
 void Material::release(VkDevice device)
 {
-	shader.release(device);
-	texture->release(device);
+	shader = nullptr;
+	texture = nullptr;
 
-	variant->release(device);
+	variant.release(device);
 }

@@ -9,6 +9,11 @@
 #include "VkMesh.h"
 #include "Mesh.h"
 #include "Material.h"
+#include "VkTypes/VkTexture.h"
+#include "VkTypes/VkShader.h"
+
+#include "Presentation/Device.h"
+#include "PresentationTarget.h"
 
 Mesh::Mesh(std::vector<glm::vec3>& positions, std::vector<glm::vec2>& uvs, std::vector<glm::vec3>& normals, std::vector<glm::vec3>& colors, std::vector<uint16_t>& indices)
 	: m_positions(std::move(positions)), m_uvs(std::move(uvs)), m_normals(std::move(normals)), m_colors(std::move(colors)), m_indices(std::move(indices))
@@ -75,17 +80,32 @@ bool Mesh::isValid()
 	return true;
 }
 
-bool Scene::load(const VmaAllocator& vmaAllocator)
+bool Scene::load(const VmaAllocator& vmaAllocator, VkDescriptorPool descPool)
 {
-	std::vector<UNQ<Material>> mats;
-	Scene::tryLoadFromFile(meshes, mats, "C:/Git/Vulkan_Engine/Resources/sponza.obj");
+	std::unordered_map<uint32_t, uint32_t> meshTextureMap;
+	Scene::tryLoadFromFile(meshes, textures, meshTextureMap, "C:/Git/Vulkan_Engine/Resources/sponza.obj");
+
+	auto* defaultShader = Shader::findShader(0);
+	auto device = presentationDevice->getDevice();
+	materials.resize(textures.size());
+	for(int i = 0; i < textures.size(); i++)
+	{
+		presentationTarget->createMaterial(materials[i], device, descPool, defaultShader, textures[i].get());
+	}
 
 	auto defaultMeshDescriptor = Mesh::defaultMeshDescriptor;
 
 	const auto count = meshes.size();
 	graphicsMeshes.resize(count);
+	renderers.reserve(count);
 	for (int i = 0; i < count; i++)
 	{
+		if (meshTextureMap.count(i) == 0 || meshTextureMap[i] >= textures.size())
+		{
+			printf("SceneLoader - The material not found for '%i' mesh.\n", i);
+			continue;
+		}
+
 		if (!meshes[i]->allocateGraphicsMesh(graphicsMeshes[i], vmaAllocator) || !meshes[i]->isValid())
 			return false;
 
@@ -94,24 +114,47 @@ bool Scene::load(const VmaAllocator& vmaAllocator)
 			printf("Mesh metadata does not match - can not bind to the same pipeline.\n");
 			return false;
 		}
+
+		renderers.push_back(MeshRenderer(graphicsMeshes[i].get(), &materials[meshTextureMap[i]]->getMaterialVariant()));
 	}
 
 	return true;
 }
 
-void Scene::release(const VmaAllocator& allocator)
+void Scene::release(VkDevice device, const VmaAllocator& allocator)
 {
 	for (auto& mesh : meshes)
 	{
 		mesh->clear();
 		mesh.release();
 	}
+	meshes.clear();
 
 	for (auto& gmesh : graphicsMeshes)
 	{
 		gmesh->release(allocator);
+		gmesh.release();
 	}
+	graphicsMeshes.clear();
+
+	for (auto& tex : textures)
+	{
+		tex->release(device);
+		tex.release();
+	}
+	textures.clear();
+
+	for (auto& mat : materials)
+	{
+		mat->release(device);
+		mat.release();
+	}
+	materials.clear();
 }
+
+Scene::Scene(const Presentation::Device* device, Presentation::PresentationTarget* target) 
+	: presentationDevice(device), presentationTarget(target) { }
+Scene::~Scene() {}
 
 const std::vector<UNQ<Mesh>>& Scene::getMeshes() const { return meshes; }
 const std::vector<UNQ<VkMesh>>& Scene::getGraphicsMeshes() const { return graphicsMeshes; }
@@ -158,7 +201,7 @@ T reinterpretAt_orFallback(std::vector<F>& src, size_t srcIndex)
 	return src.size() > srcIndex ? *reinterpret_cast<T*>(&src[srcIndex]) : T{};
 }
 
-bool loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::vector<UNQ<Material>>& materials, const std::string& path, const std::string& name)
+bool Scene::loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::vector<UNQ<VkTexture2D>>& textures, std::unordered_map<uint32_t, uint32_t>& meshTextureMap, const std::string& path, const std::string& name)
 {
 	//attrib will contain the vertex arrays of the file
 	tinyobj::attrib_t objAttribs;
@@ -176,6 +219,17 @@ bool loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::vector<UNQ<Mater
 
 	tinyobj::LoadObj(&objAttribs, &objShapes, &objMats, &warn, &err, objPath.c_str(), path.c_str());
 
+	textures.reserve(objMats.size());
+	for(int i = 0; i < std::min(static_cast<size_t>(9999), objMats.size()); i++)
+	{
+		auto texPath = path + objMats[i].diffuse_texname;
+		if (objMats[i].diffuse_texname.size() == 0 ||
+			!std::filesystem::exists(texPath))
+			continue;
+
+		textures.push_back(MAKEUNQ<VkTexture2D>(texPath, VkMemoryAllocator::getInstance()->m_allocator, presentationDevice));
+	}
+
 	//make sure to output the warnings to the console, in case there are issues with the file
 	if (!warn.empty())
 	{
@@ -192,7 +246,7 @@ bool loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::vector<UNQ<Mater
 
 	std::unordered_map<size_t, uint16_t> indexMapping;
 	//for (size_t i = 0; i < shapes.size(); i++)
-	for (size_t i = 0; i < std::min(static_cast<size_t>(10), objShapes.size()); i++)
+	for (size_t i = 0; i < std::min(static_cast<size_t>(9999), objShapes.size()); i++)
 	{
 		auto& name = objShapes[i].name;
 		auto& mesh = objShapes[i].mesh;
@@ -253,7 +307,7 @@ bool loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::vector<UNQ<Mater
 				vertices.push_back(reinterpretAt<float, MeshDescriptor::TVertexPosition>(objAttribs.vertices, vi * 3));
 
 				normals.push_back(reinterpretAt_orFallback<float, MeshDescriptor::TVertexNormal>(objAttribs.normals, ni * 3));
-				uvs.push_back(reinterpretAt_orFallback<float, MeshDescriptor::TVertexUV>(objAttribs.texcoords, uvi * 3));
+				uvs.push_back(reinterpretAt_orFallback<float, MeshDescriptor::TVertexUV>(objAttribs.texcoords, uvi * 2));
 
 				uniqueVertIndices.insert(vi);
 			}
@@ -263,14 +317,20 @@ bool loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::vector<UNQ<Mater
 		fillArrayWithDefaultValue(colors, 0, vertices.size());
 		
 		meshes.push_back(MAKEUNQ<Mesh>(vertices, uvs, normals, colors, indices));
+
+		meshTextureMap[i] = mesh.material_ids[0];
+		if (mesh.material_ids.size() - 1 > 0)
+			printf("Skipped materials %zi ids for shape '%s'\n", mesh.material_ids.size() - 1, name.c_str());
 	}
 
-	printf("Loaded obj mesh at '%s' successfully, with %i meshes and %i materials.\n", 
-		objPath.c_str(), as_uint32(meshes.size()), as_uint32(materials.size()));
+	// We are currently rendering the whole mesh (with all of its submeshes) with material[0] - hardcoded.
+	// To do - integrate the submesh support. Can be problematic due to different vertex bindings (another pipeline?)
+	printf("Loaded obj mesh at '%s' successfully, with %i meshes and %i diffuse textures.\n", 
+		objPath.c_str(), as_uint32(meshes.size()), as_uint32(textures.size()));
 	return true;
 }
 
-bool Scene::tryLoadFromFile(std::vector<UNQ<Mesh>>& meshes, std::vector<UNQ<Material>>& materials, const std::string& path)
+bool Scene::tryLoadFromFile(std::vector<UNQ<Mesh>>& meshes, std::vector<UNQ<VkTexture2D>>& textures, std::unordered_map<uint32_t, uint32_t>& meshTextureMap, const std::string& path)
 {
 	const std::string supportedFormat = ".obj";
 	if (path.length() > supportedFormat.length() && std::equal(supportedFormat.rbegin(), supportedFormat.rend(), path.rbegin()))
@@ -280,7 +340,7 @@ bool Scene::tryLoadFromFile(std::vector<UNQ<Mesh>>& meshes, std::vector<UNQ<Mate
 		auto directory = path.substr(0, nameStart);
 		auto name = path.substr(nameStart, path.length() - nameStart - extensionLength);
 
-		loadObjImplementation(meshes, materials, directory, name);
+		loadObjImplementation(meshes, textures, meshTextureMap, directory, name);
 	}
 
 	return false;

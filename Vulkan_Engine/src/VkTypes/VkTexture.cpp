@@ -10,7 +10,7 @@ VkTexture2D::VkTexture2D(std::string path, const VmaAllocator& allocator, const 
 	stbi_uc* const pixels = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
 	size_t imageSize = static_cast<size_t>(width) * static_cast<size_t>(height) * 4;
 
-	if (imageSize <= 0 || !pixels)
+	if (width <= 0 || height <= 0 || imageSize <= 0 || !pixels)
 	{
 		printf("Could not load the image at %s.\n", path.c_str());
 	}

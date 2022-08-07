@@ -3,19 +3,43 @@
 #include "Common.h"
 
 class Material;
+struct VkMesh;
+struct VkGraphicsPipeline;
+
+enum VariantStateChange : uint32_t
+{
+	None = 0,
+
+	Pipeline = 1,
+
+	DescriptorSet = 6
+};
 
 struct VkMaterialVariant
 {
-	VkDescriptorSetLayout descriptorSetLayout{};
-	std::array<VkDescriptorSet, SWAPCHAIN_IMAGE_COUNT> descriptorSets;
+	VkMaterialVariant(const VkPipeline pipeline, const VkPipelineLayout pipelineLayout, const VkDescriptorSetLayout descriptorSetLayout, std::array<VkDescriptorSet, SWAPCHAIN_IMAGE_COUNT>& descriptorSets);
 
-	VkPipeline pipeline;
-	VkPipelineLayout pipelineLayout;
+	const VkPipeline getPipeline() const;
+	const VkPipelineLayout getPipelineLayout() const;
+	const VkDescriptorSet* getDescriptorSet(uint32_t frameNumber) const;
+	const VkDescriptorSetLayout getDescriptorSetLayout() const;
 
-	VkMaterialVariant(const Material* sourceMat, VkDevice device, VkDescriptorPool descriptorPool, bool hasDepthAttachment);
+	VariantStateChange compare(const VkMaterialVariant* other) const;
 
 	void release(VkDevice device);
 
 private:
-	const Material* sourceMat;
+	const VkPipeline pipeline;
+	const VkPipelineLayout pipelineLayout;
+	const VkDescriptorSetLayout descriptorSetLayout;
+
+	std::array<VkDescriptorSet, SWAPCHAIN_IMAGE_COUNT> descriptorSets;
+};
+
+struct MeshRenderer
+{
+	const VkMesh* mesh;
+	const VkMaterialVariant* variant;
+
+	MeshRenderer(const VkMesh* mesh, const VkMaterialVariant* variant) : mesh(mesh), variant(variant) {}
 };

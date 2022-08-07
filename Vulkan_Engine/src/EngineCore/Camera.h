@@ -1,11 +1,11 @@
 #pragma once
 #include "pch.h"
 
-const float YAW = 90.0f;
-const float PITCH = 0.0f;
-const float SPEED = 0.0025f;
-const float SENSITIVITY = 150.0f;
-const float ZOOM = 45.0f;
+static constexpr float YAW = 90.0f;
+static constexpr float PITCH = 0.0f;
+static constexpr float SPEED = 0.0025f;
+static constexpr float SENSITIVITY = 150.0f;
+static constexpr float ZOOM = 45.0f;
 
 class Camera
 {
@@ -16,7 +16,7 @@ public:
 	// const glm::quat& getRotation() const;
 	float getYaw() const;
 	float getPitch() const;
-
+	
 	void setPosition(const glm::vec3& position);
 	void setRotation(float yaw, float pitch);
 

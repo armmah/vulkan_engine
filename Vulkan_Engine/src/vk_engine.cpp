@@ -12,6 +12,7 @@
 #include "Engine/Window.h"
 #include "EngineCore/Scene.h"
 #include "Camera.h"
+#include "VkTypes/VkShader.h"
 
 #include <EngineCore/Material.h>
 #include "vk_engine.h"
@@ -40,25 +41,26 @@ void VulkanEngine::init(bool requestValidationLayers)
 	m_imgui = MAKEUNQ<ImGuiHandle>(m_instance, m_presentationHardware->getActiveGPU(), m_presentationDevice.get(), 
 		m_presentationTarget->getRenderPass(), m_framePresentation->getImageCount(), m_window.get());
 
+	// Descriptor pools
+	auto descPool = m_descriptorPoolManager->createNewPool(SWAPCHAIN_IMAGE_COUNT * 1000);
+
+	Shader::ensureDefaultShader(m_presentationDevice->getDevice());
+	
 	// Scene
-	m_openScene = MAKEUNQ<Scene>();
-	if (!m_openScene->load(m_memoryAllocator->m_allocator))
+	m_openScene = MAKEUNQ<Scene>(m_presentationDevice.get(), m_presentationTarget.get());
+	if (!m_openScene->load(m_memoryAllocator->m_allocator, descPool))
 	{
 		printf("Failed to load the scene!");
 	}
+
+	
 
 	// Camera
 	m_cam = MAKEUNQ<Camera>(60.f, m_presentationTarget->getSwapchainExtent());
 	m_cam->setPosition({ -150.f, 100.f, -10.f });
 	m_cam->setRotation(0.f, 15.f);
 
-	// Descriptor pools
-	m_descriptorPoolManager = MAKEUNQ<DescriptorPoolManager>(m_presentationDevice->getDevice());
-	auto descPool = m_descriptorPoolManager->createNewPool(SWAPCHAIN_IMAGE_COUNT);
-
-	// Material (texture & shader)
-	MaterialSource msrc = {};
-	m_material = MAKEUNQ<Material>(m_presentationDevice.get(), m_presentationTarget.get(), descPool, msrc);
+	// m_material = MAKEUNQ<Material>(m_presentationDevice.get(), m_presentationTarget.get(), descPool);
 }
 
 bool VulkanEngine::init_vulkan()
@@ -75,7 +77,8 @@ bool VulkanEngine::init_vulkan()
 		tryInitialize<Presentation::Device>(m_presentationDevice, m_presentationHardware->getActiveGPU(), surface, m_window.get(), m_validationLayers.get()) &&
 		tryInitialize<VkMemoryAllocator>(m_memoryAllocator, m_instance, m_presentationHardware->getActiveGPU(), m_presentationDevice->getDevice()) &&
 		tryInitialize<Presentation::PresentationTarget>(m_presentationTarget, *m_presentationHardware, *m_presentationDevice, m_window.get(), true) &&
-		tryInitialize<Presentation::FrameCollection>(m_framePresentation, m_presentationDevice->getDevice(), m_presentationDevice->getCommandPool());
+		tryInitialize<Presentation::FrameCollection>(m_framePresentation, m_presentationDevice->getDevice(), m_presentationDevice->getCommandPool()) &&
+		tryInitialize<DescriptorPoolManager>(m_descriptorPoolManager, m_presentationDevice->getDevice());
 }
 
 void VulkanEngine::run()
@@ -167,8 +170,9 @@ void VulkanEngine::draw()
 	auto buffer = frame.getCommandBuffer();
 	vkResetCommandBuffer(buffer, 0);
 	
-	CommandObjectsWrapper::renderIndexedMeshes(buffer, m_presentationTarget->getRenderPass(), m_presentationTarget->getSwapchainFrameBuffers(imageIndex),
-		m_presentationTarget->getSwapchainExtent(), *m_cam, m_openScene->getGraphicsMeshes(), *m_material->variant.get(), m_frameNumber);
+	CommandObjectsWrapper::renderIndexedMeshes(m_openScene->getRenderers(), *m_cam, buffer,
+		m_presentationTarget->getRenderPass(), m_presentationTarget->getSwapchainFrameBuffers(imageIndex),
+		m_presentationTarget->getSwapchainExtent(), m_frameNumber);
 
 	frame.resetAcquireFence(m_presentationDevice->getDevice());
 	frame.submitToQueue(m_presentationDevice->getGraphicsQueue());
@@ -201,11 +205,11 @@ void VulkanEngine::cleanup()
 {
 	if (m_instance)
 	{
+		Shader::releaseGlobalShaderList(m_presentationDevice->getDevice());
+		
 		m_imgui->release(m_presentationDevice->getDevice());
 
-		m_material->release(m_presentationDevice->getDevice());
-
-		m_openScene->release(m_memoryAllocator->m_allocator);
+		m_openScene->release(m_presentationDevice->getDevice(), m_memoryAllocator->m_allocator);
 
 		m_framePresentation->releaseFrameResources();
 
@@ -219,7 +223,7 @@ void VulkanEngine::cleanup()
 		vkDestroySurfaceKHR(m_instance, m_presentationDevice->getSurface(), nullptr);
 		vkDestroyInstance(m_instance, nullptr);
 	}
-
+	
 	if (m_window)
 	{
 		m_window->release();

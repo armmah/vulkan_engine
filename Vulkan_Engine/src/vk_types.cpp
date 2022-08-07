@@ -136,6 +136,7 @@ void CommandObjectsWrapper::renderIndexedMeshes(const std::vector<MeshRenderer>&
 					stats.pipelineCount += 1;
 				}
 
+				// if (bitFlagPresent(stateChange, VariantStateChange::DescriptorSet))
 				{
 					vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, variant.getPipelineLayout(), 0, 1, variant.getDescriptorSet(frameNumber), 0, nullptr);
 					stats.descriptorSetCount += 1;

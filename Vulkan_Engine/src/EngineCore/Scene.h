@@ -39,10 +39,10 @@ public:
 
 	std::vector<MeshRenderer> getRenderers() { return renderers; }
 
-	bool tryLoadFromFile(std::vector<UNQ<Mesh>>& meshes, std::vector<UNQ<VkTexture2D>>& textures, std::unordered_map<uint32_t, uint32_t>& meshTextureMap, const std::string& path);
+	bool tryLoadFromFile(std::vector<UNQ<Mesh>>& meshes, std::vector<UNQ<VkTexture2D>>& textures, std::unordered_map<uint32_t, std::vector<uint32_t>>& meshTextureMap, const std::string& path);
 
 private:
-	bool loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::vector<UNQ<VkTexture2D>>& textures, std::unordered_map<uint32_t, uint32_t>& meshTextureMap, const std::string& path, const std::string& name);
+	bool loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::vector<UNQ<VkTexture2D>>& textures, std::unordered_map<uint32_t, std::vector<uint32_t>>& meshTextureMap, const std::string& path, const std::string& name);
 
 	const Presentation::Device* presentationDevice;
 	Presentation::PresentationTarget* presentationTarget;

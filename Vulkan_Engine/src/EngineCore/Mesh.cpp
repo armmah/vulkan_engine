@@ -14,7 +14,8 @@ Mesh::Mesh(size_t vertN, size_t indexN)
 	m_normals.reserve(vertN);
 	m_colors.reserve(vertN);
 
-	m_indices.reserve(indexN);
+	m_submeshes.resize(1);
+	m_submeshes[0].m_indices.reserve(indexN);
 
 	updateMetaData();
 }
@@ -94,9 +95,9 @@ bool Mesh::allocateVertexAttributes(VkMesh& graphicsMesh, const VmaAllocator& vm
 	return true;
 }
 
-bool Mesh::allocateIndexAttributes(VkMesh& graphicsMesh, const VmaAllocator& vmaAllocator)
+bool Mesh::allocateIndexAttributes(VkMesh& graphicsMesh, const SubMesh& submesh, const VmaAllocator& vmaAllocator)
 {
-	size_t totalSize = vectorsizeof(m_indices);
+	size_t totalSize = vectorsizeof(submesh.m_indices);
 
 	VkBuffer iBuffer;
 	VmaAllocation iMemRange;
@@ -106,11 +107,13 @@ bool Mesh::allocateIndexAttributes(VkMesh& graphicsMesh, const VmaAllocator& vma
 		return false;
 	}
 
-	graphicsMesh.iAttributes = MAKEUNQ<IndexAttributes>(iBuffer, iMemRange, VkIndexType::VK_INDEX_TYPE_UINT16);
-	graphicsMesh.iCount = as_uint32(m_indices.size());
+	auto indexCount = submesh.getIndexCount();
+	graphicsMesh.iAttributes.push_back(
+		IndexAttributes(iBuffer, iMemRange, as_uint32(indexCount), VkIndexType::VK_INDEX_TYPE_UINT16)
+	);
 
 	// Fill the index buffer
-	mapAndCopyBuffer(vmaAllocator, iMemRange, m_indices.data(), m_indices.size() / 3, totalSize,
+	mapAndCopyBuffer(vmaAllocator, iMemRange, submesh.m_indices.data(), indexCount / 3, totalSize,
 		"Copied index buffer of size: %zu triangles and %zu bytes (%f bytes per triangle).\n");
 
 	return true;
@@ -183,9 +186,14 @@ VertexBinding Mesh::initializeBindings(const MeshDescriptor& meshDescriptor)
 bool Mesh::allocateGraphicsMesh(UNQ<VkMesh>& graphicsMesh, const VmaAllocator& vmaAllocator)
 {
 	graphicsMesh = MAKEUNQ<VkMesh>();
-	if (!allocateVertexAttributes(*graphicsMesh, vmaAllocator) ||
-		!allocateIndexAttributes(*graphicsMesh, vmaAllocator))
+	if (!allocateVertexAttributes(*graphicsMesh, vmaAllocator))
 		return false;
+
+	for (auto& submesh : m_submeshes)
+	{
+		if (!allocateIndexAttributes(*graphicsMesh, submesh, vmaAllocator))
+			return false;
+	}
 
 	return true;
 }

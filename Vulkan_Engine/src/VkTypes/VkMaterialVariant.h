@@ -40,6 +40,8 @@ struct MeshRenderer
 {
 	const VkMesh* mesh;
 	const VkMaterialVariant* variant;
+	uint32_t submeshIndex;
 
-	MeshRenderer(const VkMesh* mesh, const VkMaterialVariant* variant) : mesh(mesh), variant(variant) {}
+	MeshRenderer(const VkMesh* mesh, const VkMaterialVariant* variant) : mesh(mesh), submeshIndex(0), variant(variant) {}
+	MeshRenderer(const VkMesh* mesh, uint32_t submeshIndex, const VkMaterialVariant* variant) : mesh(mesh), submeshIndex(submeshIndex), variant(variant) {}
 };

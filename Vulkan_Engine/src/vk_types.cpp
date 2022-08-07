@@ -75,7 +75,7 @@ void CommandObjectsWrapper::HelloTriangleCommand(VkCommandBuffer buffer, VkPipel
 	}
 }
 
-void CommandObjectsWrapper::drawAt(VkCommandBuffer commandBuffer, const VkMesh& mesh, VkPipelineLayout layout, const Camera& cam, uint32_t frameNumber, float freq, glm::vec3 pos)
+void CommandObjectsWrapper::drawAt(VkCommandBuffer commandBuffer, const MeshRenderer& renderer, VkPipelineLayout layout, const Camera& cam, uint32_t frameNumber, float freq, glm::vec3 pos)
 {
 	const glm::mat4 model = glm::translate(glm::mat4(1.f), pos);// *glm::rotate(glm::mat4{ 1.0f }, glm::radians(frameNumber * 0.01f * freq), glm::vec3(0, 1, 0));
 
@@ -84,11 +84,15 @@ void CommandObjectsWrapper::drawAt(VkCommandBuffer commandBuffer, const VkMesh& 
 	pushConstant.view_matrix = cam.getViewMatrix();
 	pushConstant.persp_matrix = cam.getPerspectiveMatrix();
 
-	mesh.vAttributes->bind(commandBuffer);
-	mesh.iAttributes->bind(commandBuffer);
+	renderer.mesh->vAttributes->bind(commandBuffer);
 
-	vkCmdPushConstants(commandBuffer, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(TransformPushConstant), &pushConstant);
-	vkCmdDrawIndexed(commandBuffer, mesh.iCount, 1, 0, 0, 0);
+	auto& indices = renderer.mesh->iAttributes[renderer.submeshIndex];
+	{
+		indices.bind(commandBuffer);
+
+		vkCmdPushConstants(commandBuffer, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(TransformPushConstant), &pushConstant);
+		vkCmdDrawIndexed(commandBuffer, indices.getIndexCount(), 1, 0, 0, 0);
+	}
 }
 
 struct StateChangeStatistics
@@ -119,7 +123,7 @@ void CommandObjectsWrapper::renderIndexedMeshes(const std::vector<MeshRenderer>&
 		const VkMaterialVariant* prevVariant = nullptr;
 		// To do - Add sorting to minimize state change
 		// To do - Frustrum culling
-		for (auto & renderer : renderers)
+		for (auto& renderer : renderers)
 		{
 			const auto& variant = *renderer.variant;
 			if (prevVariant != renderer.variant)
@@ -140,10 +144,10 @@ void CommandObjectsWrapper::renderIndexedMeshes(const std::vector<MeshRenderer>&
 				prevVariant = &variant;
 			}
 
-			drawAt(commandBuffer, *renderer.mesh, variant.getPipelineLayout(), cam, frameNumber, 10.0f, glm::vec3(0.0f, 0.0f, 0.0f));
+			drawAt(commandBuffer, renderer, variant.getPipelineLayout(), cam, frameNumber, 10.0f, glm::vec3(0.0f, 0.0f, 0.0f));
 			stats.drawCallCount += 1;
 		}
-		//stats.print();
+		stats.print();
 
 		if (ImGui::GetDrawData())
 		{

@@ -46,7 +46,7 @@ Mesh Mesh::getPrimitiveQuad()
 		2, 1, 3
 	};
 
-	return Mesh(positions, uvs, normals, colors, indices);
+	return Mesh(positions, uvs, normals, colors, SubMesh(indices));
 }
 
 void Mesh::makeFace(glm::vec3 pivot, glm::vec3 up, glm::vec3 right, uint16_t firstIndex)
@@ -72,19 +72,22 @@ void Mesh::makeFace(glm::vec3 pivot, glm::vec3 up, glm::vec3 right, uint16_t fir
 	m_colors.push_back(Color::green().v4());
 	m_colors.push_back(Color::blue().v4());
 
-	uint16_t indices[6]{
+	uint16_t indices[6] {
 		0, 1, 2,
 		2, 1, 3
 	};
+	m_submeshes.resize(1);
+	auto& submesh = m_submeshes[0];
+
 	if (normal.x < 0 || normal.y < 0 || normal.z < 0)
 	{
 		for (int i = 0; i < 6; i += 1)
-			m_indices.push_back(firstIndex + indices[i]);
+			submesh.m_indices.push_back(firstIndex + indices[i]);
 	}
 	else
 	{
 		for (int i = 5; i >= 0; i -= 1)
-			m_indices.push_back(firstIndex + indices[i]);
+			submesh.m_indices.push_back(firstIndex + indices[i]);
 	}
 }
 

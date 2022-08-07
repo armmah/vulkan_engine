@@ -13,9 +13,7 @@ void main()
 {
     vec4 color = texture(texSampler, fragTexCoord);
 
-    // fragNormal 
-    // viewDirection
     float attenuation = dot(fragNormal, viewDirection);
 
-    outColor = color * attenuation;
+    outColor = color;// * attenuation;
 }

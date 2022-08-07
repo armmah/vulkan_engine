@@ -6,10 +6,22 @@
 
 struct VkMesh;
 
+struct SubMesh
+{
+	SubMesh() : m_indices() { }
+	SubMesh(size_t size) : m_indices() { m_indices.reserve(size); }
+	SubMesh(std::vector<MeshDescriptor::TVertexIndices>& indices) : m_indices(std::move(indices)) { }
+	uint32_t getIndexCount() const { return m_indices.size(); }
+
+	std::vector<MeshDescriptor::TVertexIndices> m_indices;
+};
+
 struct Mesh
 {
 public:
-	Mesh(std::vector<glm::vec3>& positions, std::vector<glm::vec2>& uvs, std::vector<glm::vec3>& normals, std::vector<glm::vec3>& colors, std::vector<uint16_t>& indices);
+	Mesh(std::vector<glm::vec3>& positions, std::vector<glm::vec2>& uvs, std::vector<glm::vec3>& normals, std::vector<glm::vec3>& colors, std::vector<SubMesh>& submeshes);
+	Mesh(std::vector<glm::vec3>& positions, std::vector<glm::vec2>& uvs, std::vector<glm::vec3>& normals, std::vector<glm::vec3>& colors, SubMesh& submesh);
+	Mesh(std::vector<glm::vec3>& positions, std::vector<glm::vec2>& uvs, std::vector<glm::vec3>& normals, std::vector<glm::vec3>& colors, SubMesh&& submesh);
 
 	void clear();
 	bool isValid();
@@ -23,7 +35,7 @@ public:
 	static VertexBinding initializeBindings(const MeshDescriptor& meshDescriptor);
 
 	bool allocateGraphicsMesh(UNQ<VkMesh>& graphicsMesh, const VmaAllocator& vmaAllocator);
-	bool allocateIndexAttributes(VkMesh& graphicsMesh, const VmaAllocator& vmaAllocator);
+	bool allocateIndexAttributes(VkMesh& graphicsMesh, const SubMesh& submesh, const VmaAllocator& vmaAllocator);
 	bool allocateVertexAttributes(VkMesh& graphicsMesh, const VmaAllocator& vmaAllocator);
 
 	void makeFace(glm::vec3 pivot, glm::vec3 up, glm::vec3 right, uint16_t firstIndex);
@@ -44,7 +56,8 @@ private:
 	std::vector<MeshDescriptor::TVertexNormal> m_normals;
 	std::vector<MeshDescriptor::TVertexColor> m_colors;
 
-	std::vector<MeshDescriptor::TVertexIndices> m_indices;
+	//std::vector<MeshDescriptor::TVertexIndices> m_indices;
+	std::vector<SubMesh> m_submeshes;
 
 	MeshDescriptor metaData;
 	void* vectors[MeshDescriptor::descriptorCount];

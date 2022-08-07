@@ -15,9 +15,23 @@
 #include "Presentation/Device.h"
 #include "PresentationTarget.h"
 
-Mesh::Mesh(std::vector<glm::vec3>& positions, std::vector<glm::vec2>& uvs, std::vector<glm::vec3>& normals, std::vector<glm::vec3>& colors, std::vector<uint16_t>& indices)
-	: m_positions(std::move(positions)), m_uvs(std::move(uvs)), m_normals(std::move(normals)), m_colors(std::move(colors)), m_indices(std::move(indices))
+Mesh::Mesh(std::vector<glm::vec3>& positions, std::vector<glm::vec2>& uvs, std::vector<glm::vec3>& normals, std::vector<glm::vec3>& colors, std::vector<SubMesh>& submeshes)
+	: m_positions(std::move(positions)), m_uvs(std::move(uvs)), m_normals(std::move(normals)), m_colors(std::move(colors)), m_submeshes(std::move(submeshes))
 {
+	updateMetaData();
+}
+
+Mesh::Mesh(std::vector<glm::vec3>& positions, std::vector<glm::vec2>& uvs, std::vector<glm::vec3>& normals, std::vector<glm::vec3>& colors, SubMesh& submesh)
+	: m_positions(std::move(positions)), m_uvs(std::move(uvs)), m_normals(std::move(normals)), m_colors(std::move(colors)), m_submeshes(1)
+{
+	m_submeshes[0] = std::move(submesh);
+	updateMetaData();
+}
+
+Mesh::Mesh(std::vector<glm::vec3>& positions, std::vector<glm::vec2>& uvs, std::vector<glm::vec3>& normals, std::vector<glm::vec3>& colors, SubMesh&& submesh)
+	: m_positions(std::move(positions)), m_uvs(std::move(uvs)), m_normals(std::move(normals)), m_colors(std::move(colors)), m_submeshes(1) 
+{
+	m_submeshes[0] = std::move(submesh);
 	updateMetaData();
 }
 
@@ -28,7 +42,7 @@ void Mesh::clear()
 	m_normals.clear();
 	m_colors.clear();
 
-	m_indices.clear();
+	m_submeshes.clear();
 }
 
 bool Mesh::validateOptionalBufferSize(size_t vectorSize, size_t vertexCount, char const* name)
@@ -66,13 +80,16 @@ bool Mesh::isValid()
 		return false;
 
 #ifndef NDEBUG
-	for (size_t i = 0, size = m_indices.size(); i < size; ++i)
+	for (auto& submesh : m_submeshes)
 	{
-		auto index = m_indices[i];
-		if (index < 0 || index >= n)
+		for (size_t i = 0, size = submesh.m_indices.size(); i < size; ++i)
 		{
-			printf("An incorrect index '%i' detected at position indices[%zu], should be in {0, %zu} range.\n", index, i, n);
-			return false;
+			auto index = submesh.m_indices[i];
+			if (index < 0 || index >= n)
+			{
+				printf("An incorrect index '%i' detected at position indices[%zu], should be in {0, %zu} range.\n", index, i, n);
+				return false;
+			}
 		}
 	}
 #endif
@@ -82,7 +99,7 @@ bool Mesh::isValid()
 
 bool Scene::load(const VmaAllocator& vmaAllocator, VkDescriptorPool descPool)
 {
-	std::unordered_map<uint32_t, uint32_t> meshTextureMap;
+	std::unordered_map<uint32_t, std::vector<uint32_t>> meshTextureMap;
 	Scene::tryLoadFromFile(meshes, textures, meshTextureMap, "C:/Git/Vulkan_Engine/Resources/sponza.obj");
 
 	auto* defaultShader = Shader::findShader(0);
@@ -100,12 +117,6 @@ bool Scene::load(const VmaAllocator& vmaAllocator, VkDescriptorPool descPool)
 	renderers.reserve(count);
 	for (int i = 0; i < count; i++)
 	{
-		if (meshTextureMap.count(i) == 0 || meshTextureMap[i] >= textures.size())
-		{
-			printf("SceneLoader - The material not found for '%i' mesh.\n", i);
-			continue;
-		}
-
 		if (!meshes[i]->allocateGraphicsMesh(graphicsMeshes[i], vmaAllocator) || !meshes[i]->isValid())
 			return false;
 
@@ -115,9 +126,22 @@ bool Scene::load(const VmaAllocator& vmaAllocator, VkDescriptorPool descPool)
 			return false;
 		}
 
-		renderers.push_back(MeshRenderer(graphicsMeshes[i].get(), &materials[meshTextureMap[i]]->getMaterialVariant()));
+		auto& allMaterialIDs = meshTextureMap[i];
+		uint32_t submeshIndex = 0;
+		for (auto id : allMaterialIDs)
+		{
+			if (meshTextureMap.count(i) == 0 || id >= textures.size())
+			{
+				printf("SceneLoader - The material not found for '%i' mesh.\n", i);
+				continue;
+			}
+
+			renderers.push_back(MeshRenderer(graphicsMeshes[i].get(), submeshIndex, &materials[id]->getMaterialVariant()));
+			++submeshIndex;
+		}
 	}
 
+	printf("Initialized the scene with (renderers = %zi), (meshes = %zi), (textures = %zi), (materials = %zi).\n", renderers.size(), meshes.size(), textures.size(), materials.size());
 	return true;
 }
 
@@ -201,7 +225,7 @@ T reinterpretAt_orFallback(std::vector<F>& src, size_t srcIndex)
 	return src.size() > srcIndex ? *reinterpret_cast<T*>(&src[srcIndex]) : T{};
 }
 
-bool Scene::loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::vector<UNQ<VkTexture2D>>& textures, std::unordered_map<uint32_t, uint32_t>& meshTextureMap, const std::string& path, const std::string& name)
+bool Scene::loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::vector<UNQ<VkTexture2D>>& textures, std::unordered_map<uint32_t, std::vector<uint32_t>>& meshTextureMap, const std::string& path, const std::string& name)
 {
 	//attrib will contain the vertex arrays of the file
 	tinyobj::attrib_t objAttribs;
@@ -244,22 +268,71 @@ bool Scene::loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::vector<UN
 		return false;
 	}
 
-	std::unordered_map<size_t, uint16_t> indexMapping;
+	struct SubMeshDesc
+	{
+		size_t indexCount;
+		uint32_t mappedIndex;
+	};
+
+	std::unordered_map<uint32_t, SubMeshDesc> uniqueMaterialIDs;
+	std::unordered_map<size_t, MeshDescriptor::TVertexIndices> indexMapping;
 	//for (size_t i = 0; i < shapes.size(); i++)
 	for (size_t i = 0; i < std::min(static_cast<size_t>(9999), objShapes.size()); i++)
 	{
+		indexMapping.clear();
+
 		auto& name = objShapes[i].name;
 		auto& mesh = objShapes[i].mesh;
 		auto& shapeIndices = mesh.indices;
 
 		// The shape's vertex index here is referencing the big obj vertex buffer,
 		// Our vertex buffer for mesh will be much smaller and should be indexed per-mesh, instead of globally.
-		std::vector<uint16_t> indices(shapeIndices.size());
+		std::vector<SubMesh> submeshes;
+		// std::vector<MeshDescriptor::TVertexIndices> indices(shapeIndices.size());
 
-		auto index = 0;
-		for (size_t i = 0; i < shapeIndices.size(); i++)
+		if (mesh.material_ids.size() * 3 < shapeIndices.size())
 		{
-			auto& vertIndex = shapeIndices[i].vertex_index;
+			printf("The material ID array size (3 * %zi) does not match the shapeIndices array size (%zi).", mesh.material_ids.size(), shapeIndices.size());
+			return false;
+		}
+
+		// Initialize the vector memory
+		uniqueMaterialIDs.clear();
+		size_t materialCount = 0;
+		for (size_t k = 0; k < mesh.material_ids.size(); k++)
+		{
+			auto id = mesh.material_ids[k];
+
+			if (uniqueMaterialIDs.count(id) > 0)
+			{
+				uniqueMaterialIDs[id].indexCount += 1;
+				continue;
+			}
+
+			SubMeshDesc desc;
+			desc.indexCount = 1;
+			desc.mappedIndex = materialCount;
+
+			uniqueMaterialIDs[id] = desc;
+			materialCount += 1;
+		}
+		submeshes.reserve(materialCount);
+
+		auto& shapeMaterialCollection = meshTextureMap[i];
+		shapeMaterialCollection.reserve(materialCount);
+		for (auto& kvPair : uniqueMaterialIDs)
+		{
+			auto materialID = kvPair.first;
+			auto submeshDesc = kvPair.second;
+
+			submeshes.push_back(SubMesh(submeshDesc.indexCount));
+			shapeMaterialCollection.push_back(materialID);
+		}
+		
+		auto index = 0;
+		for (size_t k = 0; k < shapeIndices.size(); k++)
+		{
+			auto& vertIndex = shapeIndices[k].vertex_index;
 			auto curIndex = index;
 
 			if (indexMapping.count(vertIndex) == 0)
@@ -272,7 +345,8 @@ bool Scene::loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::vector<UN
 				curIndex = indexMapping[vertIndex];
 			}
 
-			indices[i] = curIndex;
+			auto submeshIndex = uniqueMaterialIDs[mesh.material_ids[k / 3]].mappedIndex;
+			submeshes[submeshIndex].m_indices.push_back(curIndex);
 		}
 
 		std::set<size_t> uniqueVertIndices;
@@ -316,11 +390,7 @@ bool Scene::loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::vector<UN
 		std::vector<MeshDescriptor::TVertexColor> colors(vertices.size());
 		fillArrayWithDefaultValue(colors, 0, vertices.size());
 		
-		meshes.push_back(MAKEUNQ<Mesh>(vertices, uvs, normals, colors, indices));
-
-		meshTextureMap[i] = mesh.material_ids[0];
-		if (mesh.material_ids.size() - 1 > 0)
-			printf("Skipped materials %zi ids for shape '%s'\n", mesh.material_ids.size() - 1, name.c_str());
+		meshes.push_back(MAKEUNQ<Mesh>(vertices, uvs, normals, colors, submeshes));
 	}
 
 	// We are currently rendering the whole mesh (with all of its submeshes) with material[0] - hardcoded.
@@ -330,7 +400,7 @@ bool Scene::loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::vector<UN
 	return true;
 }
 
-bool Scene::tryLoadFromFile(std::vector<UNQ<Mesh>>& meshes, std::vector<UNQ<VkTexture2D>>& textures, std::unordered_map<uint32_t, uint32_t>& meshTextureMap, const std::string& path)
+bool Scene::tryLoadFromFile(std::vector<UNQ<Mesh>>& meshes, std::vector<UNQ<VkTexture2D>>& textures, std::unordered_map<uint32_t, std::vector<uint32_t>>& meshTextureMap, const std::string& path)
 {
 	const std::string supportedFormat = ".obj";
 	if (path.length() > supportedFormat.length() && std::equal(supportedFormat.rbegin(), supportedFormat.rend(), path.rbegin()))

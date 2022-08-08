@@ -42,7 +42,8 @@ namespace Presentation
 		bool createPresentationTarget(const HardwareDevice& presentationHardware, const Device& presentationDevice, uint32_t swapchainCount = 3u);
 		bool createMaterial(UNQ<Material>& material, VkDevice device, VkDescriptorPool descPool, const Shader* shader, const VkTexture2D* texture);
 
-		void release(VkDevice device);
+		void releaseAllResources(VkDevice device);
+		void releaseSwapChain(VkDevice device);
 
 		std::unordered_map<const Shader*, VkGraphicsPipeline> globalPipelineList;
 		std::unordered_map<const Shader*, VkDescriptorSetLayout> globalDescriptorSetLayoutList;

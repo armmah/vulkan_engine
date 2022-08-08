@@ -4,6 +4,7 @@
 #include "Camera.h"
 #include "Engine/Window.h"
 #include "Presentation/Device.h"
+#include "Engine/RenderLoopStatistics.h"
 
 ImGuiHandle::ImGuiHandle(VkInstance instance, VkPhysicalDevice activeGPU, const Presentation::Device* presentationDevice, VkRenderPass renderPass, uint32_t imageCount, Window* window)
 	: m_window(window)
@@ -65,15 +66,22 @@ ImGuiHandle::ImGuiHandle(VkInstance instance, VkPhysicalDevice activeGPU, const 
 	ImGui_ImplVulkan_DestroyFontUploadObjects();
 }
 
-void ImGuiHandle::draw(Camera* cam)
+void ImGuiHandle::draw(FrameStats stats, Camera* cam)
 {
 	// imgui new frame
 	ImGui_ImplVulkan_NewFrame();
 	ImGui_ImplSDL2_NewFrame(m_window->get());
 
 	ImGui::NewFrame();
-	ImGui::Begin("Camera controls");
 
+	ImGui::Begin("Stats");
+	std::string statsText = 
+		"Draw Calls: " + std::to_string(stats.drawCallCount) + 
+		"\nRenderLoop:" + std::to_string(stats.renderLoop_ms);
+	ImGui::Text(statsText.c_str());
+	ImGui::End();
+
+	ImGui::Begin("Camera controls");
 	auto pos = glm::vec3(cam->getPosition());
 	ImGui::InputFloat3("Position", &pos[0]);
 
@@ -81,7 +89,6 @@ void ImGuiHandle::draw(Camera* cam)
 	ImGui::InputFloat2("Yaw / Pitch", &yaw_pitch[0]);
 
 	ImGui::End();
-
 	ImGui::Render();
 }
 

@@ -95,6 +95,9 @@ void VulkanEngine::run()
 	int prevMsX = -1, prevMsY = -1;
 	int deltaMsX = 0, deltaMsY = 0;
 
+	//const auto endTime = std::chrono::steady_clock::now();
+	//const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
+	
 	// Main loop
 	while (!quit)
 	{
@@ -148,7 +151,7 @@ void VulkanEngine::run()
 		}
 		m_cam->processFrameEvents(deltaTime);
 
-		m_imgui->draw(m_cam.get());
+		m_imgui->draw(m_renderLoopStatistics, m_cam.get());
 
 		draw();
 	}
@@ -170,7 +173,7 @@ void VulkanEngine::draw()
 	auto buffer = frame.getCommandBuffer();
 	vkResetCommandBuffer(buffer, 0);
 	
-	CommandObjectsWrapper::renderIndexedMeshes(m_openScene->getRenderers(), *m_cam, buffer,
+	m_renderLoopStatistics = CommandObjectsWrapper::renderIndexedMeshes(m_openScene->getRenderers(), *m_cam, buffer,
 		m_presentationTarget->getRenderPass(), m_presentationTarget->getSwapchainFrameBuffers(imageIndex),
 		m_presentationTarget->getSwapchainExtent(), m_frameNumber);
 
@@ -187,7 +190,7 @@ bool VulkanEngine::handleFailedToAcquireImageIfNecessary(VkResult imageAcquireRe
 	{
 		vkDeviceWaitIdle(m_presentationDevice->getDevice());
 
-		m_presentationTarget->release(m_presentationDevice->getDevice());
+		m_presentationTarget->releaseSwapChain(m_presentationDevice->getDevice());
 		if (!m_presentationTarget->createPresentationTarget(*m_presentationHardware, *m_presentationDevice))
 			printf("Recreating the swapchain was not successful");
 
@@ -215,7 +218,7 @@ void VulkanEngine::cleanup()
 
 		m_descriptorPoolManager->release();
 
-		m_presentationTarget->release(m_presentationDevice->getDevice());
+		m_presentationTarget->releaseAllResources(m_presentationDevice->getDevice());
 
 		vmaDestroyAllocator(m_memoryAllocator->m_allocator);
 		m_presentationDevice->release();

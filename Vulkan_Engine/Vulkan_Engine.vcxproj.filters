@@ -226,5 +226,8 @@
     <ClInclude Include="src\EngineCore\Material.h">
       <Filter>Header Files\EngineCore</Filter>
     </ClInclude>
+    <ClInclude Include="src\Engine\RenderLoopStatistics.h">
+      <Filter>Header Files\Engine</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

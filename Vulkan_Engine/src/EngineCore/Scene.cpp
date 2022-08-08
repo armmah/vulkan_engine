@@ -216,13 +216,14 @@ void reinterpretCopy(std::vector<F>& src, std::vector<T>& dst)
 template <typename F, typename T>
 T reinterpretAt(std::vector<F>& src, size_t srcIndex)
 {
+	srcIndex *= (sizeof(T) / sizeof(F));
 	return *reinterpret_cast<T*>(&src[srcIndex]);
 }
 
 template <typename F, typename T>
 T reinterpretAt_orFallback(std::vector<F>& src, size_t srcIndex)
 {
-	return src.size() > srcIndex ? *reinterpret_cast<T*>(&src[srcIndex]) : T{};
+	return src.size() > srcIndex ? reinterpretAt<F, T>(src, srcIndex) : T{};
 }
 
 bool Scene::loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::vector<UNQ<VkTexture2D>>& textures, std::unordered_map<uint32_t, std::vector<uint32_t>>& meshTextureMap, const std::string& path, const std::string& name)
@@ -244,12 +245,17 @@ bool Scene::loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::vector<UN
 	tinyobj::LoadObj(&objAttribs, &objShapes, &objMats, &warn, &err, objPath.c_str(), path.c_str());
 
 	textures.reserve(objMats.size());
-	for(int i = 0; i < std::min(static_cast<size_t>(9999), objMats.size()); i++)
+	auto textureCount = 0;
+	std::unordered_map<uint32_t, uint32_t> textureMap;
+	for(int i = 0; i < objMats.size(); i++)
 	{
 		auto texPath = path + objMats[i].diffuse_texname;
 		if (objMats[i].diffuse_texname.size() == 0 ||
 			!std::filesystem::exists(texPath))
 			continue;
+
+		textureMap[i] = textureCount;
+		textureCount += 1;
 
 		textures.push_back(MAKEUNQ<VkTexture2D>(texPath, VkMemoryAllocator::getInstance()->m_allocator, presentationDevice));
 	}
@@ -277,7 +283,7 @@ bool Scene::loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::vector<UN
 	std::unordered_map<uint32_t, SubMeshDesc> uniqueMaterialIDs;
 	std::unordered_map<size_t, MeshDescriptor::TVertexIndices> indexMapping;
 	//for (size_t i = 0; i < shapes.size(); i++)
-	for (size_t i = 0; i < std::min(static_cast<size_t>(9999), objShapes.size()); i++)
+	for (size_t i = 0; i < objShapes.size(); i++)
 	{
 		indexMapping.clear();
 
@@ -296,12 +302,13 @@ bool Scene::loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::vector<UN
 			return false;
 		}
 
-		// Initialize the vector memory
 		uniqueMaterialIDs.clear();
 		size_t materialCount = 0;
 		for (size_t k = 0; k < mesh.material_ids.size(); k++)
 		{
 			auto id = mesh.material_ids[k];
+
+			// if(id < 0 || id > objMats.size() || objMats[id].diffuse_texname.size() == 0 || !std::filesystem::exists(path + objMats[id].diffuse_texname))
 
 			if (uniqueMaterialIDs.count(id) > 0)
 			{
@@ -325,39 +332,51 @@ bool Scene::loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::vector<UN
 			auto materialID = kvPair.first;
 			auto submeshDesc = kvPair.second;
 
-			submeshes.push_back(SubMesh(submeshDesc.indexCount));
-			shapeMaterialCollection.push_back(materialID);
+			submeshes.push_back(SubMesh(submeshDesc.indexCount * 3));
+			shapeMaterialCollection.push_back(textureMap[materialID]);
 		}
-		
-		auto index = 0;
+
+		/*************************		VERTEX, NORMAL, UV indices -> pick unique and map to [0, N] range		**************************/
+		struct KeyFuncs
+		{
+			static size_t cantor(size_t a, size_t b) { return (a + b + 1) * (a + b) / 2 + b; }
+			static size_t cantor(int a, int b, int c) { return cantor(a, cantor(b, c)); }
+
+			size_t operator()(const tinyobj::index_t& k)const
+			{
+				return cantor(k.vertex_index, k.normal_index, k.texcoord_index);
+			}
+
+			bool operator()(const tinyobj::index_t& a, const tinyobj::index_t& b)const
+			{
+				return a.vertex_index == b.vertex_index && a.normal_index == b.normal_index && a.texcoord_index == b.texcoord_index;
+			}
+		};
+
+		MeshDescriptor::TVertexIndices mappedIndex = 0;
+		std::unordered_map<tinyobj::index_t, MeshDescriptor::TVertexIndices, KeyFuncs, KeyFuncs> indmap;
 		for (size_t k = 0; k < shapeIndices.size(); k++)
 		{
-			auto& vertIndex = shapeIndices[k].vertex_index;
-			auto curIndex = index;
+			auto& indices = shapeIndices[k];
+			auto curIndex = mappedIndex;
 
-			if (indexMapping.count(vertIndex) == 0)
+			if (indmap.count(indices) == 0)
 			{
-				indexMapping[vertIndex] = index;
-				++index;
+				indmap[indices] = mappedIndex;
+				++mappedIndex;
 			}
 			else
 			{
-				curIndex = indexMapping[vertIndex];
+				curIndex = indmap[indices];
 			}
 
 			auto submeshIndex = uniqueMaterialIDs[mesh.material_ids[k / 3]].mappedIndex;
 			submeshes[submeshIndex].m_indices.push_back(curIndex);
 		}
 
-		std::set<size_t> uniqueVertIndices;
-
-		std::vector<MeshDescriptor::TVertexPosition> vertices;
-		std::vector<MeshDescriptor::TVertexNormal> normals;
-		std::vector<MeshDescriptor::TVertexUV> uvs;
-
-		vertices.reserve(index);
-		normals.reserve(index);
-		uvs.reserve(index);
+		std::vector<MeshDescriptor::TVertexPosition> vertices(mappedIndex);
+		std::vector<MeshDescriptor::TVertexNormal> normals(mappedIndex);
+		std::vector<MeshDescriptor::TVertexUV> uvs(mappedIndex);
 
 		if (objAttribs.normals.size() > objAttribs.vertices.size() ||
 			objAttribs.texcoords.size() > objAttribs.vertices.size())
@@ -366,30 +385,20 @@ bool Scene::loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::vector<UN
 				name.c_str(), as_uint32(objAttribs.normals.size()), as_uint32(objAttribs.texcoords.size()), as_uint32(objAttribs.vertices.size()));
 		}
 
-		uint32_t discardedVertCount = 0;
-		for (size_t si = 0; si < shapeIndices.size(); si++)
+		/*************************		Copying the vert, norm and uv into their containers, in mapped order		**************************/
+		for (auto& kv : indmap)
 		{
-			auto vi = shapeIndices[si].vertex_index;
+			auto vi = kv.first.vertex_index;
+			auto ni = kv.first.normal_index;
+			auto uvi = kv.first.texcoord_index;
 
-			auto ni = shapeIndices[si].normal_index;
-			auto uvi = shapeIndices[si].texcoord_index;
+			vertices[kv.second] = reinterpretAt<float, MeshDescriptor::TVertexPosition>(objAttribs.vertices, vi);
 
-			if (uniqueVertIndices.count(vi) > 0)
-				continue;
-			else
-			{
-				vertices.push_back(reinterpretAt<float, MeshDescriptor::TVertexPosition>(objAttribs.vertices, vi * 3));
-
-				normals.push_back(reinterpretAt_orFallback<float, MeshDescriptor::TVertexNormal>(objAttribs.normals, ni * 3));
-				uvs.push_back(reinterpretAt_orFallback<float, MeshDescriptor::TVertexUV>(objAttribs.texcoords, uvi * 2));
-
-				uniqueVertIndices.insert(vi);
-			}
+			normals[kv.second] = reinterpretAt_orFallback<float, MeshDescriptor::TVertexNormal>(objAttribs.normals, ni);
+			uvs[kv.second] = reinterpretAt_orFallback<float, MeshDescriptor::TVertexUV>(objAttribs.texcoords, uvi);
 		}
 
-		std::vector<MeshDescriptor::TVertexColor> colors(vertices.size());
-		fillArrayWithDefaultValue(colors, 0, vertices.size());
-		
+		std::vector<MeshDescriptor::TVertexColor> colors;		
 		meshes.push_back(MAKEUNQ<Mesh>(vertices, uvs, normals, colors, submeshes));
 	}
 

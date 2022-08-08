@@ -306,6 +306,7 @@
     <ClInclude Include="src\EngineCore\VertexAttributes.h" />
     <ClInclude Include="src\EngineCore\VertexBinding.h" />
     <ClInclude Include="src\EngineCore\VkMesh.h" />
+    <ClInclude Include="src\Engine\RenderLoopStatistics.h" />
     <ClInclude Include="src\Engine\Window.h" />
     <ClInclude Include="src\Interfaces\IRequireInitialization.h" />
     <ClInclude Include="src\Presentation\Frame.h" />

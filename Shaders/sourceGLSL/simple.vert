@@ -28,6 +28,7 @@ void main()
     fragColor = inColor;
 
     fragTexCoord = uv;
+    fragTexCoord.y = 1.0 - fragTexCoord.y;
 
     mat3 normalMatrix = mat3(transpose(inverse(PushConstants.model_matrix)));
     fragNormal = normalMatrix * inNormal;

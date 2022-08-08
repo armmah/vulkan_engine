@@ -16,7 +16,7 @@ public:
 
 	MeshDescriptor() : lengths(), elementByteSizes()
 	{
-		lengths[0] = 1; lengths[1] = 1; lengths[2] = 1; lengths[3] = 1;
+		lengths[0] = 1; lengths[1] = 1; lengths[2] = 1; lengths[3] = 0;
 
 		elementByteSizes[0] = sizeof(TVertexPosition); elementByteSizes[1] = sizeof(TVertexUV);
 		elementByteSizes[2] = sizeof(TVertexNormal); elementByteSizes[3] = sizeof(TVertexColor);

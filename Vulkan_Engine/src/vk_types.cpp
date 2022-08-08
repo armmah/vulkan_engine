@@ -75,9 +75,12 @@ void CommandObjectsWrapper::HelloTriangleCommand(VkCommandBuffer buffer, VkPipel
 	}
 }
 
-void CommandObjectsWrapper::drawAt(VkCommandBuffer commandBuffer, const MeshRenderer& renderer, VkPipelineLayout layout, const Camera& cam, uint32_t frameNumber, float freq, glm::vec3 pos)
+void CommandObjectsWrapper::drawAt(VkCommandBuffer commandBuffer, const MeshRenderer& renderer, const Camera& cam, glm::vec3 pos)
 {
-	const glm::mat4 model = glm::translate(glm::mat4(1.f), pos);// *glm::rotate(glm::mat4{ 1.0f }, glm::radians(frameNumber * 0.01f * freq), glm::vec3(0, 1, 0));
+	if (renderer.submeshIndex >= renderer.mesh->iAttributes.size())
+		return;
+
+	const glm::mat4 model = glm::translate(glm::mat4(1.f), pos);
 
 	TransformPushConstant pushConstant{};
 	pushConstant.model_matrix = model;
@@ -89,27 +92,17 @@ void CommandObjectsWrapper::drawAt(VkCommandBuffer commandBuffer, const MeshRend
 	auto& indices = renderer.mesh->iAttributes[renderer.submeshIndex];
 	{
 		indices.bind(commandBuffer);
-
-		vkCmdPushConstants(commandBuffer, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(TransformPushConstant), &pushConstant);
+		
+		vkCmdPushConstants(commandBuffer, renderer.variant->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(TransformPushConstant), &pushConstant);
 		vkCmdDrawIndexed(commandBuffer, indices.getIndexCount(), 1, 0, 0, 0);
 	}
 }
 
-struct StateChangeStatistics
-{
-	uint32_t pipelineCount;
-	uint32_t descriptorSetCount;
-	uint32_t drawCallCount;
-
-	void print() const
-	{
-		printf("\t\t\tDraw calls = %i. State change (pipeline = %i) | (descriptors = %i).\n", drawCallCount, pipelineCount, descriptorSetCount);
-	}
-};
-
-void CommandObjectsWrapper::renderIndexedMeshes(const std::vector<MeshRenderer>& renderers, Camera& cam, 
+FrameStats CommandObjectsWrapper::renderIndexedMeshes(const std::vector<MeshRenderer>& renderers, Camera& cam, 
 	VkCommandBuffer commandBuffer, VkRenderPass m_renderPass, VkFramebuffer frameBuffer, VkExtent2D extent, uint32_t frameNumber)
 {
+	FrameStats stats{};
+	const auto startTime = std::chrono::steady_clock::now();
 	auto cbs = CommandBufferScope(commandBuffer);
 	{
 		cam.updateWindowExtent(extent);
@@ -119,7 +112,6 @@ void CommandObjectsWrapper::renderIndexedMeshes(const std::vector<MeshRenderer>&
 
 		auto rps = RenderPassScope(commandBuffer, m_renderPass, frameBuffer, extent, true);
 
-		StateChangeStatistics stats{};
 		const VkMaterialVariant* prevVariant = nullptr;
 		// To do - Add sorting to minimize state change
 		// To do - Frustrum culling
@@ -145,14 +137,17 @@ void CommandObjectsWrapper::renderIndexedMeshes(const std::vector<MeshRenderer>&
 				prevVariant = &variant;
 			}
 
-			drawAt(commandBuffer, renderer, variant.getPipelineLayout(), cam, frameNumber, 10.0f, glm::vec3(0.0f, 0.0f, 0.0f));
+			drawAt(commandBuffer, renderer, cam, glm::vec3(0.0f, 0.0f, 0.0f));
 			stats.drawCallCount += 1;
 		}
-		stats.print();
 
 		if (ImGui::GetDrawData())
 		{
 			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 		}
 	}
+	const auto endTime = std::chrono::steady_clock::now();
+	stats.frameNumber = frameNumber;
+	stats.renderLoop_ms = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count();
+	return stats;
 }

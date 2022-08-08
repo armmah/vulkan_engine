@@ -169,44 +169,11 @@ namespace Presentation
 		return true;
 	}
 
-	void PresentationTarget::release(VkDevice device)
-	{
-		for (auto& descLayout : globalDescriptorSetLayoutList)
-		{
-			vkDestroyDescriptorSetLayout(device, descLayout.second, nullptr);
-		}
-		
-		for (auto& graphicsPipeline : globalPipelineList)
-		{
-			vkDestroyPipelineLayout(device, graphicsPipeline.second.pipelineLayout, nullptr);
-			vkDestroyPipeline(device, graphicsPipeline.second.pipeline, nullptr);
-		}
-		//globalPipelineList.clear();
-
-		vkDestroyRenderPass(device, m_renderPass, nullptr);
-
-		if (hasDepthAttachement())
-		{
-			m_depthImage->release(device);
-		}
-
-		int count = static_cast<uint32_t>(m_swapChainImageViews.size());
-		assert(m_swapChainImageViews.size() == m_swapChainFrameBuffers.size() && "Frame buffer count should be equal to image view count.");
-		for (int i = 0; i < count; i++)
-		{
-			vkDestroyFramebuffer(device, m_swapChainFrameBuffers[i], nullptr);
-			vkDestroyImageView(device, m_swapChainImageViews[i], nullptr);
-		}
-
-		vkDestroySwapchainKHR(device, m_swapchain, nullptr);
-	}
-
 	PresentationTarget::PresentationTarget(const HardwareDevice& presentationHardware, const Device& presentationDevice, Window const* wnd, bool depthAttachment, uint32_t swapchainCount)
 		: m_window(wnd), m_hasDepthAttachment(depthAttachment)
 	{
 		m_isInitialized = createPresentationTarget(presentationHardware, presentationDevice, swapchainCount);
 	}
-
 	PresentationTarget::~PresentationTarget() {}
 
 	bool PresentationTarget::hasDepthAttachement() { return m_depthImage ? true : false; }
@@ -429,5 +396,42 @@ namespace Presentation
 		}
 
 		return true;
+	}
+
+	void PresentationTarget::releaseSwapChain(VkDevice device)
+	{
+		vkDestroyRenderPass(device, m_renderPass, nullptr);
+
+		if (hasDepthAttachement())
+		{
+			m_depthImage->release(device);
+		}
+
+		int count = static_cast<uint32_t>(m_swapChainImageViews.size());
+		assert(m_swapChainImageViews.size() == m_swapChainFrameBuffers.size() && "Frame buffer count should be equal to image view count.");
+		for (int i = 0; i < count; i++)
+		{
+			vkDestroyFramebuffer(device, m_swapChainFrameBuffers[i], nullptr);
+			vkDestroyImageView(device, m_swapChainImageViews[i], nullptr);
+		}
+
+		vkDestroySwapchainKHR(device, m_swapchain, nullptr);
+	}
+
+	void PresentationTarget::releaseAllResources(VkDevice device)
+	{
+		for (auto& descLayout : globalDescriptorSetLayoutList)
+		{
+			vkDestroyDescriptorSetLayout(device, descLayout.second, nullptr);
+		}
+
+		for (auto& graphicsPipeline : globalPipelineList)
+		{
+			vkDestroyPipelineLayout(device, graphicsPipeline.second.pipelineLayout, nullptr);
+			vkDestroyPipeline(device, graphicsPipeline.second.pipeline, nullptr);
+		}
+		globalPipelineList.clear();
+
+		releaseSwapChain(device);
 	}
 }

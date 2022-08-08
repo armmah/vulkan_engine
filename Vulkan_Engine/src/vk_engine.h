@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "pch.h"
 #include "VkTypes/InitializersUtility.h"
+#include "Engine/RenderLoopStatistics.h"
 
 class DescriptorPoolManager : IRequireInitialization
 {
@@ -81,7 +82,7 @@ public:
 	UNQ<Window> m_window;
 	VkExtent2D m_startingWindowSize{ 800 , 600 };
 	uint32_t m_frameNumber{ 0 };
-
+	FrameStats m_renderLoopStatistics;
 
 	//initializes everything in the engine
 	void init(bool requestValidationLayers);

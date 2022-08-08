@@ -15,5 +15,5 @@ void main()
 
     float attenuation = dot(fragNormal, viewDirection);
 
-    outColor = color;// * attenuation;
+    outColor = color;;
 }

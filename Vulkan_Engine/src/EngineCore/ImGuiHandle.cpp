@@ -66,7 +66,7 @@ ImGuiHandle::ImGuiHandle(VkInstance instance, VkPhysicalDevice activeGPU, const 
 	ImGui_ImplVulkan_DestroyFontUploadObjects();
 }
 
-void ImGuiHandle::draw(FrameStats stats, Camera* cam)
+void ImGuiHandle::draw(FrameStats stats, const Camera* cam)
 {
 	// imgui new frame
 	ImGui_ImplVulkan_NewFrame();
@@ -77,7 +77,9 @@ void ImGuiHandle::draw(FrameStats stats, Camera* cam)
 	ImGui::Begin("Stats");
 	std::string statsText = 
 		"Draw Calls: " + std::to_string(stats.drawCallCount) + 
-		"\nRenderLoop:" + std::to_string(stats.renderLoop_ms);
+		"\nRenderLoop: " + std::to_string(stats.renderLoop_ms) + " us"
+		+"\n\nPipeline count: " + std::to_string(stats.pipelineCount) +
+		+"\nDescriptor set count: " + std::to_string(stats.descriptorSetCount);
 	ImGui::Text(statsText.c_str());
 	ImGui::End();
 

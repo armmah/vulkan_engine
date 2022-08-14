@@ -25,6 +25,7 @@ protected:
 struct VkTexture2D : public VkTexture
 {
 	VkSampler sampler;
+	uint32_t mipLevels;
 
 	VkTexture2D(std::string path, const VmaAllocator& allocator, const Presentation::Device* presentationDevice);
 

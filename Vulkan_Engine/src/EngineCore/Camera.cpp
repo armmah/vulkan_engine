@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "VkTypes/InitializersUtility.h"
 #include "Camera.h"
+#include "Mesh.h"
 
 Camera::Camera(float fov_degrees, VkExtent2D windowSize, float nearZ, float farZ) :
 	fov_radians(glm::radians(fov_degrees)),
@@ -87,11 +88,11 @@ void Camera::processFrameEvents(float dt)
 
 	// Redo with sanitized inputs
 	if (movement.x != 0.0)
-		pos += right * -((float)std::signbit(movement.x) * 2.f - 1.f) * movementSpeed * dt;
+		pos += right * -(static_cast<float>(std::signbit(movement.x)) * 2.f - 1.f) * movementSpeed * dt;
 	if (movement.y != 0.0)
-		pos += up * ((float)std::signbit(movement.y) * 2.f - 1.f) * movementSpeed * dt;
+		pos += up * (static_cast<float>(std::signbit(movement.y)) * 2.f - 1.f) * movementSpeed * dt;
 	if (movement.z != 0.0)
-		pos += front * ((float)std::signbit(movement.z) * 2.f - 1.f) * movementSpeed * dt;
+		pos += front * (static_cast<float>(std::signbit(movement.z)) * 2.f - 1.f) * movementSpeed * dt;
 
 	movement = glm::vec3();
 

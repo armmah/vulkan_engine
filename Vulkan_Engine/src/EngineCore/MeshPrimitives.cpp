@@ -67,10 +67,10 @@ void Mesh::makeFace(glm::vec3 pivot, glm::vec3 up, glm::vec3 right, uint16_t fir
 	m_normals.push_back(normal);
 	m_normals.push_back(normal);
 
-	m_colors.push_back(Color::red().v4());
-	m_colors.push_back(Color::green().v4());
-	m_colors.push_back(Color::green().v4());
-	m_colors.push_back(Color::blue().v4());
+	//m_colors.push_back(Color::red().v4());
+	//m_colors.push_back(Color::green().v4());
+	//m_colors.push_back(Color::green().v4());
+	//m_colors.push_back(Color::blue().v4());
 
 	uint16_t indices[6] {
 		0, 1, 2,

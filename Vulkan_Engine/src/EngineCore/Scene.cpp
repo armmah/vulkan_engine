@@ -111,8 +111,8 @@ bool Scene::load(const VmaAllocator& vmaAllocator, VkDescriptorPool descPool)
 	}
 
 	auto defaultMeshDescriptor = Mesh::defaultMeshDescriptor;
-
 	const auto count = meshes.size();
+
 	graphicsMeshes.resize(count);
 	renderers.reserve(count);
 	for (int i = 0; i < count; i++)
@@ -136,7 +136,7 @@ bool Scene::load(const VmaAllocator& vmaAllocator, VkDescriptorPool descPool)
 				continue;
 			}
 
-			renderers.push_back(MeshRenderer(graphicsMeshes[i].get(), submeshIndex, &materials[id]->getMaterialVariant()));
+			renderers.push_back(MeshRenderer(graphicsMeshes[i].get(), submeshIndex, meshes[i]->getBounds(submeshIndex), &materials[id]->getMaterialVariant()));
 			++submeshIndex;
 		}
 	}
@@ -183,6 +183,28 @@ Scene::~Scene() {}
 const std::vector<UNQ<Mesh>>& Scene::getMeshes() const { return meshes; }
 const std::vector<UNQ<VkMesh>>& Scene::getGraphicsMeshes() const { return graphicsMeshes; }
 
+namespace tinyobj
+{
+	struct IndexHash
+	{
+		static size_t cantor(size_t a, size_t b) { return (a + b + 1) * (a + b) / 2 + b; }
+		static size_t cantor(int a, int b, int c) { return cantor(a, cantor(b, c)); }
+
+		size_t operator()(const tinyobj::index_t& k)const
+		{
+			return cantor(k.vertex_index, k.normal_index, k.texcoord_index);
+		}
+	};
+
+	struct IndexComparison
+	{
+		bool operator()(const tinyobj::index_t& a, const tinyobj::index_t& b)const
+		{
+			return a.vertex_index == b.vertex_index && a.normal_index == b.normal_index && a.texcoord_index == b.texcoord_index;
+		}
+	};
+}
+
 template <typename T>
 void fillArrayWithDefaultValue(std::vector<T>& dst, size_t offset, size_t count)
 {
@@ -224,6 +246,20 @@ template <typename F, typename T>
 T reinterpretAt_orFallback(std::vector<F>& src, size_t srcIndex)
 {
 	return src.size() > srcIndex ? reinterpretAt<F, T>(src, srcIndex) : T{};
+}
+
+void minVector(glm::vec3& min, const glm::vec3& point)
+{
+	min.x = std::min(min.x, point.x);
+	min.y = std::min(min.y, point.y);
+	min.z = std::min(min.z, point.z);
+}
+
+void maxVector(glm::vec3& max, const glm::vec3& point)
+{
+	max.x = std::max(max.x, point.x);
+	max.y = std::max(max.y, point.y);
+	max.z = std::max(max.z, point.z);
 }
 
 bool Scene::loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::vector<UNQ<VkTexture2D>>& textures, std::unordered_map<uint32_t, std::vector<uint32_t>>& meshTextureMap, const std::string& path, const std::string& name)
@@ -294,6 +330,7 @@ bool Scene::loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::vector<UN
 		// The shape's vertex index here is referencing the big obj vertex buffer,
 		// Our vertex buffer for mesh will be much smaller and should be indexed per-mesh, instead of globally.
 		std::vector<SubMesh> submeshes;
+		std::vector<glm::vec3> boundsMinMax;
 		// std::vector<MeshDescriptor::TVertexIndices> indices(shapeIndices.size());
 
 		if (mesh.material_ids.size() * 3 < shapeIndices.size())
@@ -324,6 +361,13 @@ bool Scene::loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::vector<UN
 			materialCount += 1;
 		}
 		submeshes.reserve(materialCount);
+		boundsMinMax.resize(materialCount * 2);
+
+		for (int k = 0; k < boundsMinMax.size(); k += 2)
+		{
+			boundsMinMax[k] = glm::vec3(1.f) * std::numeric_limits<float>::max();
+			boundsMinMax[k + 1] = glm::vec3(1.f) * std::numeric_limits<float>::lowest();
+		}
 
 		auto& shapeMaterialCollection = meshTextureMap[i];
 		shapeMaterialCollection.reserve(materialCount);
@@ -337,24 +381,8 @@ bool Scene::loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::vector<UN
 		}
 
 		/*************************		VERTEX, NORMAL, UV indices -> pick unique and map to [0, N] range		**************************/
-		struct KeyFuncs
-		{
-			static size_t cantor(size_t a, size_t b) { return (a + b + 1) * (a + b) / 2 + b; }
-			static size_t cantor(int a, int b, int c) { return cantor(a, cantor(b, c)); }
-
-			size_t operator()(const tinyobj::index_t& k)const
-			{
-				return cantor(k.vertex_index, k.normal_index, k.texcoord_index);
-			}
-
-			bool operator()(const tinyobj::index_t& a, const tinyobj::index_t& b)const
-			{
-				return a.vertex_index == b.vertex_index && a.normal_index == b.normal_index && a.texcoord_index == b.texcoord_index;
-			}
-		};
-
 		MeshDescriptor::TVertexIndices mappedIndex = 0;
-		std::unordered_map<tinyobj::index_t, MeshDescriptor::TVertexIndices, KeyFuncs, KeyFuncs> indmap;
+		std::unordered_map<tinyobj::index_t, MeshDescriptor::TVertexIndices, tinyobj::IndexHash, tinyobj::IndexComparison> indmap;
 		for (size_t k = 0; k < shapeIndices.size(); k++)
 		{
 			auto& indices = shapeIndices[k];
@@ -371,7 +399,18 @@ bool Scene::loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::vector<UN
 			}
 
 			auto submeshIndex = uniqueMaterialIDs[mesh.material_ids[k / 3]].mappedIndex;
+
+			// Store min and max vertex components to initialize AABB.
+			auto vert = reinterpretAt<float, MeshDescriptor::TVertexPosition>(objAttribs.vertices, indices.vertex_index);
+			minVector(boundsMinMax[submeshIndex * 2], vert);
+			maxVector(boundsMinMax[submeshIndex * 2 + 1], vert);
+
 			submeshes[submeshIndex].m_indices.push_back(curIndex);
+		}
+
+		for (size_t k = 0; k < submeshes.size(); k++)
+		{
+			submeshes[k].m_bounds = BoundsAABB(boundsMinMax[k * 2], boundsMinMax[k * 2 + 1]);
 		}
 
 		std::vector<MeshDescriptor::TVertexPosition> vertices(mappedIndex);

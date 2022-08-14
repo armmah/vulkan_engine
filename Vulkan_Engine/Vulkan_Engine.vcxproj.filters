@@ -36,6 +36,12 @@
     <Filter Include="Source Files\Engine">
       <UniqueIdentifier>{ab91a252-6334-449c-926f-833abfb036c2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Math">
+      <UniqueIdentifier>{6b08236d-ab55-4d91-82d3-ec788a4e6588}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Math">
+      <UniqueIdentifier>{7855f27b-7f8a-438e-b711-a2d2015ce22c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -127,6 +133,15 @@
     </ClCompile>
     <ClCompile Include="src\VkTypes\VkShader.cpp">
       <Filter>Source Files\VkTypes</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Math\Plane.cpp">
+      <Filter>Source Files\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Math\Frustum.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Math\BoundsAABB.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -228,6 +243,15 @@
     </ClInclude>
     <ClInclude Include="src\Engine\RenderLoopStatistics.h">
       <Filter>Header Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Math\Plane.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Math\Frustum.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Math\BoundsAABB.h">
+      <Filter>Header Files\Math</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

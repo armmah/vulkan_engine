@@ -5,6 +5,7 @@
 class Material;
 struct VkMesh;
 struct VkGraphicsPipeline;
+struct BoundsAABB;
 
 enum VariantStateChange : uint32_t
 {
@@ -29,19 +30,20 @@ struct VkMaterialVariant
 	void release(VkDevice device);
 
 private:
-	const VkPipeline pipeline;
-	const VkPipelineLayout pipelineLayout;
-	const VkDescriptorSetLayout descriptorSetLayout;
+	const VkPipeline m_pipeline;
+	const VkPipelineLayout m_pipelineLayout;
+	const VkDescriptorSetLayout m_descriptorSetLayout;
 
-	std::array<VkDescriptorSet, SWAPCHAIN_IMAGE_COUNT> descriptorSets;
+	std::array<VkDescriptorSet, SWAPCHAIN_IMAGE_COUNT> m_descriptorSets;
 };
 
 struct MeshRenderer
 {
 	const VkMesh* mesh;
 	const VkMaterialVariant* variant;
+	const BoundsAABB* bounds;
 	uint32_t submeshIndex;
 
-	MeshRenderer(const VkMesh* mesh, const VkMaterialVariant* variant) : mesh(mesh), submeshIndex(0), variant(variant) {}
-	MeshRenderer(const VkMesh* mesh, uint32_t submeshIndex, const VkMaterialVariant* variant) : mesh(mesh), submeshIndex(submeshIndex), variant(variant) {}
+	MeshRenderer(const VkMesh* mesh, const BoundsAABB* bounds, const VkMaterialVariant* variant) : mesh(mesh), bounds(bounds), submeshIndex(0), variant(variant) {}
+	MeshRenderer(const VkMesh* mesh, uint32_t submeshIndex, const BoundsAABB* bounds, const VkMaterialVariant* variant) : mesh(mesh), submeshIndex(submeshIndex), bounds(bounds), variant(variant) {}
 };

@@ -9,6 +9,7 @@ VkTexture2D::VkTexture2D(std::string path, const VmaAllocator& allocator, const 
 	int width, height, channels;
 	stbi_uc* const pixels = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
 	size_t imageSize = static_cast<size_t>(width) * static_cast<size_t>(height) * 4;
+	mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
 
 	if (width <= 0 || height <= 0 || imageSize <= 0 || !pixels)
 	{

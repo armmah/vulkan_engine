@@ -227,6 +227,9 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="src\Math\BoundsAABB.cpp" />
+    <ClCompile Include="src\Math\Frustum.cpp" />
+    <ClCompile Include="src\Math\Plane.cpp" />
     <ClCompile Include="src\Presentation\Frame.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
@@ -309,6 +312,9 @@
     <ClInclude Include="src\Engine\RenderLoopStatistics.h" />
     <ClInclude Include="src\Engine\Window.h" />
     <ClInclude Include="src\Interfaces\IRequireInitialization.h" />
+    <ClInclude Include="src\Math\BoundsAABB.h" />
+    <ClInclude Include="src\Math\Frustum.h" />
+    <ClInclude Include="src\Math\Plane.h" />
     <ClInclude Include="src\Presentation\Frame.h" />
     <ClInclude Include="src\Presentation\HardwareDevice.h" />
     <ClInclude Include="src\Presentation\Device.h" />

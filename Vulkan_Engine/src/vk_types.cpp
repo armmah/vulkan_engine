@@ -4,11 +4,13 @@
 #include "Camera.h"
 #include "VkTypes/PushConstantTypes.h"
 #include "VkMesh.h"
+#include "Mesh.h"
 #include "VertexAttributes.h"
 #include "IndexAttributes.h"
 #include <Presentation/Device.h>
 #include <VkTypes/VkMaterialVariant.h>
 #include "PresentationTarget.h"
+#include "Math/Frustum.h"
 
 CommandObjectsWrapper::RenderPassScope::RenderPassScope(VkCommandBuffer commandBuffer, VkRenderPass m_renderPass, VkFramebuffer swapChainFramebuffer, VkExtent2D extent, bool hasDepthAttachment)
 {
@@ -75,12 +77,10 @@ void CommandObjectsWrapper::HelloTriangleCommand(VkCommandBuffer buffer, VkPipel
 	}
 }
 
-void CommandObjectsWrapper::drawAt(VkCommandBuffer commandBuffer, const MeshRenderer& renderer, const Camera& cam, glm::vec3 pos)
+void CommandObjectsWrapper::drawAt(VkCommandBuffer commandBuffer, const MeshRenderer& renderer, const Camera& cam, const glm::mat4& model)
 {
 	if (renderer.submeshIndex >= renderer.mesh->iAttributes.size())
 		return;
-
-	const glm::mat4 model = glm::translate(glm::mat4(1.f), pos);
 
 	TransformPushConstant pushConstant{};
 	pushConstant.model_matrix = model;
@@ -112,11 +112,18 @@ FrameStats CommandObjectsWrapper::renderIndexedMeshes(const std::vector<MeshRend
 
 		auto rps = RenderPassScope(commandBuffer, m_renderPass, frameBuffer, extent, true);
 
+		const auto& cameraFrustum = Frustum(cam);
 		const VkMaterialVariant* prevVariant = nullptr;
 		// To do - Add sorting to minimize state change
 		// To do - Frustrum culling
 		for (auto& renderer : renderers)
 		{
+			glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f);
+			glm::mat4 model = glm::translate(glm::mat4(1.f), position);
+
+			if (renderer.bounds != nullptr && !cameraFrustum.isOnFrustum(*renderer.bounds))
+				continue;
+
 			const auto& variant = *renderer.variant;
 			if (prevVariant != renderer.variant)
 			{
@@ -137,7 +144,7 @@ FrameStats CommandObjectsWrapper::renderIndexedMeshes(const std::vector<MeshRend
 				prevVariant = &variant;
 			}
 
-			drawAt(commandBuffer, renderer, cam, glm::vec3(0.0f, 0.0f, 0.0f));
+			drawAt(commandBuffer, renderer, cam, model);
 			stats.drawCallCount += 1;
 		}
 

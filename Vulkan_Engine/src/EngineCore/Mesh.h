@@ -3,17 +3,19 @@
 #include "Common.h"
 #include "vk_mem_alloc.h"
 #include "VertexBinding.h"
+#include "Math/BoundsAABB.h"
 
 struct VkMesh;
 
 struct SubMesh
 {
-	SubMesh() : m_indices() { }
-	SubMesh(size_t size) : m_indices() { m_indices.reserve(size); }
-	SubMesh(std::vector<MeshDescriptor::TVertexIndices>& indices) : m_indices(std::move(indices)) { }
+	SubMesh() : m_indices(), m_bounds() { }
+	SubMesh(size_t size) : m_indices(), m_bounds() { m_indices.reserve(size); }
+	SubMesh(std::vector<MeshDescriptor::TVertexIndices>& indices) : m_indices(std::move(indices)), m_bounds() { }
 	uint32_t getIndexCount() const { return m_indices.size(); }
 
 	std::vector<MeshDescriptor::TVertexIndices> m_indices;
+	BoundsAABB m_bounds;
 };
 
 struct Mesh
@@ -44,6 +46,7 @@ public:
 	static Mesh getPrimitiveTriangle();
 
 	const MeshDescriptor& getMeshDescriptor() const { return metaData; }
+	const BoundsAABB* getBounds(uint32_t submeshIndex) const { return submeshIndex >= 0 && submeshIndex < m_submeshes.size() ? &m_submeshes[submeshIndex].m_bounds : nullptr; }
 
 	inline static MeshDescriptor defaultMeshDescriptor = MeshDescriptor();
 	inline static VertexBinding defaultVertexBinding = VertexBinding(defaultMeshDescriptor);

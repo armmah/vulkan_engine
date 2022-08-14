@@ -31,6 +31,7 @@
 #include <glm/ext/quaternion_geometric.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/mat4x4.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include "vulkan/vulkan.h"
 #include "vk_mem_alloc.h"

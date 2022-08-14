@@ -7,6 +7,8 @@
 #include "VertexAttributes.h"
 #include "IndexAttributes.h"
 
+#include "Camera.h"
+
 Mesh::Mesh(size_t vertN, size_t indexN)
 {
 	m_positions.reserve(vertN);
@@ -215,3 +217,4 @@ void Mesh::updateMetaData()
 	metaData.elementByteSizes[2] = vectorElementsizeof(m_normals);
 	metaData.elementByteSizes[3] = vectorElementsizeof(m_colors);
 }
+

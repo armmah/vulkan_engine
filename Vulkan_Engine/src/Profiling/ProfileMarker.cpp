@@ -17,5 +17,5 @@ ProfileMarker::ProfileMarker(std::string markerName) : ProfileMarkerBase(), mark
 ProfileMarker::~ProfileMarker()
 {
 	auto msElapsed = getMiliseconds(startTime, getNow());
-	printf("=\ {%s} /=: %lld\n", markerName.c_str(), msElapsed);
+	printf("=\\ %s /=: {%lld ms}\n", markerName.c_str(), msElapsed);
 }

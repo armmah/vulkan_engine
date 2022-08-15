@@ -9,6 +9,8 @@
 #include "Presentation/Device.h"
 #include "PresentationTarget.h"
 
+#include "Profiling/ProfileMarker.h"
+
 Scene::~Scene() {}
 
 Scene::Scene(const Presentation::Device* device, Presentation::PresentationTarget* target)
@@ -16,6 +18,8 @@ Scene::Scene(const Presentation::Device* device, Presentation::PresentationTarge
 
 bool Scene::load(const VmaAllocator& vmaAllocator, VkDescriptorPool descPool)
 {
+	ProfileMarker marker("Scene::load");
+
 	std::unordered_map<uint32_t, std::vector<uint32_t>> meshTextureMap;
 	Scene::tryLoadFromFile(meshes, textures, meshTextureMap, "C:/Git/Vulkan_Engine/Resources/sponza.obj");
 
@@ -177,6 +181,7 @@ void maxVector(glm::vec3& max, const glm::vec3& point)
 
 bool Scene::loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::vector<UNQ<VkTexture2D>>& textures, std::unordered_map<uint32_t, std::vector<uint32_t>>& meshTextureMap, const std::string& path, const std::string& name)
 {
+
 	//attrib will contain the vertex arrays of the file
 	tinyobj::attrib_t objAttribs;
 	//shapes contains the info for each separate object in the file
@@ -191,36 +196,43 @@ bool Scene::loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::vector<UN
 	//load the OBJ file
 	auto objPath = (path + name + ".obj");
 
-	tinyobj::LoadObj(&objAttribs, &objShapes, &objMats, &warn, &err, objPath.c_str(), path.c_str());
+	{
+		ProfileMarker marker("	Scene::loadObjImplementation - Load obj from disk");
+		tinyobj::LoadObj(&objAttribs, &objShapes, &objMats, &warn, &err, objPath.c_str(), path.c_str());
 
-	textures.reserve(objMats.size());
-	auto textureCount = 0;
+		//make sure to output the warnings to the console, in case there are issues with the file
+		if (!warn.empty())
+		{
+			// printf("warning: %s\n", warn.c_str());
+		}
+
+		//if we have any error, print it to the console, and break the mesh loading.
+		//This happens if the file can't be found or is malformed
+		if (!err.empty())
+		{
+			printf("Error: %s\n", err.c_str());
+			return false;
+		}
+	}
+
 	std::unordered_map<uint32_t, uint32_t> textureMap;
-	for(int i = 0; i < objMats.size(); i++)
 	{
-		auto texPath = path + objMats[i].diffuse_texname;
-		if (objMats[i].diffuse_texname.size() == 0 ||
-			!std::filesystem::exists(texPath))
-			continue;
+		ProfileMarker marker("	Scene::loadObjImplementation - Load textures and create VkTexture2D");
 
-		textureMap[i] = textureCount;
-		textureCount += 1;
+		textures.reserve(objMats.size());
+		auto textureCount = 0;
+		for (int i = 0; i < objMats.size(); i++)
+		{
+			auto texPath = path + objMats[i].diffuse_texname;
+			if (objMats[i].diffuse_texname.size() == 0 ||
+				!std::filesystem::exists(texPath))
+				continue;
 
-		textures.push_back(MAKEUNQ<VkTexture2D>(texPath, VkMemoryAllocator::getInstance()->m_allocator, presentationDevice));
-	}
+			textureMap[i] = textureCount;
+			textureCount += 1;
 
-	//make sure to output the warnings to the console, in case there are issues with the file
-	if (!warn.empty())
-	{
-		printf("warning: %s\n", warn.c_str());
-	}
-
-	//if we have any error, print it to the console, and break the mesh loading.
-	//This happens if the file can't be found or is malformed
-	if (!err.empty())
-	{
-		printf("Error: %s\n", err.c_str());
-		return false;
+			textures.push_back(MAKEUNQ<VkTexture2D>(texPath, VkMemoryAllocator::getInstance()->m_allocator, presentationDevice));
+		}
 	}
 
 	struct SubMeshDesc
@@ -228,6 +240,8 @@ bool Scene::loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::vector<UN
 		size_t indexCount;
 		uint32_t mappedIndex;
 	};
+
+	ProfileMarker marker ("	Scene::loadObjImplementation - Create meshes");
 
 	std::unordered_map<uint32_t, SubMeshDesc> uniqueMaterialIDs;
 	std::unordered_map<size_t, MeshDescriptor::TVertexIndices> indexMapping;

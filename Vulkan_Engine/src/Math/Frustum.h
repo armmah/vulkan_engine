@@ -21,9 +21,9 @@ private:
 		Top = 3,
 		Near = 4,
 		Far = 5,
-		Count = 6,
-		Combinations = Count * (Count - 1) / 2
+
+		Count = 6
 	};
 
-	std::array<Plane, Count> m_planes;
+	std::array<Plane, EPlanes::Count> m_planes;
 };

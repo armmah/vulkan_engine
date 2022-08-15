@@ -3,20 +3,10 @@
 #include "Common.h"
 #include "VkTypes/VkMaterialVariant.h"
 
-// Make a global buffer of all shaders
-// In the material, store a pointer to the specific shader
-
-// Make a buffer of all textures inside Scene object
-// In the material, store a pointer to the specific texture
-
-class VkMemoryAllocator;
-struct VmaAllocator_T;
-class Material;
-
 struct Mesh;
 struct VkMesh;
 
-class VKShader;
+class Material;
 struct VkTexture2D;
 
 namespace Presentation

@@ -5,43 +5,52 @@
 
 Mesh Mesh::getPrimitiveQuad()
 {
-	std::vector<MeshDescriptor::TVertexPosition> positions;
-	std::vector<MeshDescriptor::TVertexUV> uvs;
-	std::vector<MeshDescriptor::TVertexNormal> normals;
-	std::vector<MeshDescriptor::TVertexColor> colors;
-	std::vector<MeshDescriptor::TVertexIndices> indices;
-
 	float extent = 0.5f;
-	positions = {
+
+	std::vector<MeshDescriptor::TVertexPosition> positions {
 		{ -extent, -extent, 0.0f },
 		{ extent, -extent, 0.0f },
 		{ -extent, extent, 0.0f },
 		{ extent, extent, 0.0f }
 	};
 
-	uvs = {
-		{ 0.0, 0.0 },
-		{ 1.0, 0.0 },
-		{ 0.0, 1.0 },
-		{ 1.0, 1.0 }
-	};
+	const auto n = positions.size();
+	std::vector<MeshDescriptor::TVertexUV> uvs(n);
+	std::vector<MeshDescriptor::TVertexNormal> normals(n);
+	std::vector<MeshDescriptor::TVertexColor> colors(n);
 
-	glm::vec3 forward(0.0f, 0.0f, 1.0f);
-	normals = {
-		forward,
-		forward,
-		forward,
-		forward
-	};
+	if (MeshDescriptor::EAttributePresent::UV)
+	{
+		uvs = {
+			{ 0.0, 0.0 },
+			{ 1.0, 0.0 },
+			{ 0.0, 1.0 },
+			{ 1.0, 1.0 }
+		};
+	}
 
-	colors = {
-		Color::red().v4() * 0.5f,
-		Color::green().v4() * 0.5f,
-		Color::green().v4() * 0.5f,
-		Color::blue().v4() * 0.5f
-	};
+	if (MeshDescriptor::EAttributePresent::Normals)
+	{
+		glm::vec3 forward(0.0f, 0.0f, 1.0f);
+		normals = {
+			forward,
+			forward,
+			forward,
+			forward
+		};
+	}
 
-	indices = {
+	if (MeshDescriptor::EAttributePresent::Colors)
+	{
+		colors = {
+			Color::red().v4() * 0.5f,
+			Color::green().v4() * 0.5f,
+			Color::green().v4() * 0.5f,
+			Color::blue().v4() * 0.5f
+		};
+	}
+
+	std::vector<MeshDescriptor::TVertexIndices> indices {
 		0, 1, 2,
 		2, 1, 3
 	};
@@ -56,21 +65,30 @@ void Mesh::makeFace(glm::vec3 pivot, glm::vec3 up, glm::vec3 right, uint16_t fir
 	m_positions.push_back(pivot - up - right);
 	m_positions.push_back(pivot - up + right);
 
-	m_uvs.push_back({ 0.0, 1.0 });
-	m_uvs.push_back({ 1.0, 1.0 });
-	m_uvs.push_back({ 0.0, 0.0 });
-	m_uvs.push_back({ 1.0, 0.0 });
+	if (MeshDescriptor::EAttributePresent::UV)
+	{
+		m_uvs.push_back({ 0.0, 1.0 });
+		m_uvs.push_back({ 1.0, 1.0 });
+		m_uvs.push_back({ 0.0, 0.0 });
+		m_uvs.push_back({ 1.0, 0.0 });
+	}
 
 	auto normal = glm::normalize(pivot);
-	m_normals.push_back(normal);
-	m_normals.push_back(normal);
-	m_normals.push_back(normal);
-	m_normals.push_back(normal);
+	if (MeshDescriptor::EAttributePresent::Normals)
+	{
+		m_normals.push_back(normal);
+		m_normals.push_back(normal);
+		m_normals.push_back(normal);
+		m_normals.push_back(normal);
+	}
 
-	//m_colors.push_back(Color::red().v4());
-	//m_colors.push_back(Color::green().v4());
-	//m_colors.push_back(Color::green().v4());
-	//m_colors.push_back(Color::blue().v4());
+	if (MeshDescriptor::EAttributePresent::Colors)
+	{
+		m_colors.push_back(Color::red().v4());
+		m_colors.push_back(Color::green().v4());
+		m_colors.push_back(Color::green().v4());
+		m_colors.push_back(Color::blue().v4());
+	}
 
 	uint16_t indices[6] {
 		0, 1, 2,
@@ -115,40 +133,49 @@ Mesh Mesh::getPrimitiveCube()
 
 Mesh Mesh::getPrimitiveTriangle()
 {
-	std::vector<MeshDescriptor::TVertexPosition> positions;
-	std::vector<MeshDescriptor::TVertexUV> uvs;
-	std::vector<MeshDescriptor::TVertexNormal> normals;
-	std::vector<MeshDescriptor::TVertexColor> colors;
-	std::vector<MeshDescriptor::TVertexIndices> indices;
-
 	float extentX = 0.5f;
 	float extentY = extentX / 3.0f;
-	positions = {
+
+	std::vector<MeshDescriptor::TVertexPosition> positions{
 		{ 0.0f, -extentY * 2.f, 0.0f },
 		{ extentX, extentY, 0.0f },
 		{ -extentX, extentY, 0.0f },
 	};
 
-	uvs = {
-		{ 0.5, 0 },
-		{ 1.0, 1.0 },
-		{ 0.0, 1.0 }
-	};
+	const auto n = positions.size();
+	std::vector<MeshDescriptor::TVertexUV> uvs(n);
+	std::vector<MeshDescriptor::TVertexNormal> normals(n);
+	std::vector<MeshDescriptor::TVertexColor> colors(n);
 
-	glm::vec3 forward(0.0f, 0.0f, 1.0f);
-	normals = {
-		forward,
-		forward,
-		forward
-	};
+	if (MeshDescriptor::EAttributePresent::UV)
+	{
+		uvs = {
+			{ 0.5, 0 },
+			{ 1.0, 1.0 },
+			{ 0.0, 1.0 }
+		};
+	}
 
-	colors = {
-		Color::red().v4() * 0.5f + glm::vec4(0.5f),
-		Color::green().v4() * 0.5f + glm::vec4(0.5f),
-		Color::blue().v4() * 0.5f + glm::vec4(0.5f)
-	};
+	if (MeshDescriptor::EAttributePresent::Normals)
+	{
+		glm::vec3 forward(0.0f, 0.0f, 1.0f);
+		normals = {
+			forward,
+			forward,
+			forward
+		};
+	}
 
-	indices = {
+	if (MeshDescriptor::EAttributePresent::Colors)
+	{
+		colors = {
+			Color::red().v4() * 0.5f + glm::vec4(0.5f),
+			Color::green().v4() * 0.5f + glm::vec4(0.5f),
+			Color::blue().v4() * 0.5f + glm::vec4(0.5f)
+		};
+	}
+
+	std::vector<MeshDescriptor::TVertexIndices> indices {
 		0, 1, 2
 	};
 

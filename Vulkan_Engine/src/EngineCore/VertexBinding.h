@@ -4,19 +4,26 @@
 
 struct MeshDescriptor
 {
-public:
+	using TVertexIndices = uint16_t;
+
 	using TVertexPosition = glm::vec3;
 	using TVertexUV = glm::vec2;
 	using TVertexNormal = glm::vec3;
 	using TVertexColor = glm::vec3;
 
-	using TVertexIndices = uint16_t;
+	enum EAttributePresent
+	{
+		Position = 1,
+		UV = 1,
+		Normals = 1,
+		Colors = 0
+	};
 
 	static constexpr size_t descriptorCount = 4;
 
 	MeshDescriptor() : lengths(), elementByteSizes()
 	{
-		lengths[0] = 1; lengths[1] = 1; lengths[2] = 1; lengths[3] = 0;
+		lengths[0] = EAttributePresent::Position; lengths[1] = EAttributePresent::UV; lengths[2] = EAttributePresent::Normals; lengths[3] = EAttributePresent::Colors;
 
 		elementByteSizes[0] = sizeof(TVertexPosition); elementByteSizes[1] = sizeof(TVertexUV);
 		elementByteSizes[2] = sizeof(TVertexNormal); elementByteSizes[3] = sizeof(TVertexColor);
@@ -31,7 +38,6 @@ public:
 
 struct VertexBinding
 {
-public:
 	VertexBinding() = delete;
 
 	VertexBinding(const MeshDescriptor& meshDescriptor);

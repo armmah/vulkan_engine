@@ -5,6 +5,7 @@
 #include "Presentation/Frame.h"
 #include "Presentation/PresentationTarget.h"
 
+#include "vk_engine.h"
 #include "vk_types.h"
 #include "VkTypes/VulkanValidationLayers.h"
 #include "EngineCore/ImGuiHandle.h"
@@ -14,10 +15,9 @@
 #include "Camera.h"
 #include "VkTypes/VkShader.h"
 
-#include <EngineCore/Material.h>
-#include "vk_engine.h"
+#include "EngineCore/Material.h"
 
-VulkanEngine::VulkanEngine() { }
+VulkanEngine::VulkanEngine() {}
 VulkanEngine::~VulkanEngine() { }
 
 void VulkanEngine::init(bool requestValidationLayers)

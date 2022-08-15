@@ -11,6 +11,7 @@
 #include <VkTypes/VkMaterialVariant.h>
 #include "PresentationTarget.h"
 #include "Math/Frustum.h"
+#include "Profiling/ProfileMarker.h"
 
 CommandObjectsWrapper::RenderPassScope::RenderPassScope(VkCommandBuffer commandBuffer, VkRenderPass m_renderPass, VkFramebuffer swapChainFramebuffer, VkExtent2D extent, bool hasDepthAttachment)
 {
@@ -102,9 +103,9 @@ FrameStats CommandObjectsWrapper::renderIndexedMeshes(const std::vector<MeshRend
 	VkCommandBuffer commandBuffer, VkRenderPass m_renderPass, VkFramebuffer frameBuffer, VkExtent2D extent, uint32_t frameNumber)
 {
 	FrameStats stats{};
-	const auto startTime = std::chrono::steady_clock::now();
 	auto cbs = CommandBufferScope(commandBuffer);
 	{
+		const auto injectionMarker = ProfileMarkerInjectResult(stats.renderLoop_ms);
 		cam.updateWindowExtent(extent);
 
 		vkCmdSetViewport(commandBuffer, 0, 1, &cam.getViewport());
@@ -153,8 +154,6 @@ FrameStats CommandObjectsWrapper::renderIndexedMeshes(const std::vector<MeshRend
 			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 		}
 	}
-	const auto endTime = std::chrono::steady_clock::now();
 	stats.frameNumber = frameNumber;
-	stats.renderLoop_ms = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count();
 	return stats;
 }

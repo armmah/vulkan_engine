@@ -77,7 +77,7 @@ void ImGuiHandle::draw(FrameStats stats, const Camera* cam)
 	ImGui::Begin("Stats");
 	std::string statsText = 
 		"Draw Calls: " + std::to_string(stats.drawCallCount) + 
-		"\nRenderLoop: " + std::to_string(stats.renderLoop_ms) + " us"
+		"\nRenderLoop: " + std::to_string(stats.renderLoop_ms) + " ms"
 		+"\n\nPipeline count: " + std::to_string(stats.pipelineCount) +
 		+"\nDescriptor set count: " + std::to_string(stats.descriptorSetCount);
 	ImGui::Text(statsText.c_str());

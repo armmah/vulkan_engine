@@ -42,6 +42,12 @@
     <Filter Include="Header Files\Math">
       <UniqueIdentifier>{7855f27b-7f8a-438e-b711-a2d2015ce22c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Profiling">
+      <UniqueIdentifier>{747eb528-a900-4ca9-9bff-360a4afcd429}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Profiling">
+      <UniqueIdentifier>{a590b189-4e51-4d34-9c32-66cade746875}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -142,6 +148,9 @@
     </ClCompile>
     <ClCompile Include="src\Math\Frustum.cpp">
       <Filter>Source Files\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Profiling\ProfileMarker.cpp">
+      <Filter>Source Files\Profiling</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -252,6 +261,9 @@
     </ClInclude>
     <ClInclude Include="src\Math\BoundsAABB.h">
       <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Profiling\ProfileMarker.h">
+      <Filter>Header Files\Profiling</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -3,6 +3,7 @@
 #include "Common.h"
 #include "VkTypes/VkMaterialVariant.h"
 
+
 struct Mesh;
 struct VkMesh;
 

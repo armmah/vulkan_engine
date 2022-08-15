@@ -19,7 +19,7 @@ Mesh Mesh::getPrimitiveQuad()
 	std::vector<MeshDescriptor::TVertexNormal> normals(n);
 	std::vector<MeshDescriptor::TVertexColor> colors(n);
 
-	if (MeshDescriptor::EAttributePresent::UV)
+	if (MeshDescriptor::EAttributePresent::UVs)
 	{
 		uvs = {
 			{ 0.0, 0.0 },
@@ -65,7 +65,7 @@ void Mesh::makeFace(glm::vec3 pivot, glm::vec3 up, glm::vec3 right, uint16_t fir
 	m_positions.push_back(pivot - up - right);
 	m_positions.push_back(pivot - up + right);
 
-	if (MeshDescriptor::EAttributePresent::UV)
+	if (MeshDescriptor::EAttributePresent::UVs)
 	{
 		m_uvs.push_back({ 0.0, 1.0 });
 		m_uvs.push_back({ 1.0, 1.0 });
@@ -147,7 +147,7 @@ Mesh Mesh::getPrimitiveTriangle()
 	std::vector<MeshDescriptor::TVertexNormal> normals(n);
 	std::vector<MeshDescriptor::TVertexColor> colors(n);
 
-	if (MeshDescriptor::EAttributePresent::UV)
+	if (MeshDescriptor::EAttributePresent::UVs)
 	{
 		uvs = {
 			{ 0.5, 0 },

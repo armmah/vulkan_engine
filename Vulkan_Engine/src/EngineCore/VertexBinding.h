@@ -13,7 +13,7 @@ struct MeshDescriptor
 
 	enum EAttributePresent
 	{
-		Position = 1,
+		Positions = 1,
 		UVs = 1,
 		Normals = 1,
 		Colors = 0
@@ -23,7 +23,7 @@ struct MeshDescriptor
 
 	MeshDescriptor() : lengths(), elementByteSizes()
 	{
-		lengths[0] = EAttributePresent::Position; lengths[1] = EAttributePresent::UVs; lengths[2] = EAttributePresent::Normals; lengths[3] = EAttributePresent::Colors;
+		lengths[0] = EAttributePresent::Positions; lengths[1] = EAttributePresent::UVs; lengths[2] = EAttributePresent::Normals; lengths[3] = EAttributePresent::Colors;
 
 		elementByteSizes[0] = sizeof(TVertexPosition); elementByteSizes[1] = sizeof(TVertexUV);
 		elementByteSizes[2] = sizeof(TVertexNormal); elementByteSizes[3] = sizeof(TVertexColor);

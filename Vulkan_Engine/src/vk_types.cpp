@@ -116,7 +116,6 @@ FrameStats CommandObjectsWrapper::renderIndexedMeshes(const std::vector<MeshRend
 		const auto& cameraFrustum = Frustum(cam);
 		const VkMaterialVariant* prevVariant = nullptr;
 		// To do - Add sorting to minimize state change
-		// To do - Frustrum culling
 		for (auto& renderer : renderers)
 		{
 			glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f);

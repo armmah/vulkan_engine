@@ -123,7 +123,9 @@ inline void Mesh::mapAndCopyBuffer(const VmaAllocator& vmaAllocator, VmaAllocati
 	memcpy(data, source, totalByteSize);
 	vmaUnmapMemory(vmaAllocator, memRange);
 
+#ifdef VERBOSE_INFO_MESSAGE
 	printf(message, elementCount, totalByteSize, totalByteSize / static_cast<float>(elementCount));
+#endif
 }
 
 bool Mesh::allocateVertexAttributes(VkMesh& graphicsMesh, const VmaAllocator& vmaAllocator)
@@ -185,7 +187,7 @@ bool Mesh::allocateIndexAttributes(VkMesh& graphicsMesh, const SubMesh& submesh,
 	VmaAllocation iMemRange;
 	if (!vkinit::MemoryBuffer::allocateBufferAndMemory(iBuffer, iMemRange, vmaAllocator, as_uint32(totalSize), VMA_MEMORY_USAGE_CPU_TO_GPU, VK_BUFFER_USAGE_INDEX_BUFFER_BIT))
 	{
-		printf("Could not allocate index memory buffer.");
+		printf("Could not allocate index memory buffer.\n");
 		return false;
 	}
 

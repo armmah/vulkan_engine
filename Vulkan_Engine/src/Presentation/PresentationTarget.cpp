@@ -358,7 +358,7 @@ namespace Presentation
 
 		for (int i = 0; i < imageCount; i++)
 		{
-			if (!vkinit::Texture::createTextureImageView(m_swapChainImageViews[i], device, m_swapChainImages[i], VK_FORMAT_B8G8R8A8_SRGB))
+			if (!vkinit::Texture::createTextureImageView(m_swapChainImageViews[i], device, m_swapChainImages[i],VK_FORMAT_B8G8R8A8_SRGB, 1u))
 				return false;
 		}
 

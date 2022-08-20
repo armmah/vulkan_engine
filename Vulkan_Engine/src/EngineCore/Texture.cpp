@@ -25,7 +25,7 @@ void Texture::copyBufferToImage(const Presentation::Device* presentationDevice, 
 		});
 }
 
-void Texture::transitionImageLayout(const Presentation::Device* presentationDevice, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
+void Texture::transitionImageLayout(const Presentation::Device* presentationDevice, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipCount)
 {
 	presentationDevice->submitImmediatelyAndWaitCompletion([=](VkCommandBuffer cmd)
 		{
@@ -38,7 +38,7 @@ void Texture::transitionImageLayout(const Presentation::Device* presentationDevi
 			barrier.image = image;
 			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 			barrier.subresourceRange.baseMipLevel = 0;
-			barrier.subresourceRange.levelCount = 1;
+			barrier.subresourceRange.levelCount = mipCount;
 			barrier.subresourceRange.baseArrayLayer = 0;
 			barrier.subresourceRange.layerCount = 1;
 

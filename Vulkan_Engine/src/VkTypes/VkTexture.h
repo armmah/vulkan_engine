@@ -1,6 +1,7 @@
 #pragma once
 #include "pch.h"
 #include "VkMemoryAllocator.h"
+#include "Common.h"
 
 namespace Presentation
 {
@@ -15,11 +16,12 @@ public:
 
 	VkImageView imageView;
 
-	VkTexture(VkDevice device, MemAllocationInfo maci, VkFormat imageFormat, VkImageUsageFlags imageUsage, VkImageAspectFlags imageViewFormat, VkExtent2D extent);
 	virtual void release(VkDevice device);
 
+	VkTexture(VkDevice device, MemAllocationInfo maci, VkFormat imageFormat, VkImageUsageFlags imageUsage, VkImageAspectFlags imageViewFormat, VkExtent2D extent, uint32_t mipCount = 1);
 protected:
-	VkTexture() : image(VK_NULL_HANDLE), memoryRange(VK_NULL_HANDLE), imageView(VK_NULL_HANDLE) { }
+	VkTexture();
+	VkTexture(VkImage image, VmaAllocation memoryRange, VkImageView imageView);
 };
 
 struct VkTexture2D : public VkTexture
@@ -27,7 +29,10 @@ struct VkTexture2D : public VkTexture
 	VkSampler sampler;
 	uint32_t mipLevels;
 
-	VkTexture2D(std::string path, const VmaAllocator& allocator, const Presentation::Device* presentationDevice);
+	static bool tryCreateTexture(UNQ<VkTexture2D>& tex, std::string path, const Presentation::Device* presentationDevice, bool generateTheMips);
 
 	void release(VkDevice device) override;
+
+private:
+	VkTexture2D(VkImage image, VmaAllocation memoryRange, VkImageView imageView, VkSampler sampler, uint32_t mipLevels);
 };

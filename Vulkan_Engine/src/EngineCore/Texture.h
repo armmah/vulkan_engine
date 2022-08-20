@@ -34,7 +34,7 @@ struct Texture
 		}
 	};
 
-	static void transitionImageLayout(const Presentation::Device* presentationDevice, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
+	static void transitionImageLayout(const Presentation::Device* presentationDevice, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipCount);
 
 	constexpr static float c_anisotropySamples = 4.0f;
 };

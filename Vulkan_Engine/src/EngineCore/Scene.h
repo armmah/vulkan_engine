@@ -28,20 +28,21 @@ public:
 	bool load(const VmaAllocator& vmaAllocator, VkDescriptorPool descPool);
 	void release(VkDevice device, const VmaAllocator& allocator);
 
-	std::vector<MeshRenderer> getRenderers() { return renderers; }
+	std::vector<MeshRenderer> getRenderers() { return m_renderers; }
 
-	bool tryLoadFromFile(std::vector<UNQ<Mesh>>& meshes, std::vector<UNQ<VkTexture2D>>& textures, std::unordered_map<uint32_t, std::vector<uint32_t>>& meshTextureMap, const std::string& path);
+	bool tryLoadTestScene_1(VkDescriptorPool descPool);
+	bool tryLoadFromFile(const std::string& path, std::unordered_map<uint32_t, std::vector<uint32_t>>& meshTextureMap, VkDescriptorPool descPool);
 
 private:
 	bool loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::vector<UNQ<VkTexture2D>>& textures, std::unordered_map<uint32_t, std::vector<uint32_t>>& meshTextureMap, const std::string& path, const std::string& name);
 
-	const Presentation::Device* presentationDevice;
-	Presentation::PresentationTarget* presentationTarget;
+	const Presentation::Device* m_presentationDevice;
+	Presentation::PresentationTarget* m_presentationTarget;
 
-	std::vector<UNQ<Mesh>> meshes;
-	std::vector<UNQ<Material>> materials;
-	std::vector<UNQ<VkTexture2D>> textures;
-	std::vector<UNQ<VkMesh>> graphicsMeshes;
-	std::vector<MeshRenderer> renderers;
+	std::vector<UNQ<Mesh>> m_meshes;
+	std::vector<UNQ<Material>> m_materials;
+	std::vector<UNQ<VkTexture2D>> m_textures;
+	std::vector<UNQ<VkMesh>> m_graphicsMeshes;
+	std::vector<MeshRenderer> m_renderers;
 };
  

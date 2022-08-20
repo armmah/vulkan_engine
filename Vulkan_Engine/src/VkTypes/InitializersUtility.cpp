@@ -162,7 +162,7 @@ bool vkinit::Texture::createSwapchain(VkSwapchainKHR& swapchain, VkDevice device
 	return vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapchain) == VK_SUCCESS;
 }
 
-bool vkinit::Texture::createImage(VkImage& image, VmaAllocation& memoryRange, const MemAllocationInfo& allocInfo, VkFormat format, VkImageUsageFlags usageFlags, uint32_t width, uint32_t height)
+bool vkinit::Texture::createImage(VkImage& image, VmaAllocation& memoryRange, const MemAllocationInfo& allocInfo, VkFormat format, VkImageUsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t mipCount)
 {
 	VkImageCreateInfo imageInfo{};
 	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -172,7 +172,7 @@ bool vkinit::Texture::createImage(VkImage& image, VmaAllocation& memoryRange, co
 	imageInfo.extent.height = height;
 	imageInfo.extent.depth = 1;
 
-	imageInfo.mipLevels = 1;
+	imageInfo.mipLevels = mipCount;
 	imageInfo.arrayLayers = 1;
 	imageInfo.format = format;
 	imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
@@ -187,7 +187,7 @@ bool vkinit::Texture::createImage(VkImage& image, VmaAllocation& memoryRange, co
 	return vmaCreateImage(*allocInfo.allocator, &imageInfo, &aci, &image, &memoryRange, nullptr) == VK_SUCCESS;
 }
 
-bool vkinit::Texture::createTextureImageView(VkImageView& imageView, VkDevice device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags)
+bool vkinit::Texture::createTextureImageView(VkImageView& imageView, VkDevice device, VkImage image, VkFormat format, uint32_t mipCount, VkImageAspectFlags aspectFlags)
 {
 	VkImageViewCreateInfo viewInfo{};
 	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -196,14 +196,14 @@ bool vkinit::Texture::createTextureImageView(VkImageView& imageView, VkDevice de
 	viewInfo.format = format;
 	viewInfo.subresourceRange.aspectMask = aspectFlags;
 	viewInfo.subresourceRange.baseMipLevel = 0;
-	viewInfo.subresourceRange.levelCount = 1;
+	viewInfo.subresourceRange.levelCount = mipCount;
 	viewInfo.subresourceRange.baseArrayLayer = 0;
 	viewInfo.subresourceRange.layerCount = 1;
 
 	return vkCreateImageView(device, &viewInfo, nullptr, &imageView) == VK_SUCCESS;
 }
 
-bool vkinit::Texture::createTextureSampler(VkSampler& sampler, VkDevice device, bool linearFiltering, VkSamplerAddressMode sampleMode, float anisotropySamples)
+bool vkinit::Texture::createTextureSampler(VkSampler& sampler, VkDevice device, uint32_t mipCount, bool linearFiltering, VkSamplerAddressMode sampleMode, float anisotropySamples)
 {
 	VkSamplerCreateInfo samplerInfo{};
 	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -226,7 +226,7 @@ bool vkinit::Texture::createTextureSampler(VkSampler& sampler, VkDevice device, 
 	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 	samplerInfo.mipLodBias = 0.0f;
 	samplerInfo.minLod = 0.0f;
-	samplerInfo.maxLod = 0.0f;
+	samplerInfo.maxLod = static_cast<float>(mipCount);
 
 	return (vkCreateSampler(device, &samplerInfo, nullptr, &sampler) == VK_SUCCESS);
 }

@@ -3,11 +3,12 @@
 #include "InitializersUtility.h"
 #include <EngineCore/Texture.h>
 #include "Presentation/Device.h"
+#include "StagingBufferPool.h"
 
 VkTexture2D::VkTexture2D(VkImage image, VmaAllocation memoryRange, VkImageView imageView, VkSampler sampler, uint32_t mipLevels) :
 	VkTexture(image, memoryRange, imageView), sampler(sampler), mipLevels(mipLevels) { }
 
-bool VkTexture2D::tryCreateTexture(UNQ<VkTexture2D>& tex, std::string path, const Presentation::Device* presentationDevice, bool generateTheMips)
+bool VkTexture2D::tryCreateTexture(UNQ<VkTexture2D>& tex, std::string path, const Presentation::Device* presentationDevice, StagingBufferPool& stagingBufferPool, bool generateTheMips)
 {
 	if (!fileExists(path))
 		return false;
@@ -25,18 +26,17 @@ bool VkTexture2D::tryCreateTexture(UNQ<VkTexture2D>& tex, std::string path, cons
 		return false;
 	}
 
-	VkBuffer stagingBuffer;
-	VmaAllocation stagingAllocation;
-	if (!vkinit::MemoryBuffer::allocateBufferAndMemory(stagingBuffer, stagingAllocation, allocator, as_uint32(imageSize), VMA_MEMORY_USAGE_CPU_TO_GPU, VK_BUFFER_USAGE_TRANSFER_SRC_BIT))
+	StagingBufferPool::StgBuffer stagingBuffer;
+	if(!stagingBufferPool.claimAStagingBuffer(stagingBuffer, as_uint32(imageSize)))
 	{
 		printf("Could not allocate staging memory buffer for texture '%s'.\n", path.c_str());
 		return false;
 	}
 
 	void* data;
-	vmaMapMemory(allocator, stagingAllocation, &data);
+	vmaMapMemory(allocator, stagingBuffer.allocation, &data);
 	memcpy(data, pixels, imageSize);
-	vmaUnmapMemory(allocator, stagingAllocation);
+	vmaUnmapMemory(allocator, stagingBuffer.allocation);
 	stbi_image_free(static_cast<void*>(pixels));
 
 	VkImage image;
@@ -60,7 +60,7 @@ bool VkTexture2D::tryCreateTexture(UNQ<VkTexture2D>& tex, std::string path, cons
 	}
 
 	Texture::transitionImageLayout(presentationDevice, image, format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipCount);
-	Texture::copyBufferToImage(presentationDevice, stagingBuffer, image, as_uint32(width), as_uint32(height));
+	Texture::copyBufferToImage(presentationDevice, stagingBuffer.buffer, image, as_uint32(width), as_uint32(height));
 
 	if (generateTheMips)
 	{
@@ -157,7 +157,7 @@ bool VkTexture2D::tryCreateTexture(UNQ<VkTexture2D>& tex, std::string path, cons
 		return false;
 	}
 
-	vmaDestroyBuffer(allocator, stagingBuffer, stagingAllocation);
+	stagingBufferPool.freeBuffer(stagingBuffer);
 
 	tex = std::unique_ptr<VkTexture2D>(new VkTexture2D(image, memoryRange, imageView, sampler, mipCount));
 	return true;

@@ -7,6 +7,7 @@ namespace Presentation
 {
 	class Device;
 }
+class StagingBufferPool;
 
 struct VkTexture
 {
@@ -29,7 +30,7 @@ struct VkTexture2D : public VkTexture
 	VkSampler sampler;
 	uint32_t mipLevels;
 
-	static bool tryCreateTexture(UNQ<VkTexture2D>& tex, std::string path, const Presentation::Device* presentationDevice, bool generateTheMips);
+	static bool tryCreateTexture(UNQ<VkTexture2D>& tex, std::string path, const Presentation::Device* presentationDevice, StagingBufferPool& stagingBufferPool, bool generateTheMips);
 
 	void release(VkDevice device) override;
 

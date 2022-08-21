@@ -48,7 +48,7 @@ void VulkanEngine::init(bool requestValidationLayers)
 	
 	// Scene
 	m_openScene = MAKEUNQ<Scene>(m_presentationDevice.get(), m_presentationTarget.get());
-	if (!m_openScene->load(m_memoryAllocator->m_allocator, descPool))
+	if (!m_openScene->load(descPool))
 	{
 		printf("Failed to load the scene!");
 	}

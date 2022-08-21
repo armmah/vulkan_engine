@@ -8,6 +8,7 @@
 
 #include "Presentation/Device.h"
 #include "PresentationTarget.h"
+#include "EngineCore/StagingBufferPool.h"
 
 #include "Profiling/ProfileMarker.h"
 
@@ -21,9 +22,13 @@ bool Scene::tryLoadTestScene_1(VkDescriptorPool descPool)
 	m_meshes.resize(1);
 	m_meshes[0] = MAKEUNQ<Mesh>(Mesh::getPrimitiveCube());
 
+	StagingBufferPool stagingBufferPool{};
+
 	m_textures.resize(1);
-	if(!VkTexture2D::tryCreateTexture(m_textures[0], "C:/Git/Vulkan_Engine/Resources/vulkan_tutorial_texture.jpg", m_presentationDevice, false))
+	if(!VkTexture2D::tryCreateTexture(m_textures[0], "C:/Git/Vulkan_Engine/Resources/vulkan_tutorial_texture.jpg", m_presentationDevice, stagingBufferPool, false))
 		return false;
+
+	stagingBufferPool.releaseAllResources();
 
 	m_materials.reserve(1);
 	return m_presentationTarget->createMaterial(m_materials[0], m_presentationDevice->getDevice(), descPool, Shader::findShader(0), m_textures[0].get());
@@ -32,47 +37,16 @@ bool Scene::tryLoadTestScene_1(VkDescriptorPool descPool)
 static inline std::string CRYTEK_SPONZA = "C:/Git/Vulkan_Engine/Resources/sponza.obj";
 static inline std::string LIGHTING_SCENE = "C:/Git/Vulkan_Engine/Resources/debrovic_sponza/sponza.obj";
 
-bool Scene::load(const VmaAllocator& vmaAllocator, VkDescriptorPool descPool)
+bool Scene::load(VkDescriptorPool descPool)
 {
 	ProfileMarker marker("Scene::load");
 
-	std::unordered_map<uint32_t, std::vector<uint32_t>> meshMaterialMap;
-	
+	std::vector<std::string> texturePaths;
 	//Todo - Fix this scene, it rans out of heap memory, because we are not using any staging buffers for our meshes.
 	// tryLoadFromFile("C:/Git/SponzeScenes/lost-empire/lost_empire.obj", meshMaterialMap, descPool);
 
-	tryLoadFromFile(CRYTEK_SPONZA, meshMaterialMap, descPool);
+	tryLoadFromFile(CRYTEK_SPONZA, descPool);
 	
-	auto defaultMeshDescriptor = Mesh::defaultMeshDescriptor;
-	const auto count = m_meshes.size();
-
-	m_graphicsMeshes.resize(count);
-	m_renderers.reserve(count);
-	for (int i = 0; i < count; i++)
-	{
-		if (!m_meshes[i]->allocateGraphicsMesh(m_graphicsMeshes[i], vmaAllocator) || !m_meshes[i]->isValid())
-			return false;
-
-		if (defaultMeshDescriptor != m_meshes[i]->getMeshDescriptor())
-		{
-			printf("Mesh metadata does not match - can not bind to the same pipeline.\n");
-			return false;
-		}
-
-		auto& allMaterialIDs = meshMaterialMap[i];
-		uint32_t submeshIndex = 0;
-		for (auto id : allMaterialIDs)
-		{
-			if (meshMaterialMap.count(i) == 0 || id < 0 || id >= m_textures.size())
-			{
-				printf("SceneLoader - The material not found for '%i' mesh.\n", i);
-				continue;
-			}
-
-			m_renderers.push_back(MeshRenderer(m_graphicsMeshes[i].get(), submeshIndex, m_meshes[i]->getBounds(submeshIndex), &m_materials[id]->getMaterialVariant()));
-			++submeshIndex;
-		}
-	}
 
 	printf("Initialized the scene with (renderers = %zi), (meshes = %zi), (textures = %zi), (materials = %zi).\n", m_renderers.size(), m_meshes.size(), m_textures.size(), m_materials.size());
 	return true;
@@ -191,7 +165,7 @@ void maxVector(glm::vec3& max, const glm::vec3& point)
 	max.z = std::max(max.z, point.z);
 }
 
-bool Scene::loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::vector<UNQ<VkTexture2D>>& textures, std::unordered_map<uint32_t, std::vector<uint32_t>>& meshTextureMap, const std::string& path, const std::string& name)
+bool Scene::loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::unordered_map<MeshIndex, SubmeshMaterials>& meshTextureMap, const std::string& path, const std::string& name)
 {
 	//attrib will contain the vertex arrays of the file
 	tinyobj::attrib_t objAttribs;
@@ -228,33 +202,6 @@ bool Scene::loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::vector<UN
 		}
 	}
 
-	std::unordered_map<uint32_t, uint32_t> textureMap;
-	{
-		ProfileMarker marker("	Scene::loadObjImplementation - Load textures and create VkTexture2D");
-
-		textures.reserve(objMats.size());
-		auto textureCount = 0;
-		for (int i = 0; i < objMats.size(); i++)
-		{
-			auto texPath = path + objMats[i].diffuse_texname;
-			if (objMats[i].diffuse_texname.size() == 0 ||
-				!std::filesystem::exists(texPath))
-				continue;
-
-			textures.resize(textureCount + 1);
-			if (VkTexture2D::tryCreateTexture(textures.back(), texPath, m_presentationDevice, true))
-			{
-				textureMap[i] = textureCount;
-				textureCount += 1;
-			}
-			else
-			{
-				textureMap[i] = -1;
-				printf("The texture at '%s' could not be loaded.\n", texPath.c_str());
-			}
-		}
-	}
-
 	struct SubMeshDesc
 	{
 		size_t indexCount;
@@ -262,8 +209,7 @@ bool Scene::loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::vector<UN
 	};
 
 	ProfileMarker marker ("	Scene::loadObjImplementation - Create meshes");
-
-	std::unordered_map<uint32_t, SubMeshDesc> uniqueMaterialIDs;
+	std::unordered_map<MaterialID, SubMeshDesc> uniqueMaterialIDs;
 	std::unordered_map<size_t, MeshDescriptor::TVertexIndices> indexMapping;
 	for (size_t i = 0; i < objShapes.size(); i++)
 	{
@@ -276,7 +222,6 @@ bool Scene::loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::vector<UN
 		// The shape's vertex index here is referencing the big obj vertex buffer,
 		// Our vertex buffer for mesh will be much smaller and should be indexed per-mesh, instead of globally.
 		std::vector<SubMesh> submeshes;
-		std::vector<glm::vec3> boundsMinMax;
 
 		if (mesh.material_ids.size() * 3 < shapeIndices.size())
 		{
@@ -304,13 +249,6 @@ bool Scene::loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::vector<UN
 			materialCount += 1;
 		}
 		submeshes.reserve(materialCount);
-		boundsMinMax.resize(materialCount * 2);
-
-		for (int k = 0; k < boundsMinMax.size(); k += 2)
-		{
-			boundsMinMax[k] = glm::vec3(1.f) * std::numeric_limits<float>::max();
-			boundsMinMax[k + 1] = glm::vec3(1.f) * std::numeric_limits<float>::lowest();
-		}
 
 		auto& shapeMaterialCollection = meshTextureMap[i];
 		shapeMaterialCollection.reserve(materialCount);
@@ -320,7 +258,18 @@ bool Scene::loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::vector<UN
 			auto submeshDesc = kvPair.second;
 
 			submeshes.push_back(SubMesh(submeshDesc.indexCount * 3));
-			shapeMaterialCollection.push_back(textureMap[materialID]);
+
+			auto texPath = path + objMats[materialID].diffuse_texname;
+			if (objMats[materialID].diffuse_texname.length() > 0 && std::filesystem::exists(texPath))
+				shapeMaterialCollection.push_back(texPath);
+		}
+
+		// Axis-Aligned Bounding Box
+		std::vector<glm::vec3> boundsMinMax(materialCount * 2);
+		for (int k = 0; k < boundsMinMax.size(); k += 2)
+		{
+			boundsMinMax[k] = glm::vec3(1.f) * std::numeric_limits<float>::max();
+			boundsMinMax[k + 1] = glm::vec3(1.f) * std::numeric_limits<float>::lowest();
 		}
 
 		/*************************		VERTEX, NORMAL, UV indices -> pick unique and map to [0, N] range		**************************/
@@ -391,14 +340,10 @@ bool Scene::loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::vector<UN
 		meshes.push_back(MAKEUNQ<Mesh>(vertices, uvs, normals, colors, submeshes));
 	}
 
-	// We are currently rendering the whole mesh (with all of its submeshes) with material[0] - hardcoded.
-	// To do - integrate the submesh support. Can be problematic due to different vertex bindings (another pipeline?)
-	printf("Loaded obj mesh at '%s' successfully, with %i meshes and %i diffuse textures.\n", 
-		objPath.c_str(), as_uint32(meshes.size()), as_uint32(textures.size()));
 	return true;
 }
 
-bool Scene::tryLoadFromFile(const std::string& path, std::unordered_map<uint32_t, std::vector<uint32_t>>& meshTextureMap, VkDescriptorPool descPool)
+bool Scene::tryLoadFromFile(const std::string& path, VkDescriptorPool descPool)
 {
 	const std::string supportedFormat = ".obj";
 	if (!fileExists(path, supportedFormat))
@@ -412,15 +357,74 @@ bool Scene::tryLoadFromFile(const std::string& path, std::unordered_map<uint32_t
 	auto directory = path.substr(0, nameStart);
 	auto name = path.substr(nameStart, path.length() - nameStart - extensionLength);
 
-	loadObjImplementation(m_meshes, m_textures, meshTextureMap, directory, name);
+	/* ================ READ FROM OBJ =============== */
+	std::unordered_map<MeshIndex, SubmeshMaterials> meshTextureMap;
+	loadObjImplementation(m_meshes, meshTextureMap, directory, name);
 
+	/* ================= CREATE TEXTURES ================*/
+	std::unordered_map<std::string, uint32_t> loadedTextures;
+	StagingBufferPool stagingBufPool{};
+	for (auto& kvPair : meshTextureMap)
+	{
+		for (auto& texPath : kvPair.second)
+		{
+			if (loadedTextures.count(texPath) == 0)
+			{
+				auto size = m_textures.size();
+				m_textures.resize(size + 1);
+				if (VkTexture2D::tryCreateTexture(m_textures.back(), texPath, m_presentationDevice, stagingBufPool, true))
+				{
+					loadedTextures[texPath] = size;
+				} 
+				else
+				{
+					m_textures.resize(size);
+					printf("The texture at '%s' could not be loaded.\n", texPath.c_str());
+				}
+			}
+		}
+	}
+	stagingBufPool.releaseAllResources();
+
+	/* ================= CREATE MATERIALS ================*/
 	auto* defaultShader = Shader::findShader(0);
 	auto device = m_presentationDevice->getDevice();
-
 	m_materials.resize(m_textures.size());
 	for (int i = 0; i < m_textures.size(); i++)
 	{
 		m_presentationTarget->createMaterial(m_materials[i], device, descPool, defaultShader, m_textures[i].get());
+	}
+
+	/* ================= CREATE GRAPHICS MESHES ================*/
+	auto defaultMeshDescriptor = Mesh::defaultMeshDescriptor;
+	auto vmaAllocator = VkMemoryAllocator::getInstance()->m_allocator;
+	const auto count = m_meshes.size();
+	m_graphicsMeshes.resize(count);
+	m_renderers.reserve(count);
+	for (int i = 0; i < count; i++)
+	{
+		if (!m_meshes[i]->allocateGraphicsMesh(m_graphicsMeshes[i], vmaAllocator) || !m_meshes[i]->isValid())
+			return false;
+
+		if (defaultMeshDescriptor != m_meshes[i]->getMeshDescriptor())
+		{
+			printf("Mesh metadata does not match - can not bind to the same pipeline.\n");
+			return false;
+		}
+
+		auto& allMaterialIDs = meshTextureMap[i];
+		uint32_t submeshIndex = 0;
+		for (auto texPath : allMaterialIDs)
+		{
+			if (!loadedTextures.count(texPath) && loadedTextures[texPath] > 0 && loadedTextures[texPath] < m_materials.size())
+			{
+				printf("SceneLoader - The material not found for '%i' mesh.\n", i);
+				continue;
+			}
+
+			m_renderers.push_back(MeshRenderer(m_graphicsMeshes[i].get(), submeshIndex, m_meshes[i]->getBounds(submeshIndex), &m_materials[loadedTextures[texPath]]->getMaterialVariant()));
+			++submeshIndex;
+		}
 	}
 
 	return true;

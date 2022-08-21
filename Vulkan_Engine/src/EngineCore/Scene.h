@@ -16,6 +16,12 @@ namespace Presentation
 	class PresentationTarget;
 }
 
+typedef uint32_t MeshIndex;
+typedef std::vector<std::string> SubmeshMaterials;
+
+typedef uint32_t MaterialID;
+typedef size_t IndexCount;
+
 class Scene
 {
 public:
@@ -25,16 +31,16 @@ public:
 	const std::vector<UNQ<Mesh>>& getMeshes() const;
 	const std::vector<UNQ<VkMesh>>& getGraphicsMeshes() const;
 
-	bool load(const VmaAllocator& vmaAllocator, VkDescriptorPool descPool);
+	bool load(VkDescriptorPool descPool);
 	void release(VkDevice device, const VmaAllocator& allocator);
 
 	std::vector<MeshRenderer> getRenderers() { return m_renderers; }
 
 	bool tryLoadTestScene_1(VkDescriptorPool descPool);
-	bool tryLoadFromFile(const std::string& path, std::unordered_map<uint32_t, std::vector<uint32_t>>& meshTextureMap, VkDescriptorPool descPool);
+	bool tryLoadFromFile(const std::string& path, VkDescriptorPool descPool);
 
 private:
-	bool loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::vector<UNQ<VkTexture2D>>& textures, std::unordered_map<uint32_t, std::vector<uint32_t>>& meshTextureMap, const std::string& path, const std::string& name);
+	bool loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::unordered_map<MeshIndex, SubmeshMaterials>& meshTextureMap, const std::string& path, const std::string& name);
 
 	const Presentation::Device* m_presentationDevice;
 	Presentation::PresentationTarget* m_presentationTarget;

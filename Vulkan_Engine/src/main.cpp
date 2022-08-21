@@ -1,6 +1,8 @@
 #include "pch.h"
 #include <vk_engine.h>
 
+#include "StagingBufferPool.h"
+
 int main(int argc, char* argv[])
 {
 	VulkanEngine engine;

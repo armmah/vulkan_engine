@@ -152,6 +152,9 @@
     <ClCompile Include="src\Profiling\ProfileMarker.cpp">
       <Filter>Source Files\Profiling</Filter>
     </ClCompile>
+    <ClCompile Include="src\EngineCore\StagingBufferPool.cpp">
+      <Filter>Source Files\EngineCore</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\vk_engine.h">
@@ -264,6 +267,9 @@
     </ClInclude>
     <ClInclude Include="src\Profiling\ProfileMarker.h">
       <Filter>Header Files\Profiling</Filter>
+    </ClInclude>
+    <ClInclude Include="src\EngineCore\StagingBufferPool.h">
+      <Filter>Header Files\EngineCore</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

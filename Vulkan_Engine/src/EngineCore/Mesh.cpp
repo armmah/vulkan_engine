@@ -148,7 +148,7 @@ bool Mesh::allocateVertexAttributes(VkMesh& graphicsMesh, const VmaAllocator& vm
 	VmaAllocation vMemRange;
 	if (!vkinit::MemoryBuffer::allocateBufferAndMemory(vBuffer, vMemRange, vmaAllocator, as_uint32(totalSizeBytes), VMA_MEMORY_USAGE_CPU_TO_GPU, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT))
 	{
-		printf("Could not allocate vertex memory buffer.");
+		printf("Could not allocate vertex memory buffer.\n");
 		return false;
 	}
 

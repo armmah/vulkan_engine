@@ -384,7 +384,6 @@ bool Scene::tryLoadFromFile(const std::string& path, VkDescriptorPool descPool)
 			}
 		}
 	}
-	stagingBufPool.releaseAllResources();
 
 	/* ================= CREATE MATERIALS ================*/
 	auto* defaultShader = Shader::findShader(0);
@@ -403,7 +402,7 @@ bool Scene::tryLoadFromFile(const std::string& path, VkDescriptorPool descPool)
 	m_renderers.reserve(count);
 	for (int i = 0; i < count; i++)
 	{
-		if (!m_meshes[i]->allocateGraphicsMesh(m_graphicsMeshes[i], vmaAllocator) || !m_meshes[i]->isValid())
+		if (!m_meshes[i]->allocateGraphicsMesh(m_graphicsMeshes[i], vmaAllocator, m_presentationDevice, stagingBufPool) || !m_meshes[i]->isValid())
 			return false;
 
 		if (defaultMeshDescriptor != m_meshes[i]->getMeshDescriptor())
@@ -426,6 +425,7 @@ bool Scene::tryLoadFromFile(const std::string& path, VkDescriptorPool descPool)
 			++submeshIndex;
 		}
 	}
+	stagingBufPool.releaseAllResources();
 
 	return true;
 }

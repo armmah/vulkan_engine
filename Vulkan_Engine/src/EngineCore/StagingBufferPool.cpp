@@ -2,7 +2,7 @@
 #include "StagingBufferPool.h"
 
 #define VERBOSITY_ERROR
-#define VERBOSITY_INFO 
+//#define VERBOSITY_INFO
 
 bool StagingBufferPool::claimAStagingBuffer(StgBuffer& buffer, uint32_t byteSize)
 {

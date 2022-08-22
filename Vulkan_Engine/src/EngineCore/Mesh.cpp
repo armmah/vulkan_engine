@@ -6,6 +6,8 @@
 #include "VkTypes/InitializersUtility.h"
 #include "VertexAttributes.h"
 #include "IndexAttributes.h"
+#include "Presentation/Device.h"
+#include "StagingBufferPool.h"
 
 Mesh::Mesh(std::vector<glm::vec3>& positions, std::vector<glm::vec2>& uvs, std::vector<glm::vec3>& normals, std::vector<glm::vec3>& colors, std::vector<SubMesh>& submeshes)
 	: m_positions(std::move(positions)), m_uvs(std::move(uvs)), m_normals(std::move(normals)), m_colors(std::move(colors)), m_submeshes(std::move(submeshes))
@@ -128,7 +130,7 @@ inline void Mesh::mapAndCopyBuffer(const VmaAllocator& vmaAllocator, VmaAllocati
 #endif
 }
 
-bool Mesh::allocateVertexAttributes(VkMesh& graphicsMesh, const VmaAllocator& vmaAllocator)
+bool Mesh::allocateVertexAttributes(VkMesh& graphicsMesh, const VmaAllocator& vmaAllocator, const Presentation::Device* presentationDevice, StagingBufferPool& stagingPool)
 {
 	size_t vertCount = m_positions.size();
 
@@ -143,21 +145,6 @@ bool Mesh::allocateVertexAttributes(VkMesh& graphicsMesh, const VmaAllocator& vm
 	size_t vertexStride = sumValues(strides, descriptorCount);
 	size_t floatCount = vertexStride / sizeof(float);
 	size_t totalSizeBytes = vertexStride * vertCount;
-
-	VkBuffer vBuffer;
-	VmaAllocation vMemRange;
-	if (!vkinit::MemoryBuffer::allocateBufferAndMemory(vBuffer, vMemRange, vmaAllocator, as_uint32(totalSizeBytes), VMA_MEMORY_USAGE_CPU_TO_GPU, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT))
-	{
-		printf("Could not allocate vertex memory buffer.\n");
-		return false;
-	}
-
-	std::vector<VkBuffer> vBuffers{ vBuffer };
-	std::vector<VkDeviceSize> vOffsets{ 0 };
-	std::vector<VmaAllocation> vMemRanges{ vMemRange };
-	graphicsMesh.vAttributes = MAKEUNQ<VertexAttributes>(vBuffers, vMemRanges, vOffsets);
-	graphicsMesh.vCount = as_uint32(vertCount);
-
 	// Align and optimize the mesh data
 	auto interleavedCount = floatCount * vertCount;
 	std::vector<float> interleavedVertexData(interleavedCount);
@@ -172,33 +159,75 @@ bool Mesh::allocateVertexAttributes(VkMesh& graphicsMesh, const VmaAllocator& vm
 		offset += strides[i] / sizeof(float);
 	}
 
-	// Fill the vertex buffer
-	mapAndCopyBuffer(vmaAllocator, vMemRange, interleavedVertexData.data(), vertCount, totalSizeBytes,
+	// Copy to staging buffer
+	StagingBufferPool::StgBuffer stagingBuffer;
+	stagingPool.claimAStagingBuffer(stagingBuffer, as_uint32(totalSizeBytes));
+	mapAndCopyBuffer(vmaAllocator, stagingBuffer.allocation, interleavedVertexData.data(), vertCount, totalSizeBytes,
 		"Copied vertex buffer of size: %zu elements and %zu bytes (%f bytes per vertex).\n");
+
+	// Allocate permanent buffer
+	VkBuffer vBuffer;
+	VmaAllocation vMemRange;
+	if (!vkinit::MemoryBuffer::allocateBufferAndMemory(vBuffer, vMemRange, vmaAllocator, as_uint32(totalSizeBytes), VMA_MEMORY_USAGE_GPU_ONLY, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT))
+	{
+		printf("Could not allocate vertex memory buffer.\n");
+		return false;
+	}
+
+	// Copy from staging buffer to permanent buffer
+	presentationDevice->submitImmediatelyAndWaitCompletion([=](VkCommandBuffer cmd) {
+		VkBufferCopy copyRegion{};
+		copyRegion.size = as_uint32(totalSizeBytes);
+
+		vkCmdCopyBuffer(cmd, stagingBuffer.buffer, vBuffer, 1, &copyRegion);
+	});
+	// Release staging buffer back to the pool
+	stagingPool.freeBuffer(stagingBuffer);
+
+	std::vector<VkBuffer> vBuffers{ vBuffer };
+	std::vector<VkDeviceSize> vOffsets{ 0 };
+	std::vector<VmaAllocation> vMemRanges{ vMemRange };
+	graphicsMesh.vAttributes = MAKEUNQ<VertexAttributes>(vBuffers, vMemRanges, vOffsets);
+	graphicsMesh.vCount = as_uint32(vertCount);
 
 	return true;
 }
 
-bool Mesh::allocateIndexAttributes(VkMesh& graphicsMesh, const SubMesh& submesh, const VmaAllocator& vmaAllocator)
+bool Mesh::allocateIndexAttributes(VkMesh& graphicsMesh, const SubMesh& submesh, const VmaAllocator& vmaAllocator, const Presentation::Device* presentationDevice, StagingBufferPool& stagingPool)
 {
 	size_t totalSize = vectorsizeof(submesh.m_indices);
+	auto indexCount = submesh.getIndexCount();
 
+	// Copy to staging buffer
+	StagingBufferPool::StgBuffer stagingBuffer;
+	stagingPool.claimAStagingBuffer(stagingBuffer, as_uint32(totalSize));
+
+	// Fill the index buffer
+	mapAndCopyBuffer(vmaAllocator, stagingBuffer.allocation, submesh.m_indices.data(), indexCount / 3, totalSize,
+		"Copied index buffer of size: %zu triangles and %zu bytes (%f bytes per triangle).\n");
+
+	// Allocate permanent buffer
 	VkBuffer iBuffer;
 	VmaAllocation iMemRange;
-	if (!vkinit::MemoryBuffer::allocateBufferAndMemory(iBuffer, iMemRange, vmaAllocator, as_uint32(totalSize), VMA_MEMORY_USAGE_CPU_TO_GPU, VK_BUFFER_USAGE_INDEX_BUFFER_BIT))
+	if (!vkinit::MemoryBuffer::allocateBufferAndMemory(iBuffer, iMemRange, vmaAllocator, as_uint32(totalSize), VMA_MEMORY_USAGE_CPU_TO_GPU, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT))
 	{
 		printf("Could not allocate index memory buffer.\n");
 		return false;
 	}
 
-	auto indexCount = submesh.getIndexCount();
+	// Copy from staging buffer to permanent buffer
+	presentationDevice->submitImmediatelyAndWaitCompletion([=](VkCommandBuffer cmd) {
+		VkBufferCopy copyRegion{};
+		copyRegion.size = as_uint32(totalSize);
+
+		vkCmdCopyBuffer(cmd, stagingBuffer.buffer, iBuffer, 1, &copyRegion);
+	});
+	// Release staging buffer back to the pool
+	stagingPool.freeBuffer(stagingBuffer);
+
 	graphicsMesh.iAttributes.push_back(
 		IndexAttributes(iBuffer, iMemRange, as_uint32(indexCount), VkIndexType::VK_INDEX_TYPE_UINT16)
 	);
-
-	// Fill the index buffer
-	mapAndCopyBuffer(vmaAllocator, iMemRange, submesh.m_indices.data(), indexCount / 3, totalSize,
-		"Copied index buffer of size: %zu triangles and %zu bytes (%f bytes per triangle).\n");
 
 	return true;
 }
@@ -267,15 +296,15 @@ VertexBinding Mesh::initializeBindings(const MeshDescriptor& meshDescriptor)
 	return VertexBinding(bindingDescription, attributeDescriptions);
 }
 
-bool Mesh::allocateGraphicsMesh(UNQ<VkMesh>& graphicsMesh, const VmaAllocator& vmaAllocator)
+bool Mesh::allocateGraphicsMesh(UNQ<VkMesh>& graphicsMesh, const VmaAllocator& vmaAllocator, const Presentation::Device* presentationDevice, StagingBufferPool& stagingPool)
 {
 	graphicsMesh = MAKEUNQ<VkMesh>();
-	if (!allocateVertexAttributes(*graphicsMesh, vmaAllocator))
+	if (!allocateVertexAttributes(*graphicsMesh, vmaAllocator, presentationDevice, stagingPool))
 		return false;
 
 	for (auto& submesh : m_submeshes)
 	{
-		if (!allocateIndexAttributes(*graphicsMesh, submesh, vmaAllocator))
+		if (!allocateIndexAttributes(*graphicsMesh, submesh, vmaAllocator, presentationDevice, stagingPool))
 			return false;
 	}
 

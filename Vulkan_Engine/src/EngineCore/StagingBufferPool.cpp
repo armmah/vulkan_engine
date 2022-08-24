@@ -2,12 +2,12 @@
 #include "StagingBufferPool.h"
 
 #define VERBOSITY_ERROR
-//#define VERBOSITY_INFO
+#define VERBOSITY_INFO
 
 bool StagingBufferPool::claimAStagingBuffer(StgBuffer& buffer, uint32_t byteSize)
 {
 	int32_t theNextBestThing = -1;
-	for (int32_t i = 0, n = freePool.size(); i < n; i++)
+	for (int32_t i = 0, n = static_cast<int32_t>(freePool.size()); i < n; i++)
 	{
 		auto& buf = freePool[i];
 
@@ -15,7 +15,7 @@ bool StagingBufferPool::claimAStagingBuffer(StgBuffer& buffer, uint32_t byteSize
 		if (byteSize == buf.totalByteSize)
 		{
 			buffer = buf;
-			reusedMatchingBuffer += 1;
+			m_stats.reusedMatchingBuffer += 1;
 #ifdef VERBOSITY_INFO
 			printf("Found a buffer (%i) matching the requested size (%i).\n", buf.totalByteSize, byteSize);
 #endif
@@ -35,7 +35,7 @@ bool StagingBufferPool::claimAStagingBuffer(StgBuffer& buffer, uint32_t byteSize
 	if (theNextBestThing >= 0)
 	{
 		buffer = freePool[theNextBestThing];
-		reusedBiggerBuffer += 1;
+		m_stats.reusedBiggerBuffer += 1;
 #ifdef VERBOSITY_INFO
 		printf("Found a buffer (%i) clooose to the requested size (%i).\n", freePool[theNextBestThing].totalByteSize, byteSize);
 #endif
@@ -45,9 +45,12 @@ bool StagingBufferPool::claimAStagingBuffer(StgBuffer& buffer, uint32_t byteSize
 	}
 
 	// Doesn't exist - create
-	auto success = createNewBuffer(buffer, byteSize);
-	claim(buffer);
-	return success;
+	if (createNewBuffer(buffer, byteSize))
+	{
+		claim(buffer);
+		return true;
+	}
+	return false;
 }
 
 void StagingBufferPool::freeBuffer(const StgBuffer& buffer)
@@ -57,29 +60,26 @@ void StagingBufferPool::freeBuffer(const StgBuffer& buffer)
 
 void StagingBufferPool::releaseAllResources()
 {
-	auto allocator = VkMemoryAllocator::getInstance()->m_allocator;
-
 	for (auto& buffer : freePool)
 	{
-		vmaDestroyBuffer(allocator, buffer.buffer, buffer.allocation);
+		indirection_destroyBuffer(buffer, false);
 	}
+	freePool.clear();
 
 	for (auto& buffer : claimedPool)
 	{
 #ifdef VERBOSITY_ERROR
 		printf("[FORCE RELEASE] Warning, the buffer (%p) of size %i is still claimed, but release all resources was called on the pool.\n", buffer.buffer, buffer.totalByteSize);
 #endif
-		vmaDestroyBuffer(allocator, buffer.buffer, buffer.allocation);
+		indirection_destroyBuffer(buffer, false);
 	}
+	claimedPool.clear();
 
-	printf("Staging buffer stats: (Created new %i, reallocated to grow %i), (Reuse matching size %i, bigger size %i), (Claims %i, frees %i).\n", 
-		createdBuffer - destroyedBuffer, destroyedBuffer, reusedMatchingBuffer, reusedBiggerBuffer, claimCount, freeCount);
+	m_stats.print();
 }
 
 bool StagingBufferPool::createNewBuffer(StgBuffer& buffer, uint32_t size)
 {
-	auto allocator = VkMemoryAllocator::getInstance()->m_allocator;
-
 	// Before creating a new bigger buffer, free all the smaller ones in the free pool.
 	for (auto& freeBuf : freePool)
 	{
@@ -88,18 +88,14 @@ bool StagingBufferPool::createNewBuffer(StgBuffer& buffer, uint32_t size)
 #ifdef VERBOSITY_INFO
 		printf("TEMP\t\t\t\tDestroyed a free buffer (%i), because it was smaller than %i.\n", freeBuf.totalByteSize, size);
 #endif
-		destroyedBuffer += 1;
-		vmaDestroyBuffer(allocator, freeBuf.buffer, freeBuf.allocation);
+		indirection_destroyBuffer(freeBuf);
 	}
 	freePool.clear();
 
 #ifdef VERBOSITY_INFO
 	printf("Trying to allocate a new staging buffer of size %i.\n", size);
 #endif
-	createdBuffer += 1;
-
-	buffer.totalByteSize = size;
-	return vkinit::MemoryBuffer::allocateBufferAndMemory(buffer.buffer, buffer.allocation, allocator, size, VMA_MEMORY_USAGE_CPU_TO_GPU, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+	return indirection_allocateBuffer(buffer, size);
 }
 
 void StagingBufferPool::claimedFromFreePool_impl(size_t index)
@@ -149,11 +145,41 @@ void StagingBufferPool::returnToFreePool_impl(const StgBuffer& buffer)
 void StagingBufferPool::claim(const StgBuffer& buffer)
 {
 	claimedPool.push_back(buffer);
-	claimCount += 1;
+	m_stats.claimCount += 1;
 }
 
 void StagingBufferPool::free(const StgBuffer& buffer)
 {
 	freePool.push_back(buffer);
-	freeCount += 1;
+	m_stats.freeCount += 1;
+}
+
+void StagingBufferPool::indirection_destroyBuffer(StgBuffer& buffer, bool increaseCounter)
+{
+#if !defined(NO_GRAPHICS_MODE) || defined(UNIT_TEST)
+	m_stats.destroyedBuffer += increaseCounter;
+#endif
+
+#ifndef NO_GRAPHICS_MODE
+	auto allocator = VkMemoryAllocator::getInstance()->m_allocator;
+	vmaDestroyBuffer(allocator, buffer.buffer, buffer.allocation);
+#endif
+}
+
+bool StagingBufferPool::indirection_allocateBuffer(StgBuffer& buffer, uint32_t size)
+{
+	auto isSuccess = false;
+
+#ifdef UNIT_TEST
+	isSuccess = true;
+#endif
+
+#ifndef NO_GRAPHICS_MODE
+	auto allocator = VkMemoryAllocator::getInstance()->m_allocator;
+	isSuccess = vkinit::MemoryBuffer::allocateBufferAndMemory(buffer.buffer, buffer.allocation, allocator, size, VMA_MEMORY_USAGE_CPU_TO_GPU, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+#endif
+
+	buffer.totalByteSize = size;
+	m_stats.createdBuffer += isSuccess;
+	return isSuccess;
 }

@@ -46,3 +46,6 @@
 *.t0000
 *.json
 /Resources
+/Vulkan_Engine/x64/Debug/Vulkan_Engine.tlog
+/Vulkan_Engine/x64/Debug
+/Unit_Tests/x64/Debug

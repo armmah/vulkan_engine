@@ -87,7 +87,7 @@ void VulkanEngine::run()
 	bool quit = false;
 	bool mouseHeld = false;
 
-	float curFrameTime = SDL_GetTicks();
+	float curFrameTime = static_cast<float>(SDL_GetTicks());
 	float prevFrameTime = 0.f;
 	float deltaTime = curFrameTime - prevFrameTime;
 	prevFrameTime = curFrameTime;

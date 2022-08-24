@@ -1,6 +1,12 @@
 #pragma once
 #include "Common.h"
 
+class IRequireInitialization
+{
+public:
+	virtual bool isInitialized() const = 0;
+};
+
 template <typename T, typename ...Args>
 bool tryInitialize(UNQ<T>& toInitialize, Args&&... args)
 {
@@ -13,9 +19,3 @@ bool tryInitialize(UNQ<T>& toInitialize, Args&&... args)
 
 	return result;
 }
-
-class IRequireInitialization
-{
-public:
-	virtual bool isInitialized() const = 0;
-};

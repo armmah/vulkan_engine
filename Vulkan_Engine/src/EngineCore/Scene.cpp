@@ -36,17 +36,13 @@ bool Scene::tryLoadTestScene_1(VkDescriptorPool descPool)
 
 static inline std::string CRYTEK_SPONZA = "C:/Git/Vulkan_Engine/Resources/sponza.obj";
 static inline std::string LIGHTING_SCENE = "C:/Git/Vulkan_Engine/Resources/debrovic_sponza/sponza.obj";
+static inline std::string CUBE_GLTF = "C:/Git/Vulkan_Engine/Resources/gltf/Cube_khr.gltf";
 
 bool Scene::load(VkDescriptorPool descPool)
 {
-	ProfileMarker marker("Scene::load");
-
-	std::vector<std::string> texturePaths;
-	//Todo - Fix this scene, it rans out of heap memory, because we are not using any staging buffers for our meshes.
-	// tryLoadFromFile("C:/Git/SponzeScenes/lost-empire/lost_empire.obj", meshMaterialMap, descPool);
+	ProfileMarker _("Scene::load");
 
 	tryLoadFromFile(CRYTEK_SPONZA, descPool);
-	
 
 	printf("Initialized the scene with (renderers = %zi), (meshes = %zi), (textures = %zi), (materials = %zi).\n", m_renderers.size(), m_meshes.size(), m_textures.size(), m_materials.size());
 	return true;
@@ -165,7 +161,50 @@ void maxVector(glm::vec3& max, const glm::vec3& point)
 	max.z = std::max(max.z, point.z);
 }
 
-bool Scene::loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::unordered_map<MeshIndex, SubmeshMaterials>& meshTextureMap, const std::string& path, const std::string& name)
+bool Scene::loadGLTF_Implementation(std::vector<UNQ<Mesh>>& meshes, std::unordered_map<MeshIndex, SubmeshMaterials>& meshTextureMap, const std::string& path, const std::string& name, bool isBinary)
+{
+	tinygltf::Model model;
+	tinygltf::TinyGLTF loader;
+
+	//error and warning output from the load function
+	std::string err;
+	std::string warn;
+
+	auto loaded = isBinary ? loader.LoadBinaryFromFile(&model, &err, &warn, path) : loader.LoadASCIIFromFile(&model, &err, &warn, path);
+
+#ifdef VERBOSE_INFO_MESSAGE
+	if (!warn.empty()) printf("Warning: %s\n", warn.c_str());
+#endif
+	if (!err.empty()) printf("Error: %s\n", err.c_str());
+	if (!loaded)
+	{
+		return false;
+	}
+
+	const tinygltf::Scene& scene = model.scenes[model.defaultScene > -1 ? model.defaultScene : 0];
+	for (auto nodeIndex : scene.nodes)
+	{
+		auto& node = model.nodes[nodeIndex];
+		auto& mesh = model.meshes[node.mesh];
+		
+		for (auto& prim : mesh.primitives)
+		{
+			const auto& accessor = model.accessors[prim.attributes.find("POSITION")->second];
+			const auto& posView = model.bufferViews[accessor.bufferView];
+			
+			
+			model.buffers[posView.buffer];
+			
+			
+			prim.attributes.find("");
+		}
+	}
+
+	printf("loaded %s gltf\n", (isBinary ? "Binary" : "ASCII"));
+	return true;
+}
+
+bool Scene::loadOBJ_Implementation(std::vector<UNQ<Mesh>>& meshes, std::unordered_map<MeshIndex, SubmeshMaterials>& meshTextureMap, const std::string& path, const std::string& name)
 {
 	//attrib will contain the vertex arrays of the file
 	tinyobj::attrib_t objAttribs;
@@ -182,14 +221,14 @@ bool Scene::loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::unordered
 	auto objPath = (path + name + ".obj");
 
 	{
-		ProfileMarker marker("	Scene::loadObjImplementation - Load obj from disk");
+		ProfileMarker _("	Scene::loadObjImplementation - Load obj from disk");
 		tinyobj::LoadObj(&objAttribs, &objShapes, &objMats, &warn, &err, objPath.c_str(), path.c_str());
 
 #ifdef VERBOSE_INFO_MESSAGE
 		//make sure to output the warnings to the console, in case there are issues with the file
 		if (!warn.empty())
 		{
-			printf("warning: %s\n", warn.c_str());
+			printf("Warning: %s\n", warn.c_str());
 		}
 #endif
 
@@ -204,14 +243,14 @@ bool Scene::loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::unordered
 
 	struct SubMeshDesc
 	{
-		size_t indexCount;
+		int32_t indexCount;
 		uint32_t mappedIndex;
 	};
 
-	ProfileMarker marker ("	Scene::loadObjImplementation - Create meshes");
+	ProfileMarker _("	Scene::loadObjImplementation - Create meshes");
 	std::unordered_map<MaterialID, SubMeshDesc> uniqueMaterialIDs;
-	std::unordered_map<size_t, MeshDescriptor::TVertexIndices> indexMapping;
-	for (size_t i = 0; i < objShapes.size(); i++)
+	std::unordered_map<int32_t, MeshDescriptor::TVertexIndices> indexMapping;
+	for (int32_t i = 0; i < objShapes.size(); i++)
 	{
 		indexMapping.clear();
 
@@ -230,8 +269,8 @@ bool Scene::loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::unordered
 		}
 
 		uniqueMaterialIDs.clear();
-		size_t materialCount = 0;
-		for (size_t k = 0; k < mesh.material_ids.size(); k++)
+		int32_t materialCount = 0;
+		for (int32_t k = 0; k < mesh.material_ids.size(); k++)
 		{
 			auto id = mesh.material_ids[k];
 
@@ -343,23 +382,38 @@ bool Scene::loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::unordered
 	return true;
 }
 
-bool Scene::tryLoadFromFile(const std::string& path, VkDescriptorPool descPool)
+bool Scene::tryLoadSupportedFormat(const std::string& path, std::vector<UNQ<Mesh>>& meshes, std::unordered_map<MeshIndex, SubmeshMaterials>& meshTextureMap)
 {
-	const std::string supportedFormat = ".obj";
-	if (!fileExists(path, supportedFormat))
-	{
-		printf("Scene not found with supported format at '%s'\n", path.c_str());
-		return false;
-	}
-
 	auto nameStart = path.find_last_of('/') + 1;
-	auto extensionLength = supportedFormat.length();
+	auto extensionIndex = path.find_last_of('.');
+	auto extensionLength = path.length() - extensionIndex;
 	auto directory = path.substr(0, nameStart);
 	auto name = path.substr(nameStart, path.length() - nameStart - extensionLength);
 
 	/* ================ READ FROM OBJ =============== */
+	if (fileExists(path, ".obj"))
+	{
+		return loadOBJ_Implementation(meshes, meshTextureMap, directory, name);
+	}
+
+	/* ================ READ FROM GLTF =============== */
+	if (fileExists(path, ".gltf"))
+	{
+		auto isBinary = (path.substr(extensionIndex + 1, extensionLength) == "glb");
+		return loadGLTF_Implementation(meshes, meshTextureMap, directory, name, isBinary);
+	}
+
+	return false;
+}
+
+bool Scene::tryLoadFromFile(const std::string& path, VkDescriptorPool descPool)
+{
 	std::unordered_map<MeshIndex, SubmeshMaterials> meshTextureMap;
-	loadObjImplementation(m_meshes, meshTextureMap, directory, name);
+	if (!tryLoadSupportedFormat(path, m_meshes, meshTextureMap))
+	{
+		printf("Could not load scene file '%s', it did not match any of the supported formats.\n", path.c_str());
+		return false;
+	}
 
 	/* ================= CREATE TEXTURES ================*/
 	std::unordered_map<std::string, uint32_t> loadedTextures;

@@ -43,6 +43,7 @@
 #include "imgui_impl_sdl.h"
 #include "imgui_impl_vulkan.h"
 
-#include <stb_image.h>
+#include "stb_image.h"
 #include "tiny_obj_loader.h"
+#include "tiny_gltf.h"
 #pragma warning(pop)

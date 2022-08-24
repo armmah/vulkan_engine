@@ -16,10 +16,10 @@ namespace Presentation
 	class PresentationTarget;
 }
 
-typedef uint32_t MeshIndex;
+typedef int32_t MeshIndex;
 typedef std::vector<std::string> SubmeshMaterials;
 
-typedef uint32_t MaterialID;
+typedef int32_t MaterialID;
 typedef size_t IndexCount;
 
 class Scene
@@ -37,10 +37,12 @@ public:
 	std::vector<MeshRenderer> getRenderers() { return m_renderers; }
 
 	bool tryLoadTestScene_1(VkDescriptorPool descPool);
+	bool tryLoadSupportedFormat(const std::string& path, std::vector<UNQ<Mesh>>& meshes, std::unordered_map<MeshIndex, SubmeshMaterials>& meshTextureMap);
 	bool tryLoadFromFile(const std::string& path, VkDescriptorPool descPool);
 
 private:
-	bool loadObjImplementation(std::vector<UNQ<Mesh>>& meshes, std::unordered_map<MeshIndex, SubmeshMaterials>& meshTextureMap, const std::string& path, const std::string& name);
+	bool loadOBJ_Implementation(std::vector<UNQ<Mesh>>& meshes, std::unordered_map<MeshIndex, SubmeshMaterials>& meshTextureMap, const std::string& path, const std::string& name);
+	bool loadGLTF_Implementation(std::vector<UNQ<Mesh>>& meshes, std::unordered_map<MeshIndex, SubmeshMaterials>& meshTextureMap, const std::string& path, const std::string& name, bool isBinary);
 
 	const Presentation::Device* m_presentationDevice;
 	Presentation::PresentationTarget* m_presentationTarget;

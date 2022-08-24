@@ -49,3 +49,10 @@
 /Vulkan_Engine/x64/Debug/Vulkan_Engine.tlog
 /Vulkan_Engine/x64/Debug
 /Unit_Tests/x64/Debug
+*.log
+*.recipe
+*.ilk
+/Main/x64/Debug/Main.vcxproj.FileListAbsolute.txt
+*.idb
+*.pdb
+*.tlog

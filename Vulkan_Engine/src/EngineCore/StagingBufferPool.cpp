@@ -156,11 +156,8 @@ void StagingBufferPool::free(const StgBuffer& buffer)
 
 void StagingBufferPool::indirection_destroyBuffer(StgBuffer& buffer, bool increaseCounter)
 {
-#if !defined(NO_GRAPHICS_MODE) || defined(UNIT_TEST)
-	m_stats.destroyedBuffer += increaseCounter;
-#endif
-
 #ifndef NO_GRAPHICS_MODE
+	m_stats.destroyedBuffer += increaseCounter;
 	auto allocator = VkMemoryAllocator::getInstance()->m_allocator;
 	vmaDestroyBuffer(allocator, buffer.buffer, buffer.allocation);
 #endif
@@ -169,10 +166,6 @@ void StagingBufferPool::indirection_destroyBuffer(StgBuffer& buffer, bool increa
 bool StagingBufferPool::indirection_allocateBuffer(StgBuffer& buffer, uint32_t size)
 {
 	auto isSuccess = false;
-
-#ifdef UNIT_TEST
-	isSuccess = true;
-#endif
 
 #ifndef NO_GRAPHICS_MODE
 	auto allocator = VkMemoryAllocator::getInstance()->m_allocator;

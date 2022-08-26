@@ -2,7 +2,7 @@
 #include "StagingBufferPool.h"
 
 #define VERBOSITY_ERROR
-#define VERBOSITY_INFO
+//#define VERBOSITY_INFO
 
 bool StagingBufferPool::claimAStagingBuffer(StgBuffer& buffer, uint32_t byteSize)
 {
@@ -58,7 +58,7 @@ void StagingBufferPool::freeBuffer(const StgBuffer& buffer)
 	returnToFreePool_impl(buffer);
 }
 
-void StagingBufferPool::releaseAllResources()
+void StagingBufferPool::releaseAllResources() noexcept
 {
 	for (auto& buffer : freePool)
 	{
@@ -154,7 +154,7 @@ void StagingBufferPool::free(const StgBuffer& buffer)
 	m_stats.freeCount += 1;
 }
 
-void StagingBufferPool::indirection_destroyBuffer(StgBuffer& buffer, bool increaseCounter)
+void StagingBufferPool::indirection_destroyBuffer(StgBuffer& buffer, bool increaseCounter) noexcept
 {
 #ifndef NO_GRAPHICS_MODE
 	m_stats.destroyedBuffer += increaseCounter;
@@ -163,7 +163,7 @@ void StagingBufferPool::indirection_destroyBuffer(StgBuffer& buffer, bool increa
 #endif
 }
 
-bool StagingBufferPool::indirection_allocateBuffer(StgBuffer& buffer, uint32_t size)
+bool StagingBufferPool::indirection_allocateBuffer(StgBuffer& buffer, uint32_t size) noexcept
 {
 	auto isSuccess = false;
 

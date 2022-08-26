@@ -37,13 +37,24 @@ private:
 	std::array<VkDescriptorSet, SWAPCHAIN_IMAGE_COUNT> m_descriptorSets;
 };
 
-struct MeshRenderer
+struct Renderer
+{
+	int32_t meshID;
+	std::vector<int32_t> materialIDs;
+
+	Renderer(int32_t meshID, std::vector<int32_t>&&  materialIDs)
+		: meshID(meshID), materialIDs(materialIDs) { }
+	Renderer(int32_t meshID, std::vector<int32_t>& materialIDs)
+		: meshID(meshID), materialIDs(std::move(materialIDs)) { }
+};
+
+struct VkMeshRenderer
 {
 	const VkMesh* mesh;
 	const VkMaterialVariant* variant;
 	const BoundsAABB* bounds;
 	uint32_t submeshIndex;
 
-	MeshRenderer(const VkMesh* mesh, const BoundsAABB* bounds, const VkMaterialVariant* variant) : mesh(mesh), bounds(bounds), submeshIndex(0), variant(variant) {}
-	MeshRenderer(const VkMesh* mesh, uint32_t submeshIndex, const BoundsAABB* bounds, const VkMaterialVariant* variant) : mesh(mesh), submeshIndex(submeshIndex), bounds(bounds), variant(variant) {}
+	VkMeshRenderer(const VkMesh* mesh, const BoundsAABB* bounds, const VkMaterialVariant* variant) : mesh(mesh), bounds(bounds), submeshIndex(0), variant(variant) {}
+	VkMeshRenderer(const VkMesh* mesh, uint32_t submeshIndex, const BoundsAABB* bounds, const VkMaterialVariant* variant) : mesh(mesh), submeshIndex(submeshIndex), bounds(bounds), variant(variant) {}
 };

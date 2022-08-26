@@ -14,7 +14,7 @@
 
 namespace Presentation
 {
-	bool PresentationTarget::createGraphicsPipeline(VkPipeline& pipeline, VkPipelineLayout& layout, const Shader& shader, VkDevice device, const VertexBinding& vBinding, VkDescriptorSetLayout descriptorSetLayout, VkCullModeFlagBits faceCullingMode, bool depthStencilAttachement) const
+	bool PresentationTarget::createGraphicsPipeline(VkPipeline& pipeline, VkPipelineLayout& layout, const VkShader& shader, VkDevice device, const VertexBinding& vBinding, VkDescriptorSetLayout descriptorSetLayout, VkCullModeFlagBits faceCullingMode, bool depthStencilAttachement) const
 	{
 		vBinding.runValidations();
 		auto vertexInputInfo = vBinding.getVertexInputCreateInfo();
@@ -191,7 +191,7 @@ namespace Presentation
 			createFramebuffers(vkdevice);
 	}
 
-	bool PresentationTarget::createMaterial(UNQ<Material>& material, VkDevice device, VkDescriptorPool descPool, const Shader* shader, const VkTexture2D* texture)
+	bool PresentationTarget::createGraphicsMaterial(UNQ<VkMaterial>& material, VkDevice device, VkDescriptorPool descPool, const VkShader* shader, const VkTexture2D* texture)
 	{
 		VkDescriptorSetLayout descriptorSetLayout;
 		if (globalDescriptorSetLayoutList.count(shader) == 0)
@@ -215,7 +215,7 @@ namespace Presentation
 		std::array<VkDescriptorSet, SWAPCHAIN_IMAGE_COUNT> descriptorSets;
 		vkinit::Descriptor::createDescriptorSets(descriptorSets, device, descPool, descriptorSetLayout, *texture);
 
-		material = MAKEUNQ<Material>(*shader, *texture, globalPipelineList[shader].pipeline, globalPipelineList[shader].pipelineLayout, globalDescriptorSetLayoutList[shader], descriptorSets);
+		material = MAKEUNQ<VkMaterial>(*shader, *texture, globalPipelineList[shader].pipeline, globalPipelineList[shader].pipelineLayout, globalDescriptorSetLayoutList[shader], descriptorSets);
 
 		return true;
 	}

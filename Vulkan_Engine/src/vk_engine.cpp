@@ -44,7 +44,7 @@ void VulkanEngine::init(bool requestValidationLayers)
 	// Descriptor pools
 	auto descPool = m_descriptorPoolManager->createNewPool(SWAPCHAIN_IMAGE_COUNT * 1000);
 
-	Shader::ensureDefaultShader(m_presentationDevice->getDevice());
+	VkShader::ensureDefaultShader(m_presentationDevice->getDevice());
 	
 	// Scene
 	m_openScene = MAKEUNQ<Scene>(m_presentationDevice.get(), m_presentationTarget.get());
@@ -208,7 +208,7 @@ void VulkanEngine::cleanup()
 {
 	if (m_instance)
 	{
-		Shader::releaseGlobalShaderList(m_presentationDevice->getDevice());
+		VkShader::releaseGlobalShaderList(m_presentationDevice->getDevice());
 		
 		m_imgui->release(m_presentationDevice->getDevice());
 

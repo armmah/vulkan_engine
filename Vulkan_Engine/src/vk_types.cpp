@@ -78,7 +78,7 @@ void CommandObjectsWrapper::HelloTriangleCommand(VkCommandBuffer buffer, VkPipel
 	}
 }
 
-void CommandObjectsWrapper::drawAt(VkCommandBuffer commandBuffer, const MeshRenderer& renderer, const Camera& cam, const glm::mat4& model)
+void CommandObjectsWrapper::drawAt(VkCommandBuffer commandBuffer, const VkMeshRenderer& renderer, const Camera& cam, const glm::mat4& model)
 {
 	if (renderer.submeshIndex >= renderer.mesh->iAttributes.size())
 		return;
@@ -99,7 +99,7 @@ void CommandObjectsWrapper::drawAt(VkCommandBuffer commandBuffer, const MeshRend
 	}
 }
 
-FrameStats CommandObjectsWrapper::renderIndexedMeshes(const std::vector<MeshRenderer>& renderers, Camera& cam, 
+FrameStats CommandObjectsWrapper::renderIndexedMeshes(const std::vector<VkMeshRenderer>& renderers, Camera& cam, 
 	VkCommandBuffer commandBuffer, VkRenderPass m_renderPass, VkFramebuffer frameBuffer, VkExtent2D extent, uint32_t frameNumber)
 {
 	FrameStats stats{};

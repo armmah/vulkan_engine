@@ -6,8 +6,6 @@
 struct VmaAllocator_T;
 struct VertexAttributes;
 
-
-
 struct VkMesh
 {
 public:

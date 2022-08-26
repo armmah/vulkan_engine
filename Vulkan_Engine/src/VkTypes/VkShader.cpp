@@ -3,7 +3,7 @@
 #include "VkShader.h"
 #include "ShaderSource.h"
 
-Shader::Shader(VkDevice device, const ShaderSource& source)
+VkShader::VkShader(VkDevice device, const ShaderSource& source)
 {
 	if (!createShaderModule(vertShader, source.getVertexSource(), device))
 	{
@@ -16,7 +16,7 @@ Shader::Shader(VkDevice device, const ShaderSource& source)
 	}
 }
 
-bool Shader::createShaderModule(VkShaderModule& module, const std::vector<char>& code, VkDevice device)
+bool VkShader::createShaderModule(VkShaderModule& module, const std::vector<char>& code, VkDevice device)
 {
 	VkShaderModuleCreateInfo createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -26,22 +26,22 @@ bool Shader::createShaderModule(VkShaderModule& module, const std::vector<char>&
 	return vkCreateShaderModule(device, &createInfo, nullptr, &module) == VK_SUCCESS;
 }
 
-void Shader::release(VkDevice device)
+void VkShader::release(VkDevice device)
 {
 	vkDestroyShaderModule(device, vertShader, nullptr);
 	vkDestroyShaderModule(device, fragShader, nullptr);
 }
 
-void Shader::ensureDefaultShader(VkDevice device)
+void VkShader::ensureDefaultShader(VkDevice device)
 {
 	if (globalShaderList.size() == 0)
 	{
-		auto defaultShader = Shader(device, ShaderSource::getDefaultShader());
-		globalShaderList.push_back(MAKEUNQ<Shader>(defaultShader));
+		auto defaultShader = VkShader(device, ShaderSource::getDefaultShader());
+		globalShaderList.push_back(MAKEUNQ<VkShader>(defaultShader));
 	}
 }
 
-void Shader::releaseGlobalShaderList(VkDevice device)
+void VkShader::releaseGlobalShaderList(VkDevice device)
 {
 	if (globalShaderList.size() == 0)
 		return;

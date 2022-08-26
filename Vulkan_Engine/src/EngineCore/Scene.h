@@ -3,12 +3,14 @@
 #include "Common.h"
 #include "VkTypes/VkMaterialVariant.h"
 
-
 struct Mesh;
 struct VkMesh;
 
 class Material;
+struct TextureSource;
 struct VkTexture2D;
+struct VkMaterial;
+struct VkMeshRenderer;
 
 namespace Presentation
 {
@@ -17,7 +19,7 @@ namespace Presentation
 }
 
 typedef int32_t MeshIndex;
-typedef std::vector<std::string> SubmeshMaterials;
+typedef std::vector<TextureSource> SubmeshMaterials;
 
 typedef int32_t MaterialID;
 typedef size_t IndexCount;
@@ -34,23 +36,27 @@ public:
 	bool load(VkDescriptorPool descPool);
 	void release(VkDevice device, const VmaAllocator& allocator);
 
-	std::vector<MeshRenderer> getRenderers() { return m_renderers; }
+	std::vector<VkMeshRenderer> getRenderers() { return m_renderers; }
 
-	bool tryLoadTestScene_1(VkDescriptorPool descPool);
-	bool tryLoadSupportedFormat(const std::string& path, std::vector<UNQ<Mesh>>& meshes, std::unordered_map<MeshIndex, SubmeshMaterials>& meshTextureMap);
+	bool tryLoadSupportedFormat(const std::string& path);
 	bool tryLoadFromFile(const std::string& path, VkDescriptorPool descPool);
 
 private:
-	bool loadOBJ_Implementation(std::vector<UNQ<Mesh>>& meshes, std::unordered_map<MeshIndex, SubmeshMaterials>& meshTextureMap, const std::string& path, const std::string& name);
-	bool loadGLTF_Implementation(std::vector<UNQ<Mesh>>& meshes, std::unordered_map<MeshIndex, SubmeshMaterials>& meshTextureMap, const std::string& path, const std::string& name, bool isBinary);
+	static bool loadOBJ_Implementation(std::vector<UNQ<Mesh>>& meshes, std::vector<Material>& materials, std::vector<Renderer>& rendererIDs, const std::string& path, const std::string& name);
+	static bool loadGLTF_Implementation(std::vector<UNQ<Mesh>>& meshes, std::vector<Material>& materials, std::vector<Renderer>& rendererIDs, const std::string& path, const std::string& name, bool isBinary);
 
 	const Presentation::Device* m_presentationDevice;
 	Presentation::PresentationTarget* m_presentationTarget;
 
+	// Serialized scene data
 	std::vector<UNQ<Mesh>> m_meshes;
-	std::vector<UNQ<Material>> m_materials;
+	std::vector<Material> m_materials;
+	std::vector<Renderer> m_rendererIDs;
+
+	// Graphics data
+	std::vector<VkMeshRenderer> m_renderers;
 	std::vector<UNQ<VkTexture2D>> m_textures;
+	std::vector<UNQ<VkMaterial>> m_graphicsMaterials;
 	std::vector<UNQ<VkMesh>> m_graphicsMeshes;
-	std::vector<MeshRenderer> m_renderers;
 };
  

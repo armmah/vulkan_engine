@@ -13,8 +13,8 @@ struct VkGraphicsPipeline
 class Window;
 struct VkTexture;
 struct VkTexture2D;
-struct Shader;
-class Material;
+struct VkShader;
+struct VkMaterial;
 struct VertexBinding;
 
 namespace Presentation
@@ -40,13 +40,13 @@ namespace Presentation
 		bool hasDepthAttachement();
 
 		bool createPresentationTarget(const HardwareDevice& presentationHardware, const Device& presentationDevice, uint32_t swapchainCount = 3u);
-		bool createMaterial(UNQ<Material>& material, VkDevice device, VkDescriptorPool descPool, const Shader* shader, const VkTexture2D* texture);
+		bool createGraphicsMaterial(UNQ<VkMaterial>& material, VkDevice device, VkDescriptorPool descPool, const VkShader* shader, const VkTexture2D* texture);
 
 		void releaseAllResources(VkDevice device);
 		void releaseSwapChain(VkDevice device);
 
-		std::unordered_map<const Shader*, VkGraphicsPipeline> globalPipelineList;
-		std::unordered_map<const Shader*, VkDescriptorSetLayout> globalDescriptorSetLayoutList;
+		std::unordered_map<const VkShader*, VkGraphicsPipeline> globalPipelineList;
+		std::unordered_map<const VkShader*, VkDescriptorSetLayout> globalDescriptorSetLayoutList;
 	private:
 		bool m_isInitialized = false;
 		bool m_hasDepthAttachment = false;
@@ -73,6 +73,6 @@ namespace Presentation
 		bool createFramebuffers(VkDevice device);
 
 		VkExtent2D chooseSwapExtent(const SDL_Window* window);
-		bool createGraphicsPipeline(VkPipeline& pipeline, VkPipelineLayout& layout, const Shader& shader, VkDevice device, const VertexBinding& vBinding, VkDescriptorSetLayout descriptorSetLayout, VkCullModeFlagBits faceCullingMode = VK_CULL_MODE_BACK_BIT, bool depthStencilAttachement = true) const;
+		bool createGraphicsPipeline(VkPipeline& pipeline, VkPipelineLayout& layout, const VkShader& shader, VkDevice device, const VertexBinding& vBinding, VkDescriptorSetLayout descriptorSetLayout, VkCullModeFlagBits faceCullingMode = VK_CULL_MODE_BACK_BIT, bool depthStencilAttachement = true) const;
 	};
 }

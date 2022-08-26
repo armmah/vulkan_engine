@@ -17,23 +17,6 @@ Scene::~Scene() {}
 Scene::Scene(const Presentation::Device* device, Presentation::PresentationTarget* target)
 	: m_presentationDevice(device), m_presentationTarget(target) { }
 
-bool Scene::tryLoadTestScene_1(VkDescriptorPool descPool)
-{
-	m_meshes.resize(1);
-	m_meshes[0] = MAKEUNQ<Mesh>(Mesh::getPrimitiveCube());
-
-	StagingBufferPool stagingBufferPool{};
-
-	m_textures.resize(1);
-	if(!VkTexture2D::tryCreateTexture(m_textures[0], "C:/Git/Vulkan_Engine/Resources/vulkan_tutorial_texture.jpg", m_presentationDevice, stagingBufferPool, false))
-		return false;
-
-	stagingBufferPool.releaseAllResources();
-
-	m_materials.reserve(1);
-	return m_presentationTarget->createMaterial(m_materials[0], m_presentationDevice->getDevice(), descPool, Shader::findShader(0), m_textures[0].get());
-}
-
 static inline std::string CRYTEK_SPONZA = "C:/Git/Vulkan_Engine/Resources/sponza.obj";
 static inline std::string LIGHTING_SCENE = "C:/Git/Vulkan_Engine/Resources/debrovic_sponza/sponza.obj";
 static inline std::string CUBE_GLTF = "C:/Git/Vulkan_Engine/Resources/gltf/Cube_khr.gltf";
@@ -71,12 +54,16 @@ void Scene::release(VkDevice device, const VmaAllocator& allocator)
 	}
 	m_textures.clear();
 
-	for (auto& mat : m_materials)
+	for (auto& mat : m_graphicsMaterials)
 	{
 		mat->release(device);
 		mat.release();
 	}
+	m_graphicsMaterials.clear();
+
+	m_renderers.clear();
 	m_materials.clear();
+	m_rendererIDs.clear();
 }
 
 const std::vector<UNQ<Mesh>>& Scene::getMeshes() const { return m_meshes; }
@@ -161,7 +148,7 @@ void maxVector(glm::vec3& max, const glm::vec3& point)
 	max.z = std::max(max.z, point.z);
 }
 
-bool Scene::loadGLTF_Implementation(std::vector<UNQ<Mesh>>& meshes, std::unordered_map<MeshIndex, SubmeshMaterials>& meshTextureMap, const std::string& path, const std::string& name, bool isBinary)
+bool Scene::loadGLTF_Implementation(std::vector<UNQ<Mesh>>& meshes, std::vector<Material>& materials, std::vector<Renderer>& rendererIDs, const std::string& path, const std::string& name, bool isBinary)
 {
 	tinygltf::Model model;
 	tinygltf::TinyGLTF loader;
@@ -181,6 +168,8 @@ bool Scene::loadGLTF_Implementation(std::vector<UNQ<Mesh>>& meshes, std::unorder
 		return false;
 	}
 
+	printf("GLTF loading is not implemented yet.");
+	return false;
 	const tinygltf::Scene& scene = model.scenes[model.defaultScene > -1 ? model.defaultScene : 0];
 	for (auto nodeIndex : scene.nodes)
 	{
@@ -192,11 +181,7 @@ bool Scene::loadGLTF_Implementation(std::vector<UNQ<Mesh>>& meshes, std::unorder
 			const auto& accessor = model.accessors[prim.attributes.find("POSITION")->second];
 			const auto& posView = model.bufferViews[accessor.bufferView];
 			
-			
 			model.buffers[posView.buffer];
-			
-			
-			prim.attributes.find("");
 		}
 	}
 
@@ -204,7 +189,7 @@ bool Scene::loadGLTF_Implementation(std::vector<UNQ<Mesh>>& meshes, std::unorder
 	return true;
 }
 
-bool Scene::loadOBJ_Implementation(std::vector<UNQ<Mesh>>& meshes, std::unordered_map<MeshIndex, SubmeshMaterials>& meshTextureMap, const std::string& path, const std::string& name)
+bool Scene::loadOBJ_Implementation(std::vector<UNQ<Mesh>>& meshes, std::vector<Material>& materials, std::vector<Renderer>& rendererIDs, const std::string& path, const std::string& name)
 {
 	//attrib will contain the vertex arrays of the file
 	tinyobj::attrib_t objAttribs;
@@ -250,6 +235,9 @@ bool Scene::loadOBJ_Implementation(std::vector<UNQ<Mesh>>& meshes, std::unordere
 	ProfileMarker _("	Scene::loadObjImplementation - Create meshes");
 	std::unordered_map<MaterialID, SubMeshDesc> uniqueMaterialIDs;
 	std::unordered_map<int32_t, MeshDescriptor::TVertexIndices> indexMapping;
+
+	meshes.reserve(objShapes.size());
+	rendererIDs.reserve(objShapes.size());
 	for (int32_t i = 0; i < objShapes.size(); i++)
 	{
 		indexMapping.clear();
@@ -261,6 +249,7 @@ bool Scene::loadOBJ_Implementation(std::vector<UNQ<Mesh>>& meshes, std::unordere
 		// The shape's vertex index here is referencing the big obj vertex buffer,
 		// Our vertex buffer for mesh will be much smaller and should be indexed per-mesh, instead of globally.
 		std::vector<SubMesh> submeshes;
+		std::vector<int32_t> materialIDs;
 
 		if (mesh.material_ids.size() * 3 < shapeIndices.size())
 		{
@@ -288,20 +277,24 @@ bool Scene::loadOBJ_Implementation(std::vector<UNQ<Mesh>>& meshes, std::unordere
 			materialCount += 1;
 		}
 		submeshes.reserve(materialCount);
+		materialIDs.reserve(materialCount);
 
-		auto& shapeMaterialCollection = meshTextureMap[i];
-		shapeMaterialCollection.reserve(materialCount);
 		for (auto& kvPair : uniqueMaterialIDs)
 		{
 			auto materialID = kvPair.first;
 			auto submeshDesc = kvPair.second;
 
-			submeshes.push_back(SubMesh(submeshDesc.indexCount * 3));
-
 			auto texPath = path + objMats[materialID].diffuse_texname;
 			if (objMats[materialID].diffuse_texname.length() > 0 && std::filesystem::exists(texPath))
-				shapeMaterialCollection.push_back(texPath);
+			{
+				auto texSrc = TextureSource(texPath);
+				materialIDs.push_back(materials.size());
+				materials.push_back(Material(0, texSrc));
+			}
+
+			submeshes.push_back(SubMesh(submeshDesc.indexCount * 3));
 		}
+		rendererIDs.push_back(Renderer(meshes.size(), materialIDs));
 
 		// Axis-Aligned Bounding Box
 		std::vector<glm::vec3> boundsMinMax(materialCount * 2);
@@ -382,7 +375,7 @@ bool Scene::loadOBJ_Implementation(std::vector<UNQ<Mesh>>& meshes, std::unordere
 	return true;
 }
 
-bool Scene::tryLoadSupportedFormat(const std::string& path, std::vector<UNQ<Mesh>>& meshes, std::unordered_map<MeshIndex, SubmeshMaterials>& meshTextureMap)
+bool Scene::tryLoadSupportedFormat(const std::string& path)
 {
 	auto nameStart = path.find_last_of('/') + 1;
 	auto extensionIndex = path.find_last_of('.');
@@ -393,14 +386,14 @@ bool Scene::tryLoadSupportedFormat(const std::string& path, std::vector<UNQ<Mesh
 	/* ================ READ FROM OBJ =============== */
 	if (fileExists(path, ".obj"))
 	{
-		return loadOBJ_Implementation(meshes, meshTextureMap, directory, name);
+		return loadOBJ_Implementation(m_meshes, m_materials, m_rendererIDs, directory, name);
 	}
 
 	/* ================ READ FROM GLTF =============== */
 	if (fileExists(path, ".gltf"))
 	{
 		auto isBinary = (path.substr(extensionIndex + 1, extensionLength) == "glb");
-		return loadGLTF_Implementation(meshes, meshTextureMap, directory, name, isBinary);
+		return loadGLTF_Implementation(m_meshes, m_materials, m_rendererIDs, directory, name, isBinary);
 	}
 
 	return false;
@@ -408,76 +401,80 @@ bool Scene::tryLoadSupportedFormat(const std::string& path, std::vector<UNQ<Mesh
 
 bool Scene::tryLoadFromFile(const std::string& path, VkDescriptorPool descPool)
 {
-	std::unordered_map<MeshIndex, SubmeshMaterials> meshTextureMap;
-	if (!tryLoadSupportedFormat(path, m_meshes, meshTextureMap))
+	if (!tryLoadSupportedFormat(path))
 	{
 		printf("Could not load scene file '%s', it did not match any of the supported formats.\n", path.c_str());
 		return false;
 	}
 
 	/* ================= CREATE TEXTURES ================*/
-	std::unordered_map<std::string, uint32_t> loadedTextures;
+	/* ================= CREATE GRAPHICS MATERIALS ================*/
+	std::unordered_map<TextureSource, uint32_t> loadedTextures;
+	m_graphicsMaterials.reserve(m_textures.size());
+	auto device = m_presentationDevice->getDevice();
 	StagingBufferPool stagingBufPool{};
-	for (auto& kvPair : meshTextureMap)
+	for (auto& rendererIDs : m_rendererIDs)
 	{
-		for (auto& texPath : kvPair.second)
+		for (auto& matIndex : rendererIDs.materialIDs)
 		{
-			if (loadedTextures.count(texPath) == 0)
+			const auto& mat = m_materials[matIndex];
+			const auto& texSrc = mat.getTextureSource();
+			if (loadedTextures.count(texSrc) == 0)
 			{
 				auto size = m_textures.size();
 				m_textures.resize(size + 1);
-				if (VkTexture2D::tryCreateTexture(m_textures.back(), texPath, m_presentationDevice, stagingBufPool, true))
+				m_graphicsMaterials.resize(size + 1);
+				if (VkTexture2D::tryCreateTexture(m_textures.back(), texSrc, m_presentationDevice, stagingBufPool))
 				{
-					loadedTextures[texPath] = size;
-				} 
+					loadedTextures[texSrc] = size;
+
+					auto* shader = VkShader::findShader(mat.getShaderIdentifier());
+					m_presentationTarget->createGraphicsMaterial(m_graphicsMaterials.back(), device, descPool, shader, m_textures.back().get());
+				}
 				else
 				{
 					m_textures.resize(size);
-					printf("The texture at '%s' could not be loaded.\n", texPath.c_str());
+					m_graphicsMaterials.resize(size);
+					printf("The texture at '%s' could not be loaded.\n", texSrc.path.c_str());
 				}
 			}
 		}
-	}
-
-	/* ================= CREATE MATERIALS ================*/
-	auto* defaultShader = Shader::findShader(0);
-	auto device = m_presentationDevice->getDevice();
-	m_materials.resize(m_textures.size());
-	for (int i = 0; i < m_textures.size(); i++)
-	{
-		m_presentationTarget->createMaterial(m_materials[i], device, descPool, defaultShader, m_textures[i].get());
 	}
 
 	/* ================= CREATE GRAPHICS MESHES ================*/
 	auto defaultMeshDescriptor = Mesh::defaultMeshDescriptor;
 	auto vmaAllocator = VkMemoryAllocator::getInstance()->m_allocator;
 	const auto count = m_meshes.size();
+
 	m_graphicsMeshes.resize(count);
 	m_renderers.reserve(count);
-	for (int i = 0; i < count; i++)
+	int32_t graphicsMeshIndex = 0;
+	for (auto& ids : m_rendererIDs)
 	{
-		if (!m_meshes[i]->allocateGraphicsMesh(m_graphicsMeshes[i], vmaAllocator, m_presentationDevice, stagingBufPool) || !m_meshes[i]->isValid())
+		auto& mesh = m_meshes[ids.meshID];
+		if (!mesh->allocateGraphicsMesh(m_graphicsMeshes[graphicsMeshIndex], vmaAllocator, m_presentationDevice, stagingBufPool) || !mesh->isValid())
 			return false;
 
-		if (defaultMeshDescriptor != m_meshes[i]->getMeshDescriptor())
+		if (defaultMeshDescriptor != mesh->getMeshDescriptor())
 		{
 			printf("Mesh metadata does not match - can not bind to the same pipeline.\n");
 			return false;
 		}
 
-		auto& allMaterialIDs = meshTextureMap[i];
 		uint32_t submeshIndex = 0;
-		for (auto texPath : allMaterialIDs)
+		for (auto materialIDs : ids.materialIDs)
 		{
-			if (!loadedTextures.count(texPath) && loadedTextures[texPath] > 0 && loadedTextures[texPath] < m_materials.size())
+			const auto& texPath = m_materials[materialIDs].getTextureSource();
+			if (!loadedTextures.count(texPath) && loadedTextures[texPath] > 0 && loadedTextures[texPath] < m_graphicsMaterials.size())
 			{
-				printf("SceneLoader - The material not found for '%i' mesh.\n", i);
+				printf("SceneLoader - The material not found for '%i' mesh.\n", ids.meshID);
 				continue;
 			}
 
-			m_renderers.push_back(MeshRenderer(m_graphicsMeshes[i].get(), submeshIndex, m_meshes[i]->getBounds(submeshIndex), &m_materials[loadedTextures[texPath]]->getMaterialVariant()));
+			m_renderers.push_back(VkMeshRenderer(m_graphicsMeshes[graphicsMeshIndex].get(), submeshIndex, mesh->getBounds(submeshIndex), &m_graphicsMaterials[loadedTextures[texPath]]->getMaterialVariant()));
 			++submeshIndex;
 		}
+		graphicsMeshIndex += 1;
 	}
 	stagingBufPool.releaseAllResources();
 

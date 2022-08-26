@@ -1,35 +1,40 @@
 #include "pch.h"
 #include "VkTexture.h"
+#include "Material.h"
 #include "InitializersUtility.h"
-#include <EngineCore/Texture.h>
+#include "EngineCore/Texture.h"
 #include "Presentation/Device.h"
 #include "StagingBufferPool.h"
 
 VkTexture2D::VkTexture2D(VkImage image, VmaAllocation memoryRange, VkImageView imageView, VkSampler sampler, uint32_t mipLevels) :
 	VkTexture(image, memoryRange, imageView), sampler(sampler), mipLevels(mipLevels) { }
 
-bool VkTexture2D::tryCreateTexture(UNQ<VkTexture2D>& tex, std::string path, const Presentation::Device* presentationDevice, StagingBufferPool& stagingBufferPool, bool generateTheMips)
+bool VkTexture2D::tryCreateTexture(UNQ<VkTexture2D>& tex, const TextureSource& texSrc, const Presentation::Device* presentationDevice, StagingBufferPool& stagingBufferPool)
 {
+	const auto* path = texSrc.path.c_str();
 	if (!fileExists(path))
 		return false;
+
+	auto format = texSrc.format;
+	auto generateMips = texSrc.generateTheMips;
 
 	auto allocator = VkMemoryAllocator::getInstance()->m_allocator;
 
 	int width, height, channels;
-	stbi_uc* const pixels = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+	stbi_uc* const pixels = stbi_load(path, &width, &height, &channels, STBI_rgb_alpha);
 	size_t imageSize = static_cast<size_t>(width) * static_cast<size_t>(height) * 4;
-	auto mipCount = generateTheMips ? static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1 : 1u;
+	auto mipCount = generateMips ? static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1 : 1u;
 
 	if (width <= 0 || height <= 0 || imageSize <= 0 || !pixels)
 	{
-		printf("Could not load the image at %s.\n", path.c_str());
+		printf("Could not load the image at %s.\n", path);
 		return false;
 	}
 
 	StagingBufferPool::StgBuffer stagingBuffer;
 	if(!stagingBufferPool.claimAStagingBuffer(stagingBuffer, as_uint32(imageSize)))
 	{
-		printf("Could not allocate staging memory buffer for texture '%s'.\n", path.c_str());
+		printf("Could not allocate staging memory buffer for texture '%s'.\n", path);
 		return false;
 	}
 
@@ -44,10 +49,8 @@ bool VkTexture2D::tryCreateTexture(UNQ<VkTexture2D>& tex, std::string path, cons
 	VkImageView imageView;
 	VkSampler sampler;
 
-	auto format = VK_FORMAT_R8G8B8A8_SRGB;
-
 	auto imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-	if (generateTheMips)
+	if (generateMips)
 	{
 		imageUsage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 	}
@@ -55,14 +58,14 @@ bool VkTexture2D::tryCreateTexture(UNQ<VkTexture2D>& tex, std::string path, cons
 	auto vmaci = VkMemoryAllocator::getInstance()->createAllocationDescriptor(VMA_MEMORY_USAGE_GPU_ONLY);
 	if (!vkinit::Texture::createImage(image, memoryRange, vmaci, format, imageUsage, as_uint32(width), as_uint32(height), mipCount))
 	{
-		printf("Could not create image for texture '%s'.\n", path.c_str());
+		printf("Could not create image for texture '%s'.\n", path);
 		return false;
 	}
 
 	Texture::transitionImageLayout(presentationDevice, image, format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipCount);
 	Texture::copyBufferToImage(presentationDevice, stagingBuffer.buffer, image, as_uint32(width), as_uint32(height));
 
-	if (generateTheMips)
+	if (generateMips)
 	{
 		presentationDevice->submitImmediatelyAndWaitCompletion([=](VkCommandBuffer commandBuffer)
 		{
@@ -153,7 +156,7 @@ bool VkTexture2D::tryCreateTexture(UNQ<VkTexture2D>& tex, std::string path, cons
 	if (!vkinit::Texture::createTextureImageView(imageView, presentationDevice->getDevice(), image, format, mipCount) ||
 		!vkinit::Texture::createTextureSampler(sampler, presentationDevice->getDevice(), mipCount, true, VK_SAMPLER_ADDRESS_MODE_REPEAT, Texture::c_anisotropySamples))
 	{
-		printf("Could not create imageview or sampler for texture '%s'.\n", path.c_str());
+		printf("Could not create imageview or sampler for texture '%s'.\n", path);
 		return false;
 	}
 

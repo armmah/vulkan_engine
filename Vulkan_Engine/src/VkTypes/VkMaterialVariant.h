@@ -39,12 +39,12 @@ private:
 
 struct Renderer
 {
-	int32_t meshID;
-	std::vector<int32_t> materialIDs;
+	size_t meshID;
+	std::vector<size_t> materialIDs;
 
-	Renderer(int32_t meshID, std::vector<int32_t>&&  materialIDs)
+	Renderer(size_t meshID, std::vector<size_t>&&  materialIDs)
 		: meshID(meshID), materialIDs(materialIDs) { }
-	Renderer(int32_t meshID, std::vector<int32_t>& materialIDs)
+	Renderer(size_t meshID, std::vector<size_t>& materialIDs)
 		: meshID(meshID), materialIDs(std::move(materialIDs)) { }
 };
 

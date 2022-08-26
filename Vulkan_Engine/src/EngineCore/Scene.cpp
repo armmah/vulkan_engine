@@ -228,17 +228,17 @@ bool Scene::loadOBJ_Implementation(std::vector<UNQ<Mesh>>& meshes, std::vector<M
 
 	struct SubMeshDesc
 	{
-		int32_t indexCount;
-		uint32_t mappedIndex;
+		size_t indexCount;
+		size_t mappedIndex;
 	};
 
 	ProfileMarker _("	Scene::loadObjImplementation - Create meshes");
 	std::unordered_map<MaterialID, SubMeshDesc> uniqueMaterialIDs;
-	std::unordered_map<int32_t, MeshDescriptor::TVertexIndices> indexMapping;
+	std::unordered_map<size_t, MeshDescriptor::TVertexIndices> indexMapping;
 
 	meshes.reserve(objShapes.size());
 	rendererIDs.reserve(objShapes.size());
-	for (int32_t i = 0; i < objShapes.size(); i++)
+	for (int i = 0; i < objShapes.size(); i++)
 	{
 		indexMapping.clear();
 
@@ -249,7 +249,7 @@ bool Scene::loadOBJ_Implementation(std::vector<UNQ<Mesh>>& meshes, std::vector<M
 		// The shape's vertex index here is referencing the big obj vertex buffer,
 		// Our vertex buffer for mesh will be much smaller and should be indexed per-mesh, instead of globally.
 		std::vector<SubMesh> submeshes;
-		std::vector<int32_t> materialIDs;
+		std::vector<size_t> materialIDs;
 
 		if (mesh.material_ids.size() * 3 < shapeIndices.size())
 		{
@@ -258,11 +258,9 @@ bool Scene::loadOBJ_Implementation(std::vector<UNQ<Mesh>>& meshes, std::vector<M
 		}
 
 		uniqueMaterialIDs.clear();
-		int32_t materialCount = 0;
-		for (int32_t k = 0; k < mesh.material_ids.size(); k++)
+		size_t materialCount = 0;
+		for (auto& id : mesh.material_ids)
 		{
-			auto id = mesh.material_ids[k];
-
 			if (uniqueMaterialIDs.count(id) > 0)
 			{
 				uniqueMaterialIDs[id].indexCount += 1;
@@ -288,13 +286,13 @@ bool Scene::loadOBJ_Implementation(std::vector<UNQ<Mesh>>& meshes, std::vector<M
 			if (objMats[materialID].diffuse_texname.length() > 0 && std::filesystem::exists(texPath))
 			{
 				auto texSrc = TextureSource(texPath);
-				materialIDs.push_back(as_int32(materials.size()));
+				materialIDs.push_back(materials.size());
 				materials.push_back(Material(0, texSrc));
 			}
 
 			submeshes.push_back(SubMesh(submeshDesc.indexCount * 3));
 		}
-		rendererIDs.push_back(Renderer(as_int32(meshes.size()), materialIDs));
+		rendererIDs.push_back(Renderer(meshes.size(), materialIDs));
 
 		// Axis-Aligned Bounding Box
 		std::vector<glm::vec3> boundsMinMax(materialCount * 2);
@@ -447,7 +445,7 @@ bool Scene::tryLoadFromFile(const std::string& path, VkDescriptorPool descPool)
 
 	m_graphicsMeshes.resize(count);
 	m_renderers.reserve(count);
-	int32_t graphicsMeshIndex = 0;
+	int graphicsMeshIndex = 0;
 	for (auto& ids : m_rendererIDs)
 	{
 		auto& mesh = m_meshes[ids.meshID];
@@ -466,7 +464,7 @@ bool Scene::tryLoadFromFile(const std::string& path, VkDescriptorPool descPool)
 			const auto& texPath = m_materials[materialIDs].getTextureSource();
 			if (!loadedTextures.count(texPath) && loadedTextures[texPath] > 0 && loadedTextures[texPath] < m_graphicsMaterials.size())
 			{
-				printf("SceneLoader - The material not found for '%i' mesh.\n", ids.meshID);
+				printf("SceneLoader - The material not found for '%zu' mesh.\n", ids.meshID);
 				continue;
 			}
 

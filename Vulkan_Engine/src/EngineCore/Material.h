@@ -62,10 +62,10 @@ public:
 		m_shaderIdentifier(shaderIdentifier), m_textureParameters(source) { }
 
 	const TextureSource& getTextureSource() const { return m_textureParameters; }
-	int32_t getShaderIdentifier() const { return m_shaderIdentifier; }
+	uint32_t getShaderIdentifier() const { return m_shaderIdentifier; }
 
 private:
-	int32_t m_shaderIdentifier;
+	uint32_t m_shaderIdentifier;
 	TextureSource m_textureParameters;
 };
 

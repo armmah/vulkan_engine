@@ -6,8 +6,8 @@
 
 bool StagingBufferPool::claimAStagingBuffer(StgBuffer& buffer, uint32_t byteSize)
 {
-	int32_t theNextBestThing = -1;
-	for (int32_t i = 0, n = static_cast<int32_t>(freePool.size()); i < n; i++)
+	int theNextBestThing = -1;
+	for (int i = 0, n = static_cast<int>(freePool.size()); i < n; i++)
 	{
 		auto& buf = freePool[i];
 

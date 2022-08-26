@@ -16,9 +16,9 @@ namespace Presentation
 struct SubMesh
 {
 	SubMesh() : m_indices(), m_bounds() { }
-	SubMesh(int32_t size) : m_indices(), m_bounds() { m_indices.reserve(size); }
+	SubMesh(size_t size) : m_indices(), m_bounds() { m_indices.reserve(size); }
 	SubMesh(std::vector<MeshDescriptor::TVertexIndices>& indices) : m_indices(std::move(indices)), m_bounds() { }
-	int32_t getIndexCount() const { return as_int32(m_indices.size()); }
+	size_t getIndexCount() const { return m_indices.size(); }
 
 	std::vector<MeshDescriptor::TVertexIndices> m_indices;
 	BoundsAABB m_bounds;

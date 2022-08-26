@@ -18,10 +18,10 @@ namespace Presentation
 	class PresentationTarget;
 }
 
-typedef int32_t MeshIndex;
+typedef size_t MeshIndex;
 typedef std::vector<TextureSource> SubmeshMaterials;
 
-typedef int32_t MaterialID;
+typedef size_t MaterialID;
 typedef size_t IndexCount;
 
 class Scene

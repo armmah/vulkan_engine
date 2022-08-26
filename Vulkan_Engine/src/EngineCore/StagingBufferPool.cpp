@@ -58,7 +58,7 @@ void StagingBufferPool::freeBuffer(const StgBuffer& buffer)
 	returnToFreePool_impl(buffer);
 }
 
-void StagingBufferPool::releaseAllResources() noexcept
+void StagingBufferPool::releaseAllResources()
 {
 	for (auto& buffer : freePool)
 	{
@@ -154,7 +154,7 @@ void StagingBufferPool::free(const StgBuffer& buffer)
 	m_stats.freeCount += 1;
 }
 
-void StagingBufferPool::indirection_destroyBuffer(StgBuffer& buffer, bool increaseCounter) noexcept
+void StagingBufferPool::indirection_destroyBuffer(StgBuffer& buffer, bool increaseCounter)
 {
 #ifndef NO_GRAPHICS_MODE
 	m_stats.destroyedBuffer += increaseCounter;
@@ -163,7 +163,7 @@ void StagingBufferPool::indirection_destroyBuffer(StgBuffer& buffer, bool increa
 #endif
 }
 
-bool StagingBufferPool::indirection_allocateBuffer(StgBuffer& buffer, uint32_t size) noexcept
+bool StagingBufferPool::indirection_allocateBuffer(StgBuffer& buffer, uint32_t size)
 {
 	auto isSuccess = false;
 

@@ -9,6 +9,7 @@
 
 
 #define as_uint32(x) static_cast<uint32_t>(x)
+#define as_int32(x) static_cast<int32_t>(x)
 
 constexpr static uint32_t SWAPCHAIN_IMAGE_COUNT = 3u;
 

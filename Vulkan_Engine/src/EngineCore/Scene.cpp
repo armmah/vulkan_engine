@@ -288,13 +288,13 @@ bool Scene::loadOBJ_Implementation(std::vector<UNQ<Mesh>>& meshes, std::vector<M
 			if (objMats[materialID].diffuse_texname.length() > 0 && std::filesystem::exists(texPath))
 			{
 				auto texSrc = TextureSource(texPath);
-				materialIDs.push_back(materials.size());
+				materialIDs.push_back(as_int32(materials.size()));
 				materials.push_back(Material(0, texSrc));
 			}
 
 			submeshes.push_back(SubMesh(submeshDesc.indexCount * 3));
 		}
-		rendererIDs.push_back(Renderer(meshes.size(), materialIDs));
+		rendererIDs.push_back(Renderer(as_int32(meshes.size()), materialIDs));
 
 		// Axis-Aligned Bounding Box
 		std::vector<glm::vec3> boundsMinMax(materialCount * 2);
@@ -311,7 +311,6 @@ bool Scene::loadOBJ_Implementation(std::vector<UNQ<Mesh>>& meshes, std::vector<M
 		{
 			auto& indices = shapeIndices[k];
 			auto curIndex = mappedIndex;
-
 
 			if (indmap.count(indices) == 0)
 			{
@@ -426,7 +425,7 @@ bool Scene::tryLoadFromFile(const std::string& path, VkDescriptorPool descPool)
 				m_graphicsMaterials.resize(size + 1);
 				if (VkTexture2D::tryCreateTexture(m_textures.back(), texSrc, m_presentationDevice, stagingBufPool))
 				{
-					loadedTextures[texSrc] = size;
+					loadedTextures[texSrc] = as_uint32(size);
 
 					auto* shader = VkShader::findShader(mat.getShaderIdentifier());
 					m_presentationTarget->createGraphicsMaterial(m_graphicsMaterials.back(), device, descPool, shader, m_textures.back().get());

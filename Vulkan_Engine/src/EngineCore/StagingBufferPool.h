@@ -38,13 +38,13 @@ public:
 
 	bool claimAStagingBuffer(StgBuffer& buffer, uint32_t byteSize);
 	void freeBuffer(const StgBuffer& buffer);
-	void releaseAllResources() noexcept;
+	void releaseAllResources();
 
 	const Stats& getStatistics() const { return m_stats; }
 
 private:
-	bool indirection_allocateBuffer(StgBuffer& buffer, uint32_t size) noexcept;
-	void indirection_destroyBuffer(StgBuffer& buffer, bool increaseCounter = true) noexcept;
+	bool indirection_allocateBuffer(StgBuffer& buffer, uint32_t size);
+	void indirection_destroyBuffer(StgBuffer& buffer, bool increaseCounter = true);
 
 	bool createNewBuffer(StgBuffer& buffer, uint32_t size);
 	void claimedFromFreePool_impl(size_t index);

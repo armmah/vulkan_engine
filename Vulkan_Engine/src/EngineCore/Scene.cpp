@@ -12,10 +12,6 @@
 
 #include "Profiling/ProfileMarker.h"
 
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/serialization/vector.hpp>
-#include <boost/serialization/nvp.hpp>
-
 Scene::~Scene() {}
 
 Scene::Scene(const Presentation::Device* device, Presentation::PresentationTarget* target)

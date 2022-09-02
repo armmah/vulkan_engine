@@ -23,6 +23,10 @@
 #include <codeanalysis\warnings.h>
 #pragma warning(push, 0)
 #pragma warning ( disable : ALL_CPPCORECHECK_WARNINGS )
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/serialization/vector.hpp>
+#include <boost/serialization/nvp.hpp>
+
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/ext/vector_float2.hpp>

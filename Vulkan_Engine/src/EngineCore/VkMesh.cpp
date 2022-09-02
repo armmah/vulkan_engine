@@ -5,6 +5,7 @@
 #include "VertexAttributes.h"
 
 VkMesh::VkMesh() : vAttributes(nullptr), vCount(0), iAttributes() { }
+VkMesh::VkMesh(VkMesh&& fwdRef) : vAttributes(std::move(fwdRef.vAttributes)), vCount(fwdRef.vCount), iAttributes(std::move(fwdRef.iAttributes)) {}
 VkMesh::~VkMesh() { }
 
 void VkMesh::release(const VmaAllocator& allocator)

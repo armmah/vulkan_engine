@@ -37,6 +37,11 @@ private:
 	std::array<VkDescriptorSet, SWAPCHAIN_IMAGE_COUNT> m_descriptorSets;
 };
 
+namespace boost {
+	namespace serialization {
+		class access;
+	}
+}
 struct Renderer
 {
 	size_t meshID;
@@ -46,6 +51,30 @@ struct Renderer
 		: meshID(meshID), materialIDs(materialIDs) { }
 	Renderer(size_t meshID, std::vector<size_t>& materialIDs)
 		: meshID(meshID), materialIDs(std::move(materialIDs)) { }
+
+	template<class Archive>
+	void serialize(Archive& ar, const unsigned int version)
+	{
+		ar& meshID;
+		ar& materialIDs;
+	}
+
+	bool operator ==(const Renderer& other) const
+	{
+		if (meshID != other.meshID || materialIDs.size() != other.materialIDs.size())
+			return false;
+
+		for (size_t i = 0; i < materialIDs.size(); i++)
+		{
+			if (materialIDs[i] != other.materialIDs[i])
+				return false;
+		}
+		return true;
+	}
+
+private:
+	friend class boost::serialization::access;
+	Renderer() : meshID() { }
 };
 
 struct VkMeshRenderer

@@ -12,6 +12,10 @@
 
 #include "Profiling/ProfileMarker.h"
 
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/serialization/vector.hpp>
+#include <boost/serialization/nvp.hpp>
+
 Scene::~Scene() {}
 
 Scene::Scene(const Presentation::Device* device, Presentation::PresentationTarget* target)
@@ -25,7 +29,8 @@ bool Scene::load(VkDescriptorPool descPool)
 {
 	ProfileMarker _("Scene::load");
 
-	tryLoadFromFile(CRYTEK_SPONZA, descPool);
+	tryLoadFromFile("C:/Git/test_dir/file.binary", descPool);
+	//tryLoadFromFile(CRYTEK_SPONZA, descPool);
 
 	printf("Initialized the scene with (renderers = %zi), (meshes = %zi), (textures = %zi), (materials = %zi).\n", m_renderers.size(), m_meshes.size(), m_textures.size(), m_materials.size());
 	return true;
@@ -35,15 +40,13 @@ void Scene::release(VkDevice device, const VmaAllocator& allocator)
 {
 	for (auto& mesh : m_meshes)
 	{
-		mesh->clear();
-		mesh.release();
+		mesh.clear();
 	}
 	m_meshes.clear();
 
 	for (auto& gmesh : m_graphicsMeshes)
 	{
-		gmesh->release(allocator);
-		gmesh.release();
+		gmesh.release(allocator);
 	}
 	m_graphicsMeshes.clear();
 
@@ -66,8 +69,11 @@ void Scene::release(VkDevice device, const VmaAllocator& allocator)
 	m_rendererIDs.clear();
 }
 
-const std::vector<UNQ<Mesh>>& Scene::getMeshes() const { return m_meshes; }
-const std::vector<UNQ<VkMesh>>& Scene::getGraphicsMeshes() const { return m_graphicsMeshes; }
+const std::vector<Mesh>& Scene::getMeshes() const { return m_meshes; }
+const std::vector<Material>& Scene::getMaterials() const { return m_materials; }
+const std::vector<Renderer>& Scene::getRendererIDs() const { return m_rendererIDs; }
+const std::vector<VkMesh>& Scene::getGraphicsMeshes() const { return m_graphicsMeshes; }
+const std::vector<VkMeshRenderer>& Scene::getRenderers() const { return m_renderers; }
 
 namespace tinyobj
 {
@@ -148,7 +154,7 @@ void maxVector(glm::vec3& max, const glm::vec3& point)
 	max.z = std::max(max.z, point.z);
 }
 
-bool Scene::loadGLTF_Implementation(std::vector<UNQ<Mesh>>& meshes, std::vector<Material>& materials, std::vector<Renderer>& rendererIDs, const std::string& path, const std::string& name, bool isBinary)
+bool Scene::loadGLTF_Implementation(std::vector<Mesh>& meshes, std::vector<Material>& materials, std::vector<Renderer>& rendererIDs, const std::string& path, const std::string& name, bool isBinary)
 {
 	tinygltf::Model model;
 	tinygltf::TinyGLTF loader;
@@ -189,7 +195,7 @@ bool Scene::loadGLTF_Implementation(std::vector<UNQ<Mesh>>& meshes, std::vector<
 	return true;
 }
 
-bool Scene::loadOBJ_Implementation(std::vector<UNQ<Mesh>>& meshes, std::vector<Material>& materials, std::vector<Renderer>& rendererIDs, const std::string& path, const std::string& name)
+bool Scene::loadOBJ_Implementation(std::vector<Mesh>& meshes, std::vector<Material>& materials, std::vector<Renderer>& rendererIDs, const std::string& path, const std::string& name)
 {
 	//attrib will contain the vertex arrays of the file
 	tinyobj::attrib_t objAttribs;
@@ -366,10 +372,25 @@ bool Scene::loadOBJ_Implementation(std::vector<UNQ<Mesh>>& meshes, std::vector<M
 		}
 
 		std::vector<MeshDescriptor::TVertexColor> colors;		
-		meshes.push_back(MAKEUNQ<Mesh>(vertices, uvs, normals, colors, submeshes));
+		meshes.push_back(Mesh(vertices, uvs, normals, colors, submeshes));
 	}
 
 	return true;
+}
+
+namespace boost::serialization
+{
+	template <typename Ar>
+	void serialize(Ar& ar, glm::vec3& v, unsigned _)
+	{
+		ar& make_nvp("x", v.x)& make_nvp("y", v.y)& make_nvp("z", v.z);
+	}
+
+	template <typename Ar>
+	void serialize(Ar& ar, glm::vec2& v, unsigned _)
+	{
+		ar& make_nvp("x", v.x)& make_nvp("y", v.y);
+	}
 }
 
 bool Scene::tryLoadSupportedFormat(const std::string& path)
@@ -379,6 +400,19 @@ bool Scene::tryLoadSupportedFormat(const std::string& path)
 	auto extensionLength = path.length() - extensionIndex;
 	auto directory = path.substr(0, nameStart);
 	auto name = path.substr(nameStart, path.length() - nameStart - extensionLength);
+
+	/* ================ READ SERIALIZED BINARY =============== */
+	if (fileExists(path, ".binary"))
+	{
+		// Deserialize
+
+		auto stream = std::fstream(path, std::ios::in | std::ios::binary);
+		boost::archive::binary_iarchive archive(stream);
+
+		archive >> *this;
+
+		return true;
+	}
 
 	/* ================ READ FROM OBJ =============== */
 	if (fileExists(path, ".obj"))
@@ -443,20 +477,22 @@ bool Scene::tryLoadFromFile(const std::string& path, VkDescriptorPool descPool)
 	auto vmaAllocator = VkMemoryAllocator::getInstance()->m_allocator;
 	const auto count = m_meshes.size();
 
-	m_graphicsMeshes.resize(count);
+	m_graphicsMeshes.reserve(count);
 	m_renderers.reserve(count);
-	int graphicsMeshIndex = 0;
 	for (auto& ids : m_rendererIDs)
 	{
 		auto& mesh = m_meshes[ids.meshID];
-		if (!mesh->allocateGraphicsMesh(m_graphicsMeshes[graphicsMeshIndex], vmaAllocator, m_presentationDevice, stagingBufPool) || !mesh->isValid())
+
+		auto newGraphicsMesh = VkMesh();
+		if (!mesh.allocateGraphicsMesh(newGraphicsMesh, vmaAllocator, m_presentationDevice, stagingBufPool) || !mesh.isValid())
 			return false;
 
-		if (defaultMeshDescriptor != mesh->getMeshDescriptor())
+		if (defaultMeshDescriptor != mesh.getMeshDescriptor())
 		{
 			printf("Mesh metadata does not match - can not bind to the same pipeline.\n");
 			return false;
 		}
+		m_graphicsMeshes.push_back(std::move(newGraphicsMesh));
 
 		uint32_t submeshIndex = 0;
 		for (auto materialIDs : ids.materialIDs)
@@ -468,10 +504,9 @@ bool Scene::tryLoadFromFile(const std::string& path, VkDescriptorPool descPool)
 				continue;
 			}
 
-			m_renderers.push_back(VkMeshRenderer(m_graphicsMeshes[graphicsMeshIndex].get(), submeshIndex, mesh->getBounds(submeshIndex), &m_graphicsMaterials[loadedTextures[texPath]]->getMaterialVariant()));
+			m_renderers.push_back(VkMeshRenderer(&m_graphicsMeshes.back(), submeshIndex, mesh.getBounds(submeshIndex), &m_graphicsMaterials[loadedTextures[texPath]]->getMaterialVariant()));
 			++submeshIndex;
 		}
-		graphicsMeshIndex += 1;
 	}
 	stagingBufPool.releaseAllResources();
 

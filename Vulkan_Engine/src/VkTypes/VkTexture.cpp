@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "Texture.h"
 #include "VkTexture.h"
 #include "Material.h"
 #include "InitializersUtility.h"
@@ -9,40 +10,33 @@
 VkTexture2D::VkTexture2D(VkImage image, VmaAllocation memoryRange, VkImageView imageView, VkSampler sampler, uint32_t mipLevels) :
 	VkTexture(image, memoryRange, imageView), sampler(sampler), mipLevels(mipLevels) { }
 
-bool VkTexture2D::tryCreateTexture(UNQ<VkTexture2D>& tex, const TextureSource& texSrc, const Presentation::Device* presentationDevice, StagingBufferPool& stagingBufferPool)
+bool VkTexture2D::tryCreateTexture(UNQ<VkTexture2D>& tex, const TextureSource& texture, const Presentation::Device* presentationDevice, StagingBufferPool& stagingBufferPool)
 {
-	const auto* path = texSrc.path.c_str();
-	if (!fileExists(path))
-		return false;
-
-	auto format = texSrc.format;
-	auto generateMips = texSrc.generateTheMips;
-
-	auto allocator = VkMemoryAllocator::getInstance()->m_allocator;
+	const auto* path = texture.path.c_str();
+	
+	auto format = texture.format;
+	auto generateMips = texture.generateTheMips;
 
 	int width, height, channels;
-	stbi_uc* const pixels = stbi_load(path, &width, &height, &channels, STBI_rgb_alpha);
-	size_t imageSize = static_cast<size_t>(width) * static_cast<size_t>(height) * 4;
-	auto mipCount = generateMips ? static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1 : 1u;
-
-	if (width <= 0 || height <= 0 || imageSize <= 0 || !pixels)
-	{
-		printf("Could not load the image at %s.\n", path);
-		return false;
-	}
-
 	StagingBufferPool::StgBuffer stagingBuffer;
-	if(!stagingBufferPool.claimAStagingBuffer(stagingBuffer, as_uint32(imageSize)))
 	{
-		printf("Could not allocate staging memory buffer for texture '%s'.\n", path);
-		return false;
-	}
+		UNQ<LoadedTexture> loadedTexture;
+		if (!Texture::stbiLoad(loadedTexture, texture.path, width, height, channels) || !loadedTexture)
+			return false;
 
-	void* data;
-	vmaMapMemory(allocator, stagingBuffer.allocation, &data);
-	memcpy(data, pixels, imageSize);
-	vmaUnmapMemory(allocator, stagingBuffer.allocation);
-	stbi_image_free(static_cast<void*>(pixels));
+		if (!stagingBufferPool.claimAStagingBuffer(stagingBuffer, loadedTexture->getByteSize()))
+		{
+			printf("Could not allocate staging memory buffer for texture '%s'.\n", path);
+			return false;
+		}
+
+		void* data;
+		auto allocator = VkMemoryAllocator::getInstance()->m_allocator;
+		vmaMapMemory(allocator, stagingBuffer.allocation, &data);
+		loadedTexture->copyToMappedBuffer(data);
+		vmaUnmapMemory(allocator, stagingBuffer.allocation);
+	}
+	auto mipCount = generateMips ? static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1 : 1u;
 
 	VkImage image;
 	VmaAllocation memoryRange;

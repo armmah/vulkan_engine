@@ -296,15 +296,14 @@ VertexBinding Mesh::initializeBindings(const MeshDescriptor& meshDescriptor)
 	return VertexBinding(bindingDescription, attributeDescriptions);
 }
 
-bool Mesh::allocateGraphicsMesh(UNQ<VkMesh>& graphicsMesh, const VmaAllocator& vmaAllocator, const Presentation::Device* presentationDevice, StagingBufferPool& stagingPool)
+bool Mesh::allocateGraphicsMesh(VkMesh& graphicsMesh, const VmaAllocator& vmaAllocator, const Presentation::Device* presentationDevice, StagingBufferPool& stagingPool)
 {
-	graphicsMesh = MAKEUNQ<VkMesh>();
-	if (!allocateVertexAttributes(*graphicsMesh, vmaAllocator, presentationDevice, stagingPool))
+	if (!allocateVertexAttributes(graphicsMesh, vmaAllocator, presentationDevice, stagingPool))
 		return false;
 
 	for (auto& submesh : m_submeshes)
 	{
-		if (!allocateIndexAttributes(*graphicsMesh, submesh, vmaAllocator, presentationDevice, stagingPool))
+		if (!allocateIndexAttributes(graphicsMesh, submesh, vmaAllocator, presentationDevice, stagingPool))
 			return false;
 	}
 

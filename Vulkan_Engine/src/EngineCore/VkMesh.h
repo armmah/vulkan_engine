@@ -10,6 +10,7 @@ struct VkMesh
 {
 public:
 	VkMesh();
+	VkMesh(VkMesh&& fwdRef);
 	~VkMesh();
 
 	void release(const VmaAllocator& allocator);

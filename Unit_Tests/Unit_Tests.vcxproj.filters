@@ -2,6 +2,9 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="DataStructures\main.cpp" />
+    <ClCompile Include="test_binarySerialization.cpp">
+      <Filter>Serialization</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Loader_FileFormat_Model">

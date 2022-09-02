@@ -1,8 +1,25 @@
 #include "pch.h"
 #include "Texture.h"
+#include "Material.h"
 
 #include "VkTypes/InitializersUtility.h"
 #include <Presentation/Device.h>
+
+bool Texture::stbiLoad(UNQ<LoadedTexture>& texture, const std::string& path, int& width, int& height, int& channels)
+{
+	if (!fileExists(path))
+		return false;
+
+	stbi_uc* const pixels = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+	if (width <= 0 || height <= 0 || channels <= 0 || !pixels)
+	{
+		printf("Could not load the image at %s.\n", path.c_str());
+		return false;
+	}
+
+	texture = MAKEUNQ<LoadedTexture>(pixels, static_cast<size_t>(width) * static_cast<size_t>(height) * 4);
+	return true;
+}
 
 void Texture::copyBufferToImage(const Presentation::Device* presentationDevice, VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)
 {
@@ -24,6 +41,31 @@ void Texture::copyBufferToImage(const Presentation::Device* presentationDevice, 
 			vkCmdCopyBufferToImage(cmd, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &region);
 		});
 }
+
+struct _PipelineBarrierArg
+{
+	VkPipelineStageFlags stages;
+	VkAccessFlags accesses;
+
+	static void getStagingBufferState(_PipelineBarrierArg& src, _PipelineBarrierArg& dst)
+	{
+		src.accesses = 0;
+		src.stages = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+
+		dst.accesses = VK_ACCESS_TRANSFER_WRITE_BIT;
+		dst.stages = VK_PIPELINE_STAGE_TRANSFER_BIT;
+	}
+
+	static void getImageFragShaderState(_PipelineBarrierArg& src, _PipelineBarrierArg& dst)
+	{
+		src.accesses = VK_ACCESS_TRANSFER_WRITE_BIT;
+		src.stages = VK_PIPELINE_STAGE_TRANSFER_BIT;
+
+		dst.accesses = VK_ACCESS_SHADER_READ_BIT;
+		dst.stages = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+	}
+
+};
 
 void Texture::transitionImageLayout(const Presentation::Device* presentationDevice, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipCount)
 {

@@ -228,19 +228,25 @@ bool Scene::loadOBJ_Implementation(std::vector<Mesh>& meshes, std::vector<Materi
 		}
 	}
 
+	ProfileMarker _("	Scene::loadObjImplementation - Create meshes");
+	typedef int MeshID;
+
 	struct SubMeshDesc
 	{
 		size_t indexCount;
 		size_t mappedIndex;
 	};
 
-	ProfileMarker _("	Scene::loadObjImplementation - Create meshes");
+	std::unordered_map<MeshID, std::vector<MaterialID>> meshToMaterialMapping;
 	std::unordered_map<MaterialID, SubMeshDesc> uniqueMaterialIDs;
 	std::unordered_map<size_t, MeshDescriptor::TVertexIndices> indexMapping;
 
+	std::vector<SubMesh> submeshes;
+	std::vector<size_t> materialIDs;
+	// MESHES
 	meshes.reserve(objShapes.size());
 	rendererIDs.reserve(objShapes.size());
-	for (int i = 0; i < objShapes.size(); i++)
+	for (MeshID i = 0; i < objShapes.size(); i++)
 	{
 		indexMapping.clear();
 
@@ -250,8 +256,6 @@ bool Scene::loadOBJ_Implementation(std::vector<Mesh>& meshes, std::vector<Materi
 
 		// The shape's vertex index here is referencing the big obj vertex buffer,
 		// Our vertex buffer for mesh will be much smaller and should be indexed per-mesh, instead of globally.
-		std::vector<SubMesh> submeshes;
-		std::vector<size_t> materialIDs;
 
 		if (mesh.material_ids.size() * 3 < shapeIndices.size())
 		{
@@ -276,7 +280,9 @@ bool Scene::loadOBJ_Implementation(std::vector<Mesh>& meshes, std::vector<Materi
 			uniqueMaterialIDs[id] = desc;
 			materialCount += 1;
 		}
+		submeshes.clear();
 		submeshes.reserve(materialCount);
+		materialIDs.clear();
 		materialIDs.reserve(materialCount);
 
 		for (auto& kvPair : uniqueMaterialIDs)
@@ -284,17 +290,10 @@ bool Scene::loadOBJ_Implementation(std::vector<Mesh>& meshes, std::vector<Materi
 			auto materialID = kvPair.first;
 			auto submeshDesc = kvPair.second;
 
-			auto texPath = path + objMats[materialID].diffuse_texname;
-			if (objMats[materialID].diffuse_texname.length() > 0 && std::filesystem::exists(texPath))
-			{
-				auto texSrc = TextureSource(texPath);
-				materialIDs.push_back(materials.size());
-				materials.push_back(Material(0, texSrc));
-			}
-
+			materialIDs.push_back(materialID);
 			submeshes.push_back(SubMesh(submeshDesc.indexCount * 3));
 		}
-		rendererIDs.push_back(Renderer(meshes.size(), materialIDs));
+		meshToMaterialMapping[i] = materialIDs;
 
 		// Axis-Aligned Bounding Box
 		std::vector<glm::vec3> boundsMinMax(materialCount * 2);
@@ -369,6 +368,43 @@ bool Scene::loadOBJ_Implementation(std::vector<Mesh>& meshes, std::vector<Materi
 
 		std::vector<MeshDescriptor::TVertexColor> colors;		
 		meshes.push_back(Mesh(vertices, uvs, normals, colors, submeshes));
+	}
+
+	// MATERIALS
+	typedef int GlobalBufferMaterialID;
+	std::unordered_map<MaterialID, GlobalBufferMaterialID> uniqueMaterials;
+	std::vector<size_t> globalBufMaterialIDs;
+	materials.reserve(objMats.size());
+	for (const auto& kv : meshToMaterialMapping)
+	{
+		const auto& meshMaterials = kv.second;
+		globalBufMaterialIDs.clear();
+		globalBufMaterialIDs.reserve(meshMaterials.size());
+		for (const auto& materialID : meshMaterials)
+		{
+			if (materialID < 0)
+				continue;
+
+			int index = 0;
+			if (uniqueMaterials.count(materialID) > 0)
+			{
+				globalBufMaterialIDs.push_back(uniqueMaterials[materialID]);
+			}
+			else
+			{
+				assert(materialID >= 0 && materialID < objMats.size());
+				auto& mat = objMats[materialID];
+				auto texPath = path + mat.diffuse_texname;
+				if (mat.diffuse_texname.length() > 0 && std::filesystem::exists(texPath))
+				{
+					uniqueMaterials[materialID] = materials.size();
+					globalBufMaterialIDs.push_back(materials.size());
+					materials.push_back(Material(0, TextureSource(texPath)));
+				}
+			}
+		}
+
+		rendererIDs.push_back(Renderer(kv.first, globalBufMaterialIDs));
 	}
 
 	return true;

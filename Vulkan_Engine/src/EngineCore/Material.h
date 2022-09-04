@@ -64,6 +64,8 @@ class Material
 public:
 	Material(uint32_t shaderIdentifier, const TextureSource& source) : 
 		m_shaderIdentifier(shaderIdentifier), m_textureParameters(source) { }
+	Material(uint32_t shaderIdentifier, TextureSource&& source) :
+		m_shaderIdentifier(shaderIdentifier), m_textureParameters(source) { }
 
 	const TextureSource& getTextureSource() const { return m_textureParameters; }
 	uint32_t getShaderIdentifier() const { return m_shaderIdentifier; }

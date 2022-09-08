@@ -399,7 +399,7 @@ bool Scene::loadOBJ_Implementation(std::vector<Mesh>& meshes, std::vector<Materi
 				{
 					uniqueMaterials[materialID] = materials.size();
 					globalBufMaterialIDs.push_back(materials.size());
-					materials.push_back(Material(0, TextureSource(texPath)));
+					materials.push_back(Material(0, TextureSource(std::move(texPath))));
 				}
 			}
 		}

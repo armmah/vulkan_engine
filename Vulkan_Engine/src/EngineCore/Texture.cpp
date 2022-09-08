@@ -1,9 +1,65 @@
 #include "pch.h"
 #include "Texture.h"
 #include "Material.h"
+#include "dds_loader.h"
 
 #include "VkTypes/InitializersUtility.h"
 #include <Presentation/Device.h>
+
+bool Texture::tryLoadSupportedFormat(UNQ<LoadedTexture>& texture, const std::string& path, VkFormat& format, int& width, int& height, int& channels)
+{
+	if (!fileExists(path))
+		return false;
+
+	std::vector<std::string> stbi_supportedFormats = { ".png", ".jpg" };
+	if (fileExists(path, stbi_supportedFormats))
+	{
+		format = VK_FORMAT_R8G8B8A8_SRGB;
+		return stbiLoad(texture, path, width, height, channels);
+	}
+
+	if (fileExists(path, ".dds"))
+	{
+		auto tex = new DDS_TEXTURE();
+		auto errCode = load_dds_from_file(path.c_str(), &tex);
+
+		if (errCode) return false;
+
+		if (tex != nullptr)
+		{
+			switch (tex->format)
+			{
+			case 0x83F0:
+				format = VK_FORMAT_BC1_RGB_SRGB_BLOCK;
+				break;
+			case 0x83F1:
+				format = VK_FORMAT_BC1_RGBA_SRGB_BLOCK;
+				break;
+			case 0x83F2:
+				format = VK_FORMAT_BC3_SRGB_BLOCK;
+				break;
+			case 0x83F3:
+				format = VK_FORMAT_BC5_SNORM_BLOCK;
+				break;
+
+			default:
+				printf("Unsupported texture format %i.\n", tex->format);
+				return false;
+			}
+
+			width = tex->width;
+			height = tex->height;
+			channels = tex->channels;
+			texture = MAKEUNQ<LoadedTexture>(tex->pixels, tex->sz);
+
+			free(tex);
+			return true;
+		}
+		return false;
+	}
+
+	return false;
+}
 
 bool Texture::stbiLoad(UNQ<LoadedTexture>& texture, const std::string& path, int& width, int& height, int& channels)
 {

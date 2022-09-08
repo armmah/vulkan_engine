@@ -37,7 +37,7 @@ private:
 
 struct LoadedTexture : ITextureContainer
 {
-	LoadedTexture(stbi_uc* const data, size_t byteSize)
+	LoadedTexture(unsigned char* const data, size_t byteSize)
 	{
 		pixels = data;
 		imageSize = byteSize;
@@ -55,7 +55,7 @@ struct LoadedTexture : ITextureContainer
 	}
 
 private:
-	stbi_uc* pixels;
+	unsigned char* pixels;
 	size_t imageSize;
 };
 
@@ -102,10 +102,12 @@ private:
 	UNQ<LoadedTexture> loadedTexture;
 	*/
 
-	static bool stbiLoad(UNQ<LoadedTexture>& texture, const std::string& path, int& width, int& height, int& channels);
+	static bool tryLoadSupportedFormat(UNQ<LoadedTexture>& texture, const std::string& path, VkFormat& format, int& width, int& height, int& channels);
 
 	static void copyBufferToImage(const Presentation::Device* presentationDevice, VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
 	static void transitionImageLayout(const Presentation::Device* presentationDevice, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipCount);
 
+private:
+	static bool stbiLoad(UNQ<LoadedTexture>& texture, const std::string& path, int& width, int& height, int& channels);
 
 };

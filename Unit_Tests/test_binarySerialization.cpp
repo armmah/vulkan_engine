@@ -34,6 +34,22 @@ namespace boost::serialization
 	}
 }
 
+TEST(Texturesource, Path)
+{
+	auto test1 = TextureSource("directory/file.png");
+	auto test2 = TextureSource("long_complex/white space\\directory\\file.png");
+	auto test3 = TextureSource("file.png");
+
+	EXPECT_EQ(test1.getTextureName(false), "file");
+	EXPECT_EQ(test1.getTextureName(true), "file.png");
+
+	EXPECT_EQ(test2.getTextureName(false), "file");
+	EXPECT_EQ(test2.getTextureName(true), "file.png");
+
+	EXPECT_EQ(test3.getTextureName(false), "file");
+	EXPECT_EQ(test3.getTextureName(true), "file.png");
+}
+
 TEST(Serialization, SceneBinary)
 {
 	Scene scene(nullptr, nullptr);

@@ -40,5 +40,11 @@
     <ClCompile Include="tinygltf_implementation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="dds_loader_implementation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="dds_loader.h" />
   </ItemGroup>
 </Project>

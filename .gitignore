@@ -57,3 +57,4 @@
 *.pdb
 *.tlog
 /Third_Party_Project/x64/Debug/Third_Party_Project.vcxproj.FileListAbsolute.txt
+/third_party/RwgTex

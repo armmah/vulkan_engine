@@ -21,8 +21,15 @@ bool VkTexture2D::tryCreateTexture(UNQ<VkTexture2D>& tex, const TextureSource& t
 	StagingBufferPool::StgBuffer stagingBuffer;
 	{
 		UNQ<LoadedTexture> loadedTexture;
-		if (!Texture::stbiLoad(loadedTexture, texture.path, width, height, channels) || !loadedTexture)
+		VkFormat actualFormat;
+		if (!Texture::tryLoadSupportedFormat(loadedTexture, texture.path.value, actualFormat, width, height, channels) || !loadedTexture)
 			return false;
+
+		if (actualFormat != format)
+		{
+			printf("The meta data was expecting format %i, but the texture '%s' had the format %i.\n", format, path, actualFormat);
+			format = actualFormat;
+		}
 
 		if (!stagingBufferPool.claimAStagingBuffer(stagingBuffer, loadedTexture->getByteSize()))
 		{

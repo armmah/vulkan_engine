@@ -6,7 +6,7 @@
 #include "VkTypes/InitializersUtility.h"
 #include <Presentation/Device.h>
 
-bool Texture::tryLoadSupportedFormat(UNQ<LoadedTexture>& texture, const std::string& path, VkFormat& format, int& width, int& height, int& channels)
+bool Texture::tryLoadSupportedFormat(std::vector<LoadedTexture>& textureMipchain, const std::string& path, VkFormat& format, int& width, int& height, int& channels)
 {
 	if (!fileExists(path))
 		return false;
@@ -15,53 +15,64 @@ bool Texture::tryLoadSupportedFormat(UNQ<LoadedTexture>& texture, const std::str
 	if (fileExists(path, stbi_supportedFormats))
 	{
 		format = VK_FORMAT_R8G8B8A8_SRGB;
-		return stbiLoad(texture, path, width, height, channels);
+		return stbiLoad(textureMipchain, path, width, height, channels);
 	}
 
 	if (fileExists(path, ".dds"))
 	{
-		auto tex = new DDS_TEXTURE();
-		auto errCode = load_dds_from_file(path.c_str(), &tex);
-
-		if (errCode) return false;
-
-		if (tex != nullptr)
-		{
-			switch (tex->format)
-			{
-			case 0x83F0:
-				format = VK_FORMAT_BC1_RGB_SRGB_BLOCK;
-				break;
-			case 0x83F1:
-				format = VK_FORMAT_BC1_RGBA_SRGB_BLOCK;
-				break;
-			case 0x83F2:
-				format = VK_FORMAT_BC3_SRGB_BLOCK;
-				break;
-			case 0x83F3:
-				format = VK_FORMAT_BC5_SNORM_BLOCK;
-				break;
-
-			default:
-				printf("Unsupported texture format %i.\n", tex->format);
-				return false;
-			}
-
-			width = tex->width;
-			height = tex->height;
-			channels = tex->channels;
-			texture = MAKEUNQ<LoadedTexture>(tex->pixels, tex->sz);
-
-			free(tex);
-			return true;
-		}
-		return false;
+		return ddsLoad(textureMipchain, path, format, width, height, channels);
 	}
 
 	return false;
 }
 
-bool Texture::stbiLoad(UNQ<LoadedTexture>& texture, const std::string& path, int& width, int& height, int& channels)
+bool Texture::ddsLoad(std::vector<LoadedTexture>& textureMipchain, const std::string& path, VkFormat& format, int& width, int& height, int& channels)
+{
+	auto tex = nv_dds::CDDSImage();
+	tex.load(path, false);
+
+	if (tex.is_valid())
+	{
+		switch (tex.get_format())
+		{
+		case 0x83F0:
+			format = VK_FORMAT_BC1_RGB_SRGB_BLOCK;
+			break;
+		case 0x83F1:
+			format = VK_FORMAT_BC1_RGBA_SRGB_BLOCK;
+			break;
+		case 0x83F2:
+			format = VK_FORMAT_BC3_SRGB_BLOCK;
+			break;
+		case 0x83F3:
+			format = VK_FORMAT_BC5_SNORM_BLOCK;
+			break;
+
+		default:
+			printf("Unsupported texture format %i.\n", tex.get_format());
+			return false;
+		}
+
+		auto mipCount = tex.get_num_mipmaps();
+		textureMipchain.reserve(mipCount + 1);
+
+		width = tex.get_width();
+		height = tex.get_height();
+		channels = tex.get_components();
+		textureMipchain.push_back(LoadedTexture(tex.claim_data(), tex.get_size(), width, height));
+
+		for (int mipIndex = 0; mipIndex < mipCount; mipIndex++)
+		{
+			auto& mip = tex.get_mipmap(mipIndex);
+			auto* mipData = tex.claim_mipmap_data(mipIndex);
+			textureMipchain.push_back(LoadedTexture(mipData, mip.get_size(), mip.get_width(), mip.get_height()));
+		}
+		return true;
+	}
+	return false;
+}
+
+bool Texture::stbiLoad(std::vector<LoadedTexture>& textureMipChain, const std::string& path, int& width, int& height, int& channels)
 {
 	if (!fileExists(path))
 		return false;
@@ -73,28 +84,39 @@ bool Texture::stbiLoad(UNQ<LoadedTexture>& texture, const std::string& path, int
 		return false;
 	}
 
-	texture = MAKEUNQ<LoadedTexture>(pixels, static_cast<size_t>(width) * static_cast<size_t>(height) * 4);
+	textureMipChain.push_back(LoadedTexture(pixels, static_cast<size_t>(width) * static_cast<size_t>(height) * 4, width, height));
 	return true;
 }
 
-void Texture::copyBufferToImage(const Presentation::Device* presentationDevice, VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)
+void Texture::copyBufferToImage(const Presentation::Device* presentationDevice, VkBuffer buffer, VkImage image, const std::vector<VkExtent3D>& dimensions)
 {
 	presentationDevice->submitImmediatelyAndWaitCompletion([=](VkCommandBuffer cmd)
 		{
-			VkBufferImageCopy region{};
-			region.bufferOffset = 0;
-			region.bufferRowLength = 0;
-			region.bufferImageHeight = 0;
+			const auto count = dimensions.size();
+			auto offsets = 0u;
 
-			region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			region.imageSubresource.mipLevel = 0;
-			region.imageSubresource.baseArrayLayer = 0;
-			region.imageSubresource.layerCount = 1;
+			std::vector<VkBufferImageCopy> regions(count);
+			for(size_t i = 0; i < count; i++)
+			{
+				regions[i]  = VkBufferImageCopy{};
+				auto& region = regions[i];
 
-			region.imageOffset = { 0, 0, 0 };
-			region.imageExtent = { width, height, 1 };
+				region.bufferOffset = offsets;
+				region.bufferRowLength = 0;
+				region.bufferImageHeight = 0;
 
-			vkCmdCopyBufferToImage(cmd, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &region);
+				region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				region.imageSubresource.mipLevel = i;
+				region.imageSubresource.baseArrayLayer = 0;
+				region.imageSubresource.layerCount = 1;
+
+				region.imageOffset = { 0, 0, 0 };
+				region.imageExtent = { dimensions[i].width, dimensions[i].height, 1 };
+
+				offsets += dimensions[i].depth;
+			}
+
+			vkCmdCopyBufferToImage(cmd, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, regions.size(), regions.data());
 		});
 }
 

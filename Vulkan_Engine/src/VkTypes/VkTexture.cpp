@@ -13,16 +13,18 @@ VkTexture2D::VkTexture2D(VkImage image, VmaAllocation memoryRange, VkImageView i
 bool VkTexture2D::tryCreateTexture(UNQ<VkTexture2D>& tex, const TextureSource& texture, const Presentation::Device* presentationDevice, StagingBufferPool& stagingBufferPool)
 {
 	const auto* path = texture.path.c_str();
-	
+
 	auto format = texture.format;
 	auto generateMips = texture.generateTheMips;
 
+	std::vector<VkExtent3D> dimensions;
 	int width, height, channels;
+	uint32_t mipCount = 0u;
 	StagingBufferPool::StgBuffer stagingBuffer;
 	{
-		UNQ<LoadedTexture> loadedTexture;
+		std::vector<LoadedTexture> textureMipchain;
 		VkFormat actualFormat;
-		if (!Texture::tryLoadSupportedFormat(loadedTexture, texture.path.value, actualFormat, width, height, channels) || !loadedTexture)
+		if (!Texture::tryLoadSupportedFormat(textureMipchain, texture.path.value, actualFormat, width, height, channels) || !textureMipchain.size())
 			return false;
 
 		if (actualFormat != format)
@@ -31,7 +33,25 @@ bool VkTexture2D::tryCreateTexture(UNQ<VkTexture2D>& tex, const TextureSource& t
 			format = actualFormat;
 		}
 
-		if (!stagingBufferPool.claimAStagingBuffer(stagingBuffer, loadedTexture->getByteSize()))
+		mipCount = textureMipchain.size();
+		dimensions.reserve(mipCount);
+		if (mipCount > 1u)
+		{
+			generateMips = false;
+		}
+		else if (generateMips)
+		{
+			mipCount = generateMips ? static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1 : 1u;
+		}
+
+		auto totalBufferSize = 0u;
+		for (auto& mip : textureMipchain)
+		{
+			totalBufferSize += mip.getByteSize();
+			dimensions.push_back(mip.getDimensions());
+		}
+
+		if (!stagingBufferPool.claimAStagingBuffer(stagingBuffer, totalBufferSize))
 		{
 			printf("Could not allocate staging memory buffer for texture '%s'.\n", path);
 			return false;
@@ -40,10 +60,16 @@ bool VkTexture2D::tryCreateTexture(UNQ<VkTexture2D>& tex, const TextureSource& t
 		void* data;
 		auto allocator = VkMemoryAllocator::getInstance()->m_allocator;
 		vmaMapMemory(allocator, stagingBuffer.allocation, &data);
-		loadedTexture->copyToMappedBuffer(data);
+		size_t offset = 0;
+		for (auto& mip : textureMipchain)
+		{
+			mip.copyToMappedBuffer(data, offset);
+			offset += mip.getByteSize();
+
+			mip.release();
+		}
 		vmaUnmapMemory(allocator, stagingBuffer.allocation);
 	}
-	auto mipCount = generateMips ? static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1 : 1u;
 
 	VkImage image;
 	VmaAllocation memoryRange;
@@ -64,64 +90,81 @@ bool VkTexture2D::tryCreateTexture(UNQ<VkTexture2D>& tex, const TextureSource& t
 	}
 
 	Texture::transitionImageLayout(presentationDevice, image, format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipCount);
-	Texture::copyBufferToImage(presentationDevice, stagingBuffer.buffer, image, as_uint32(width), as_uint32(height));
+	Texture::copyBufferToImage(presentationDevice, stagingBuffer.buffer, image, dimensions);
 
 	if (generateMips)
 	{
 		presentationDevice->submitImmediatelyAndWaitCompletion([=](VkCommandBuffer commandBuffer)
-		{
-			VkImageMemoryBarrier barrier{};
-			barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-			barrier.image = image;
-			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			barrier.subresourceRange.baseArrayLayer = 0;
-			barrier.subresourceRange.layerCount = 1;
-			barrier.subresourceRange.levelCount = 1;
-
-			int32_t mipWidth = width,
-				mipHeight = height;
-			for (uint32_t i = 1; i < mipCount; i++) 
 			{
-				// Transfer layout for previous mip
-				barrier.subresourceRange.baseMipLevel = i - 1;
+				VkImageMemoryBarrier barrier{};
+				barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+				barrier.image = image;
+				barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+				barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+				barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				barrier.subresourceRange.baseArrayLayer = 0;
+				barrier.subresourceRange.layerCount = 1;
+				barrier.subresourceRange.levelCount = 1;
+
+				int32_t mipWidth = width,
+					mipHeight = height;
+				for (uint32_t i = 1; i < mipCount; i++)
+				{
+					// Transfer layout for previous mip
+					barrier.subresourceRange.baseMipLevel = i - 1;
+					barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+					barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+					barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+					barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+
+					vkCmdPipelineBarrier(commandBuffer,
+						VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0,
+						0, nullptr,
+						0, nullptr,
+						1, &barrier);
+
+					VkImageBlit blit{};
+					blit.srcOffsets[0] = { 0, 0, 0 };
+					blit.srcOffsets[1] = { mipWidth, mipHeight, 1 };
+					blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+					blit.srcSubresource.mipLevel = i - 1;
+					blit.srcSubresource.baseArrayLayer = 0;
+					blit.srcSubresource.layerCount = 1;
+
+					blit.dstOffsets[0] = { 0, 0, 0 };
+					blit.dstOffsets[1] = { std::max(mipWidth >> 1, 1), std::max(mipHeight >> 1, 1), 1 };
+					blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+					blit.dstSubresource.mipLevel = i;
+					blit.dstSubresource.baseArrayLayer = 0;
+					blit.dstSubresource.layerCount = 1;
+
+					vkCmdBlitImage(commandBuffer,
+						image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+						image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+						1, &blit,
+						VK_FILTER_LINEAR);
+
+					// Transition to shader read for previous mip, we are done with it.
+					barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+					barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+					barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+					barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+					vkCmdPipelineBarrier(commandBuffer,
+						VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
+						0, nullptr,
+						0, nullptr,
+						1, &barrier);
+
+					mipWidth = std::max(mipWidth >> 1, 1);
+					mipHeight = std::max(mipHeight >> 1, 1);
+				}
+
+				// The last mip (it isn't sampled from, so doesn't transition)
+				barrier.subresourceRange.baseMipLevel = mipCount - 1;
 				barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-				barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-				barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-				barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-
-				vkCmdPipelineBarrier(commandBuffer,
-					VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0,
-					0, nullptr,
-					0, nullptr,
-					1, &barrier);
-
-				VkImageBlit blit{};
-				blit.srcOffsets[0] = { 0, 0, 0 };
-				blit.srcOffsets[1] = { mipWidth, mipHeight, 1 };
-				blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-				blit.srcSubresource.mipLevel = i - 1;
-				blit.srcSubresource.baseArrayLayer = 0;
-				blit.srcSubresource.layerCount = 1;
-
-				blit.dstOffsets[0] = { 0, 0, 0 };
-				blit.dstOffsets[1] = { std::max(mipWidth >> 1, 1), std::max(mipHeight >> 1, 1), 1 };
-				blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-				blit.dstSubresource.mipLevel = i;
-				blit.dstSubresource.baseArrayLayer = 0;
-				blit.dstSubresource.layerCount = 1;
-
-				vkCmdBlitImage(commandBuffer,
-					image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-					image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-					1, &blit,
-					VK_FILTER_LINEAR);
-
-				// Transition to shader read for previous mip, we are done with it.
-				barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 				barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-				barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+				barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 				barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
 				vkCmdPipelineBarrier(commandBuffer,
@@ -129,24 +172,7 @@ bool VkTexture2D::tryCreateTexture(UNQ<VkTexture2D>& tex, const TextureSource& t
 					0, nullptr,
 					0, nullptr,
 					1, &barrier);
-
-				mipWidth = std::max(mipWidth >> 1, 1);
-				mipHeight = std::max(mipHeight >> 1, 1);
-			}
-
-			// The last mip (it isn't sampled from, so doesn't transition)
-			barrier.subresourceRange.baseMipLevel = mipCount - 1;
-			barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-			barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-			vkCmdPipelineBarrier(commandBuffer,
-				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
-				0, nullptr,
-				0, nullptr,
-				1, &barrier);
-		});
+			});
 	}
 	else
 	{

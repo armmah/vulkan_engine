@@ -3,7 +3,7 @@
 
 Path Path::combine(const char* str) const { return Path(value + str); }
 Path Path::combine(const std::string& str) const { return Path(value + str); }
-Path Path::combine(std::string&& str) const { return Path(value + str); }
+Path Path::combine(const std::string&& str) const { return Path(value + str); }
 
 void Path::remove(const std::string& str)
 {

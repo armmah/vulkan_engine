@@ -98,7 +98,7 @@ namespace nv_dds {
         }
 
         unsigned int get_num_mipmaps() const {
-            return (unsigned int)m_mipmaps.size();
+            return static_cast<unsigned int>(m_mipmaps.size());
         }
 
     protected:

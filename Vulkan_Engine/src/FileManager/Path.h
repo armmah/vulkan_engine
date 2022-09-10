@@ -30,7 +30,7 @@ struct Path
 
 	Path combine(const char* str) const;
 	Path combine(const std::string& str) const;
-	Path combine(std::string&& str) const;
+	Path combine(const std::string&& str) const;
 	void remove(const std::string& str);
 	void removeDirectory(const std::string& str);
 

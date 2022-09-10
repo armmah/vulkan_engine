@@ -17,23 +17,22 @@ bool VkTexture2D::tryCreateTexture(UNQ<VkTexture2D>& tex, const TextureSource& t
 	auto format = texture.format;
 	auto generateMips = texture.generateTheMips;
 
-	std::vector<VkExtent3D> dimensions;
-	int width, height, channels;
+	std::vector<MipDesc> dimensions;
 	uint32_t mipCount = 0u;
+
+	Texture loadedTexture;
 	StagingBufferPool::StgBuffer stagingBuffer;
 	{
-		std::vector<LoadedTexture> textureMipchain;
-		VkFormat actualFormat;
-		if (!Texture::tryLoadSupportedFormat(textureMipchain, texture.path.value, actualFormat, width, height, channels) || !textureMipchain.size())
+		if (!Texture::tryLoadSupportedFormat(loadedTexture, texture.path.value) || !loadedTexture.textureMipChain.size())
 			return false;
 
-		if (actualFormat != format)
+		if (loadedTexture.format != format)
 		{
-			printf("The meta data was expecting format %i, but the texture '%s' had the format %i.\n", format, path, actualFormat);
-			format = actualFormat;
+			printf("The meta data was expecting format %i, but the texture '%s' had the format %i.\n", format, path, loadedTexture.format);
+			format = loadedTexture.format;
 		}
 
-		mipCount = textureMipchain.size();
+		mipCount = as_uint32(loadedTexture.textureMipChain.size());
 		dimensions.reserve(mipCount);
 		if (mipCount > 1u)
 		{
@@ -41,11 +40,11 @@ bool VkTexture2D::tryCreateTexture(UNQ<VkTexture2D>& tex, const TextureSource& t
 		}
 		else if (generateMips)
 		{
-			mipCount = generateMips ? static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1 : 1u;
+			mipCount = generateMips ? as_uint32(std::floor(std::log2(std::max(loadedTexture.width, loadedTexture.height)))) + 1 : 1u;
 		}
 
 		auto totalBufferSize = 0u;
-		for (auto& mip : textureMipchain)
+		for (auto& mip : loadedTexture.textureMipChain)
 		{
 			totalBufferSize += mip.getByteSize();
 			dimensions.push_back(mip.getDimensions());
@@ -61,15 +60,14 @@ bool VkTexture2D::tryCreateTexture(UNQ<VkTexture2D>& tex, const TextureSource& t
 		auto allocator = VkMemoryAllocator::getInstance()->m_allocator;
 		vmaMapMemory(allocator, stagingBuffer.allocation, &data);
 		size_t offset = 0;
-		for (auto& mip : textureMipchain)
+		for (auto& mip : loadedTexture.textureMipChain)
 		{
 			mip.copyToMappedBuffer(data, offset);
 			offset += mip.getByteSize();
-
-			mip.release();
 		}
 		vmaUnmapMemory(allocator, stagingBuffer.allocation);
 	}
+	loadedTexture.releasePixelData();
 
 	VkImage image;
 	VmaAllocation memoryRange;
@@ -83,7 +81,7 @@ bool VkTexture2D::tryCreateTexture(UNQ<VkTexture2D>& tex, const TextureSource& t
 	}
 
 	auto vmaci = VkMemoryAllocator::getInstance()->createAllocationDescriptor(VMA_MEMORY_USAGE_GPU_ONLY);
-	if (!vkinit::Texture::createImage(image, memoryRange, vmaci, format, imageUsage, as_uint32(width), as_uint32(height), mipCount))
+	if (!vkinit::Texture::createImage(image, memoryRange, vmaci, format, imageUsage, loadedTexture.width, loadedTexture.height, mipCount))
 	{
 		printf("Could not create image for texture '%s'.\n", path);
 		return false;
@@ -106,8 +104,8 @@ bool VkTexture2D::tryCreateTexture(UNQ<VkTexture2D>& tex, const TextureSource& t
 				barrier.subresourceRange.layerCount = 1;
 				barrier.subresourceRange.levelCount = 1;
 
-				int32_t mipWidth = width,
-					mipHeight = height;
+				int32_t mipWidth = loadedTexture.width,
+					mipHeight = loadedTexture.height;
 				for (uint32_t i = 1; i < mipCount; i++)
 				{
 					// Transfer layout for previous mip

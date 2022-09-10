@@ -113,7 +113,7 @@ public:
 				return false;
 		}
 
-		const auto EPSILON3 = glm::vec3(1e-6);
+		const auto EPSILON3 = glm::vec3(1e-6f);
 		for (size_t i = 0; i < m_positions.size(); i++)
 		{
 			auto res = glm::epsilonNotEqual(m_positions[i], other.m_positions[i], EPSILON3);
@@ -121,7 +121,7 @@ public:
 				return false;
 		}
 
-		const auto EPSILON2 = glm::vec2(1e-6);
+		const auto EPSILON2 = glm::vec2(1e-6f);
 		for (size_t i = 0; i < m_uvs.size(); i++)
 		{
 			auto res = glm::epsilonNotEqual(m_uvs[i], other.m_uvs[i], EPSILON2);

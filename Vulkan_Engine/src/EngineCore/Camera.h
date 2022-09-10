@@ -3,7 +3,7 @@
 
 static constexpr float YAW = 90.0f;
 static constexpr float PITCH = 0.0f;
-static constexpr float SPEED = 0.0025f;
+static constexpr float SPEED = 0.0125f;
 static constexpr float SENSITIVITY = 150.0f;
 static constexpr float ZOOM = 45.0f;
 

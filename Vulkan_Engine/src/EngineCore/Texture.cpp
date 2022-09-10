@@ -6,33 +6,46 @@
 #include "VkTypes/InitializersUtility.h"
 #include "Presentation/Device.h"
 
-bool Texture::tryLoadSupportedFormat(std::vector<LoadedTexture>& textureMipchain, const std::string& path, VkFormat& format, int& width, int& height, int& channels)
+bool Texture::tryLoadSupportedFormat(Texture& texture, const std::string& path)
 {
 	if (!fileExists(path))
 		return false;
 
+	if (fileExists(path, ".dds"))
+	{
+		return ddsLoad(texture, path);
+	}
+
 	std::vector<std::string> stbi_supportedFormats = { ".png", ".jpg" };
 	if (fileExists(path, stbi_supportedFormats))
 	{
-		format = VK_FORMAT_R8G8B8A8_SRGB;
-		return stbiLoad(textureMipchain, path, width, height, channels);
-	}
-
-	if (fileExists(path, ".dds"))
-	{
-		return ddsLoad(textureMipchain, path, format, width, height, channels);
+		return stbiLoad(texture, path);
 	}
 
 	return false;
 }
 
-bool Texture::ddsLoad(std::vector<LoadedTexture>& textureMipchain, const std::string& path, VkFormat& format, int& width, int& height, int& channels)
+bool Texture::ddsLoad(Texture& texture, const std::string& path)
 {
 	auto tex = nv_dds::CDDSImage();
 	tex.load(path, false);
 
 	if (tex.is_valid())
 	{
+		VkFormat format;
+		unsigned int width, height, channels;
+
+		auto mipCount = tex.get_num_mipmaps();
+		std::vector<LoadedTexture> textureMipchain;
+		textureMipchain.reserve(mipCount + 1);
+
+		width = tex.get_width();
+		height = tex.get_height();
+		channels = tex.get_components();
+
+		if (width == 0 || height == 0 || channels == 0)
+			return false;
+
 		switch (tex.get_format())
 		{
 		case 0x83F0:
@@ -53,30 +66,27 @@ bool Texture::ddsLoad(std::vector<LoadedTexture>& textureMipchain, const std::st
 			return false;
 		}
 
-		auto mipCount = tex.get_num_mipmaps();
-		textureMipchain.reserve(mipCount + 1);
-
-		width = tex.get_width();
-		height = tex.get_height();
-		channels = tex.get_components();
 		textureMipchain.push_back(LoadedTexture(tex.claim_data(), tex.get_size(), width, height));
 
-		for (int mipIndex = 0; mipIndex < mipCount; mipIndex++)
+		for (uint32_t mipIndex = 0; mipIndex < mipCount; mipIndex++)
 		{
 			auto& mip = tex.get_mipmap(mipIndex);
 			auto* mipData = tex.claim_mipmap_data(mipIndex);
 			textureMipchain.push_back(LoadedTexture(mipData, mip.get_size(), mip.get_width(), mip.get_height()));
 		}
+
+		texture.Init(std::move(textureMipchain), format, as_uint32(width), as_uint32(height), as_uint32(channels));
 		return true;
 	}
 	return false;
 }
 
-bool Texture::stbiLoad(std::vector<LoadedTexture>& textureMipChain, const std::string& path, int& width, int& height, int& channels)
+bool Texture::stbiLoad(Texture& texture, const std::string& path)
 {
 	if (!fileExists(path))
 		return false;
 
+	int width, height, channels;
 	stbi_uc* const pixels = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
 	if (width <= 0 || height <= 0 || channels <= 0 || !pixels)
 	{
@@ -84,11 +94,14 @@ bool Texture::stbiLoad(std::vector<LoadedTexture>& textureMipChain, const std::s
 		return false;
 	}
 
-	textureMipChain.push_back(LoadedTexture(pixels, static_cast<size_t>(width) * static_cast<size_t>(height) * 4, width, height));
+	std::vector<LoadedTexture> textureData;
+	textureData.push_back(LoadedTexture(pixels, static_cast<size_t>(width) * static_cast<size_t>(height) * 4, width, height));
+
+	texture.Init(std::move(textureData), VK_FORMAT_R8G8B8_SRGB, as_uint32(width), as_uint32(height), as_uint32(channels));
 	return true;
 }
 
-void Texture::copyBufferToImage(const Presentation::Device* presentationDevice, VkBuffer buffer, VkImage image, const std::vector<VkExtent3D>& dimensions)
+void Texture::copyBufferToImage(const Presentation::Device* presentationDevice, VkBuffer buffer, VkImage image, const std::vector<MipDesc>& dimensions)
 {
 	presentationDevice->submitImmediatelyAndWaitCompletion([=](VkCommandBuffer cmd)
 		{
@@ -106,17 +119,17 @@ void Texture::copyBufferToImage(const Presentation::Device* presentationDevice, 
 				region.bufferImageHeight = 0;
 
 				region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-				region.imageSubresource.mipLevel = i;
+				region.imageSubresource.mipLevel = as_uint32(i);
 				region.imageSubresource.baseArrayLayer = 0;
 				region.imageSubresource.layerCount = 1;
 
 				region.imageOffset = { 0, 0, 0 };
 				region.imageExtent = { dimensions[i].width, dimensions[i].height, 1 };
 
-				offsets += dimensions[i].depth;
+				offsets += dimensions[i].imageByteSize;
 			}
 
-			vkCmdCopyBufferToImage(cmd, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, regions.size(), regions.data());
+			vkCmdCopyBufferToImage(cmd, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, as_uint32(regions.size()), regions.data());
 		});
 }
 

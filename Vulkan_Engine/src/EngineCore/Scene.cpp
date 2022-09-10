@@ -398,6 +398,10 @@ bool Scene::loadOBJ_Implementation(std::vector<Mesh>& meshes, std::vector<Materi
 					globalBufMaterialIDs.push_back(materials.size());
 					materials.push_back(Material(0, TextureSource(std::move(texPath))));
 				}
+				else
+				{
+					printf("Texture at %s could not be found.\n", texPath.c_str());
+				}
 			}
 		}
 

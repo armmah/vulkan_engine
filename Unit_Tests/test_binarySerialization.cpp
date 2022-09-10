@@ -17,9 +17,6 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/nvp.hpp>
 
-//const static inline std::string k_scenePath = "C:/Git/Vulkan_Engine/Resources/sponza.obj";
-//const static inline std::string k_testDirectory = "C:/Git/test_dir/";
-
 namespace boost::serialization
 {
 	template <typename Ar>
@@ -49,6 +46,17 @@ TEST(Texturesource, Path)
 
 	EXPECT_EQ(test3.getTextureName(false), "file");
 	EXPECT_EQ(test3.getTextureName(true), "file.png");
+
+	test1.path.removeDirectory("directory");
+	EXPECT_EQ(test1.path.value, "file.png");
+
+	test2.path.removeDirectory("long_complex/white space/directory/");
+	EXPECT_EQ(test2.path.value, "file.png");
+
+	auto test4 = Path("C:\\Git\\Vulkan_Engine\\Resources\\Serialized/background.dds");
+	test4.removeDirectory( Directories::getWorkingDirectory() );
+	EXPECT_EQ(test4.value, "background.dds");
+	EXPECT_EQ(Directories::getWorkingDirectory().combine(test4.value).value, "C:/Git/Vulkan_Engine/Resources/Serialized/background.dds");
 }
 
 TEST(Serialization, SceneBinary)
@@ -65,7 +73,7 @@ TEST(Serialization, SceneBinary)
 		auto stream = std::fstream(fullPath, std::ios::out | std::ios::binary);
 		boost::archive::binary_oarchive archive(stream);
 		EXPECT_TRUE(stream.is_open());
-
+		
 		archive << scene;
 
 		stream.close();

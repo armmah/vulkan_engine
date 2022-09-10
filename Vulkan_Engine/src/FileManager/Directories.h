@@ -7,28 +7,13 @@
 class Directories
 {
 public:
-	static Path getApplicationPath()
-	{
-		std::string pathString;
-#ifndef EDITOR
-		char buffer[MAX_PATH] = {};
-		::GetSystemDirectoryA(buffer, _countof(buffer));
-		strcat(buffer, "\\version.dll");
-		pathString = std::string(buffer);
-#else
-		pathString = "C:/Git/Vulkan_Engine/";
-#endif
-
-		return Path(std::move(pathString));
-	}
-
-	static Path getAbsolutePath(const std::string& path) { return getApplicationPath().combine(path); }
+	static Path getApplicationPath();
+	static Path getAbsolutePath(const std::string& path);
 	
-	static Path getWorkingDirectory() { return getAbsolutePath( workingSceneDir_relative ); }
-	static Path getWorkingScene() { return getAbsolutePath( workingSceneDir_relative ).combine(workingSceneName); }
-	static Path getWorkingModel() { return getAbsolutePath( workingModel_relative ); }
-	
-	static Path getShaderLibraryPath() { return getAbsolutePath( libraryShaderPath_relative ); }
+	static Path getWorkingDirectory();
+	static Path getWorkingScene();
+	static Path getWorkingModel();
+	static Path getShaderLibraryPath();
 
 private:
 	inline static std::string library_relative = "Resources/Library/";

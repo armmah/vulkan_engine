@@ -26,22 +26,6 @@ protected:
 	}
 };
 
-struct SerializedTexture : ITextureContainer
-{
-	SerializedTexture(stbi_uc* const data, int byteSize)
-	{
-		pixels = std::vector<stbi_uc>(data, data + byteSize);
-		imageSize = byteSize;
-	}
-
-	uint32_t getByteSize() const override { return pixels.size() * sizeof(stbi_uc); }
-	void copyToMappedBuffer(void* destination, size_t offset = 0) const override { copy(destination, offset, pixels.data(), getByteSize()); }
-
-private:
-	std::vector<stbi_uc> pixels;
-	int imageSize;
-};
-
 struct LoadedTexture : ITextureContainer
 {
 	LoadedTexture(LoadedTexture&& texture) = default;

@@ -227,6 +227,8 @@
     <ClCompile Include="src\Engine\Window.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="src\FileManager\Directories.cpp" />
+    <ClCompile Include="src\FileManager\Path.cpp" />
     <ClCompile Include="src\Math\BoundsAABB.cpp" />
     <ClCompile Include="src\Math\Frustum.cpp" />
     <ClCompile Include="src\Math\Plane.cpp" />

@@ -5,9 +5,6 @@
 #include "FileManager/Path.h"
 #include "FileManager/Directories.h"
 
-#include "boost/archive/binary_oarchive.hpp"
-#include "boost/archive/binary_iarchive.hpp"
-
 struct TextureSource
 {
 	Path path;
@@ -65,6 +62,10 @@ namespace boost {
 	namespace serialization {
 		class access;
 	}
+	namespace archive {
+		class binary_oarchive;
+		class binary_iarchive;
+	}
 }
 struct VkTexture2D;
 struct VkMaterialVariant;
@@ -80,40 +81,9 @@ public:
 
 	const TextureSource& getTextureSource() const { return m_textureParameters; }
 	uint32_t getShaderIdentifier() const { return m_shaderIdentifier; }
-
-	// WRITE
-	void serialize(boost::archive::binary_oarchive& ar, const unsigned int version)
-	{
-		ar& m_shaderIdentifier;
-
-		const std::string compressedAlternative = Directories::getWorkingDirectory().combine( m_textureParameters.getTextureName(false) + ".dds" );
-		if (std::filesystem::exists(compressedAlternative))
-		{
-			m_textureParameters.path.value = compressedAlternative;
-			m_textureParameters.format = VK_FORMAT_BC1_RGBA_SRGB_BLOCK;
-			m_textureParameters.generateTheMips = false;
-		}
-
-		// Always serializing relative path
-		m_textureParameters.path.removeDirectory( Directories::getWorkingDirectory() );
-
-		ar& m_textureParameters.path.value;
-		ar& m_textureParameters.format;
-		ar& m_textureParameters.generateTheMips;
-	}
-
-	// READ
-	void serialize(boost::archive::binary_iarchive& ar, const unsigned int version)
-	{
-		ar& m_shaderIdentifier;
-
-		// Deserializing always relative path to the working directory
-		ar& m_textureParameters.path.value;
-		m_textureParameters.path = Directories::getWorkingDirectory().combine( m_textureParameters.path );
-
-		ar& m_textureParameters.format;
-		ar& m_textureParameters.generateTheMips;
-	}
+	
+	void serialize(boost::archive::binary_oarchive& ar, const unsigned int version); // WRITE
+	void serialize(boost::archive::binary_iarchive& ar, const unsigned int version); // READ
 
 	bool operator ==(const Material& other) const
 	{

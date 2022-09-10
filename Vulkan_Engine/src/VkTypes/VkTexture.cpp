@@ -187,7 +187,7 @@ bool VkTexture2D::tryCreateTexture(UNQ<VkTexture2D>& tex, const TextureSource& t
 
 	stagingBufferPool.freeBuffer(stagingBuffer);
 
-	tex = std::unique_ptr<VkTexture2D>(new VkTexture2D(image, memoryRange, imageView, sampler, mipCount));
+	tex = MAKEUNQ<VkTexture2D>(image, memoryRange, imageView, sampler, mipCount);
 	return true;
 }
 

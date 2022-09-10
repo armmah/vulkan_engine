@@ -31,10 +31,8 @@ struct VkTexture2D : public VkTexture
 	VkSampler sampler;
 	uint32_t mipLevels;
 
-	static bool tryCreateTexture(UNQ<VkTexture2D>& tex, const TextureSource& path, const Presentation::Device* presentationDevice, StagingBufferPool& stagingBufferPool);
-
+	VkTexture2D(VkImage image, VmaAllocation memoryRange, VkImageView imageView, VkSampler sampler, uint32_t mipLevels);
 	void release(VkDevice device) override;
 
-private:
-	VkTexture2D(VkImage image, VmaAllocation memoryRange, VkImageView imageView, VkSampler sampler, uint32_t mipLevels);
+	static bool tryCreateTexture(UNQ<VkTexture2D>& tex, const TextureSource& path, const Presentation::Device* presentationDevice, StagingBufferPool& stagingBufferPool);
 };

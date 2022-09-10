@@ -72,8 +72,8 @@ namespace tinyobj
 {
 	struct IndexHash
 	{
-		static size_t cantor(size_t a, size_t b) { return (a + b + 1) * (a + b) / 2 + b; }
-		static size_t cantor(int a, int b, int c) { return cantor(a, cantor(b, c)); }
+		static constexpr size_t cantor(size_t a, size_t b) { return (a + b + 1) * (a + b) / 2 + b; }
+		static constexpr size_t cantor(int a, int b, int c) { return cantor(a, cantor(b, c)); }
 
 		size_t operator()(const tinyobj::index_t& k)const
 		{
@@ -169,6 +169,7 @@ bool Scene::loadGLTF_Implementation(std::vector<Mesh>& meshes, std::vector<Mater
 
 	printf("GLTF loading is not implemented yet.");
 	return false;
+	/*
 	const tinygltf::Scene& scene = model.scenes[model.defaultScene > -1 ? model.defaultScene : 0];
 	for (auto nodeIndex : scene.nodes)
 	{
@@ -186,6 +187,7 @@ bool Scene::loadGLTF_Implementation(std::vector<Mesh>& meshes, std::vector<Mater
 
 	printf("loaded %s gltf\n", (isBinary ? "Binary" : "ASCII"));
 	return true;
+	*/
 }
 
 bool Scene::loadOBJ_Implementation(std::vector<Mesh>& meshes, std::vector<Material>& materials, std::vector<Renderer>& rendererIDs, const std::string& path, const std::string& name)
@@ -294,7 +296,7 @@ bool Scene::loadOBJ_Implementation(std::vector<Mesh>& meshes, std::vector<Materi
 
 		// Axis-Aligned Bounding Box
 		std::vector<glm::vec3> boundsMinMax(materialCount * 2);
-		for (int k = 0; k < boundsMinMax.size(); k += 2)
+		for (size_t k = 0; k < boundsMinMax.size(); k += 2)
 		{
 			boundsMinMax[k] = glm::vec3(1.f) * std::numeric_limits<float>::max();
 			boundsMinMax[k + 1] = glm::vec3(1.f) * std::numeric_limits<float>::lowest();
@@ -368,7 +370,7 @@ bool Scene::loadOBJ_Implementation(std::vector<Mesh>& meshes, std::vector<Materi
 	}
 
 	// MATERIALS
-	typedef int GlobalBufferMaterialID;
+	typedef size_t GlobalBufferMaterialID;
 	std::unordered_map<MaterialID, GlobalBufferMaterialID> uniqueMaterials;
 	std::vector<size_t> globalBufMaterialIDs;
 	materials.reserve(objMats.size());

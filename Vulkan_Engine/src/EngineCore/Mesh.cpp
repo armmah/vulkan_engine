@@ -134,7 +134,7 @@ bool Mesh::allocateVertexAttributes(VkMesh& graphicsMesh, const VmaAllocator& vm
 {
 	size_t vertCount = m_positions.size();
 
-	const size_t descriptorCount = metaData.descriptorCount;
+	constexpr size_t descriptorCount = MeshDescriptor::descriptorCount;
 	auto& byteSizes = metaData.elementByteSizes;
 	auto& vectorSizes = metaData.lengths;
 

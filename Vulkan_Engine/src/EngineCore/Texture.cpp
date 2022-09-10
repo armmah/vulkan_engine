@@ -35,7 +35,7 @@ bool Texture::ddsLoad(Texture& texture, const std::string& path)
 		VkFormat format;
 		unsigned int width, height, channels;
 
-		auto mipCount = tex.get_num_mipmaps();
+		auto mipCount = static_cast<size_t>(tex.get_num_mipmaps());
 		std::vector<LoadedTexture> textureMipchain;
 		textureMipchain.reserve(mipCount + 1);
 

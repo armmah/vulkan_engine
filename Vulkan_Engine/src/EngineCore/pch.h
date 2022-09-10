@@ -23,7 +23,9 @@
 #include <codeanalysis\warnings.h>
 #pragma warning(push, 0)
 #pragma warning ( disable : ALL_CPPCORECHECK_WARNINGS )
-#include <boost/archive/binary_iarchive.hpp>
+#include "boost/archive/binary_oarchive.hpp"
+#include "boost/archive/binary_iarchive.hpp"
+
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/nvp.hpp>
 

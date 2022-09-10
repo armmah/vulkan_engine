@@ -313,6 +313,8 @@
     <ClInclude Include="src\EngineCore\VkMesh.h" />
     <ClInclude Include="src\Engine\RenderLoopStatistics.h" />
     <ClInclude Include="src\Engine\Window.h" />
+    <ClInclude Include="src\FileManager\Directories.h" />
+    <ClInclude Include="src\FileManager\Path.h" />
     <ClInclude Include="src\Interfaces\IRequireInitialization.h" />
     <ClInclude Include="src\Math\BoundsAABB.h" />
     <ClInclude Include="src\Math\Frustum.h" />

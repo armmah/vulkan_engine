@@ -2,35 +2,8 @@
 #include "pch.h"
 #include "ShaderSource.h"
 #include "VkTypes/VkMaterialVariant.h"
-
-struct Path
-{
-	std::string value;
-
-	Path() : value() { }
-	Path(std::string&& path) : value(path)
-	{
-		std::replace(value.begin(), value.end(), '\\', '/');
-	}
-
-	std::string getFileName(bool includeExtension) const
-	{
-		auto extIndex = value.find_last_of('.');
-		auto nameIndex = value.find_last_of('/') + 1;
-
-		auto totalSize = value.size();
-		auto fullSize = totalSize - nameIndex;
-
-		return value.substr(nameIndex, includeExtension ? fullSize : fullSize - (totalSize - extIndex));
-	}
-
-	bool operator ==(const Path& other) const
-	{
-		return value == other.value;
-	}
-
-	const char* c_str() const { return value.c_str(); }
-};
+#include "FileManager/Path.h"
+#include "FileManager/Directories.h"
 
 struct TextureSource
 {
@@ -109,10 +82,10 @@ public:
 	{
 		ar& m_shaderIdentifier;
 
-		const auto libraryPath = "C:/Git/test_dir/";
-		const std::string compressedAlternative = libraryPath + m_textureParameters.getTextureName(false) + ".dds";
+		const std::string compressedAlternative = Directories::getWorkingDirectory().combine( m_textureParameters.getTextureName(false) + ".dds" ).value;
 		if (std::filesystem::exists(compressedAlternative))
 		{
+			//ToDo make the texture path relative to the scene
 			m_textureParameters.path.value = compressedAlternative;
 			m_textureParameters.format = VK_FORMAT_BC1_RGBA_SRGB_BLOCK;
 			m_textureParameters.generateTheMips = false;

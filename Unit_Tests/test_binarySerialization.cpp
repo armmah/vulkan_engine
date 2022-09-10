@@ -3,6 +3,7 @@
 #include "Scene.h"
 #include "Material.h"
 #include "Mesh.h"
+#include "FileManager/Directories.h"
 
 #include <iostream>
 #include <sstream>
@@ -16,8 +17,8 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/nvp.hpp>
 
-const static inline std::string k_scenePath = "C:/Git/Vulkan_Engine/Resources/sponza.obj";
-const static inline std::string k_testDirectory = "C:/Git/test_dir/";
+//const static inline std::string k_scenePath = "C:/Git/Vulkan_Engine/Resources/sponza.obj";
+//const static inline std::string k_testDirectory = "C:/Git/test_dir/";
 
 namespace boost::serialization
 {
@@ -53,12 +54,11 @@ TEST(Texturesource, Path)
 TEST(Serialization, SceneBinary)
 {
 	Scene scene(nullptr, nullptr);
-	scene.tryLoadSupportedFormat(k_scenePath);
-
+	const auto modelPath = Directories::getWorkingModel();
+	const auto fullPath = Directories::getWorkingScene();
+	
+	scene.tryLoadSupportedFormat(modelPath);
 	EXPECT_TRUE(scene.getMeshes().size() > 0);
-
-	const auto fileName = "file.binary";
-	const auto fullPath = k_testDirectory + fileName;
 
 	// WRITE
 	{

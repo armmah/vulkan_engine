@@ -1,9 +1,10 @@
 #pragma once
 #include "pch.h"
+#include "FileManager/Directories.h"
 
 struct FileIO
 {
-	static std::vector<char> readFile(const std::string& filename)
+	static std::vector<char> readFile(const Path& filename)
 	{
 		std::ifstream file(filename.c_str(), std::ios::ate | std::ios::binary);
 
@@ -25,15 +26,31 @@ struct FileIO
 
 struct ShaderSource
 {
-	std::string vertexPath,
+	Path vertexPath,
 		fragmentPath;
 
-	ShaderSource(std::string path_vertexShaderSource, std::string path_fragmentShaderSource)
+	ShaderSource(std::string&& path_vertexShaderSource, std::string&& path_fragmentShaderSource)
+		: vertexPath(std::move(path_vertexShaderSource)), fragmentPath(std::move(path_fragmentShaderSource)) { }
+
+	ShaderSource(Path&& path_vertexShaderSource, Path&& path_fragmentShaderSource)
 		: vertexPath(path_vertexShaderSource), fragmentPath(path_fragmentShaderSource) { }
 
 	std::vector<char> getVertexSource() const { return FileIO::readFile(vertexPath); }
 	std::vector<char> getFragmentSource() const { return FileIO::readFile(fragmentPath); }
 
-	static ShaderSource getHardcodedTriangle() { return ShaderSource("C:/Git/Vulkan_Engine/Shaders/outputSPV/triangle.vert.spv", "C:/Git/Vulkan_Engine/Shaders/outputSPV/triangle.frag.spv"); }
-	static ShaderSource getDefaultShader() { return ShaderSource("C:/Git/Vulkan_Engine/Shaders/outputSPV/simple.vert.spv", "C:/Git/Vulkan_Engine/Shaders/outputSPV/simple.frag.spv"); }
+	static ShaderSource getHardcodedTriangle() 
+	{ 
+		return ShaderSource(
+			Directories::getShaderLibraryPath().combine("triangle.vert.spv"), 
+			Directories::getShaderLibraryPath().combine("triangle.frag.spv")
+		); 
+	}
+
+	static ShaderSource getDefaultShader() 
+	{ 
+		return ShaderSource(
+			Directories::getShaderLibraryPath().combine("simple.vert.spv"),
+			Directories::getShaderLibraryPath().combine("simple.frag.spv")
+		); 
+	}
 };

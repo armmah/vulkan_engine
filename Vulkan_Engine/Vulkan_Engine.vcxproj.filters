@@ -48,9 +48,6 @@
     <Filter Include="Source Files\Profiling">
       <UniqueIdentifier>{a590b189-4e51-4d34-9c32-66cade746875}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Serialization">
-      <UniqueIdentifier>{03e678bf-8951-498d-b91a-d76c727d5e92}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\Loaders">
       <UniqueIdentifier>{b76056d3-e037-4fe7-ad82-c37465b00120}</UniqueIdentifier>
     </Filter>
@@ -59,6 +56,9 @@
     </Filter>
     <Filter Include="Header Files\Loaders\Model">
       <UniqueIdentifier>{424a19e6-98dd-407c-8d87-70a4ce70dd2a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\FileManager">
+      <UniqueIdentifier>{03e678bf-8951-498d-b91a-d76c727d5e92}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -279,6 +279,12 @@
     </ClInclude>
     <ClInclude Include="src\EngineCore\StagingBufferPool.h">
       <Filter>Header Files\EngineCore</Filter>
+    </ClInclude>
+    <ClInclude Include="src\FileManager\Directories.h">
+      <Filter>Header Files\FileManager</Filter>
+    </ClInclude>
+    <ClInclude Include="src\FileManager\Path.h">
+      <Filter>Header Files\FileManager</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

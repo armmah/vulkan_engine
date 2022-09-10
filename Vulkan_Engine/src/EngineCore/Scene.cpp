@@ -10,6 +10,7 @@
 #include "PresentationTarget.h"
 #include "EngineCore/StagingBufferPool.h"
 
+#include "FileManager/Directories.h"
 #include "Profiling/ProfileMarker.h"
 
 Scene::~Scene() {}
@@ -17,16 +18,12 @@ Scene::~Scene() {}
 Scene::Scene(const Presentation::Device* device, Presentation::PresentationTarget* target)
 	: m_presentationDevice(device), m_presentationTarget(target) { }
 
-static inline std::string CRYTEK_SPONZA = "C:/Git/Vulkan_Engine/Resources/sponza.obj";
-static inline std::string LIGHTING_SCENE = "C:/Git/Vulkan_Engine/Resources/debrovic_sponza/sponza.obj";
-static inline std::string CUBE_GLTF = "C:/Git/Vulkan_Engine/Resources/gltf/Cube_khr.gltf";
-
 bool Scene::load(VkDescriptorPool descPool)
 {
 	ProfileMarker _("Scene::load");
 
-	tryLoadFromFile("C:/Git/test_dir/file.binary", descPool);
-	//tryLoadFromFile(CRYTEK_SPONZA, descPool);
+	auto path = Directories::getWorkingScene();
+	tryLoadFromFile(path.value, descPool);
 
 	printf("Initialized the scene with (renderers = %zi), (meshes = %zi), (textures = %zi), (materials = %zi).\n", m_renderers.size(), m_meshes.size(), m_textures.size(), m_materials.size());
 	return true;

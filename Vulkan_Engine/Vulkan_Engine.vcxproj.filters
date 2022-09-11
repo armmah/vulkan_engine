@@ -173,6 +173,12 @@
     <ClCompile Include="src\FileManager\Directories.cpp">
       <Filter>Source Files\FileManager</Filter>
     </ClCompile>
+    <ClCompile Include="src\EngineCore\ShaderSource.cpp">
+      <Filter>Source Files\EngineCore</Filter>
+    </ClCompile>
+    <ClCompile Include="src\FileManager\FileIO.cpp">
+      <Filter>Source Files\FileManager</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\vk_engine.h">
@@ -293,6 +299,9 @@
       <Filter>Header Files\FileManager</Filter>
     </ClInclude>
     <ClInclude Include="src\FileManager\Path.h">
+      <Filter>Header Files\FileManager</Filter>
+    </ClInclude>
+    <ClInclude Include="src\FileManager\FileIO.h">
       <Filter>Header Files\FileManager</Filter>
     </ClInclude>
   </ItemGroup>

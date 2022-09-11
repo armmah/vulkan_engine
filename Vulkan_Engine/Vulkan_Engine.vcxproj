@@ -208,6 +208,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="src\EngineCore\ShaderSource.cpp" />
     <ClCompile Include="src\EngineCore\StagingBufferPool.cpp" />
     <ClCompile Include="src\EngineCore\Texture.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
@@ -228,6 +229,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="src\FileManager\Directories.cpp" />
+    <ClCompile Include="src\FileManager\FileIO.cpp" />
     <ClCompile Include="src\FileManager\Path.cpp" />
     <ClCompile Include="src\Math\BoundsAABB.cpp" />
     <ClCompile Include="src\Math\Frustum.cpp" />
@@ -316,6 +318,7 @@
     <ClInclude Include="src\Engine\RenderLoopStatistics.h" />
     <ClInclude Include="src\Engine\Window.h" />
     <ClInclude Include="src\FileManager\Directories.h" />
+    <ClInclude Include="src\FileManager\FileIO.h" />
     <ClInclude Include="src\FileManager\Path.h" />
     <ClInclude Include="src\Interfaces\IRequireInitialization.h" />
     <ClInclude Include="src\Math\BoundsAABB.h" />

@@ -8,6 +8,9 @@
     <Filter Include="ImGui">
       <UniqueIdentifier>{b0486660-af60-4381-85c5-6a5840208492}</UniqueIdentifier>
     </Filter>
+    <Filter Include="OpenFBX">
+      <UniqueIdentifier>{f98bf271-03de-4f15-8b21-4fbeaaed8560}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\third_party\imgui\imgui.cpp">
@@ -43,8 +46,20 @@
     <ClCompile Include="dds_loader_implementation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="OpenFBX\miniz.c">
+      <Filter>OpenFBX</Filter>
+    </ClCompile>
+    <ClCompile Include="OpenFBX\ofbx.cpp">
+      <Filter>OpenFBX</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="dds_loader.h" />
+    <ClInclude Include="OpenFBX\miniz.h">
+      <Filter>OpenFBX</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenFBX\ofbx.h">
+      <Filter>OpenFBX</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -10,8 +10,11 @@
 #include "PresentationTarget.h"
 #include "EngineCore/StagingBufferPool.h"
 
+#include "FileManager/FileIO.h"
 #include "FileManager/Directories.h"
 #include "Profiling/ProfileMarker.h"
+
+#include "OpenFBX/ofbx.h"
 
 Scene::~Scene() {}
 
@@ -22,7 +25,8 @@ bool Scene::load(VkDescriptorPool descPool)
 {
 	ProfileMarker _("Scene::load");
 
-	auto path = Directories::getWorkingScene();
+	//Directories::getWorkingScene();
+	auto path = Directories::getWorkingModel();
 	tryLoadFromFile(path.value, descPool);
 
 	printf("Initialized the scene with (renderers = %zi), (meshes = %zi), (textures = %zi), (materials = %zi).\n", m_renderers.size(), m_meshes.size(), m_textures.size(), m_materials.size());
@@ -103,9 +107,15 @@ template <typename F, typename T>
 void reinterpretCopy(std::vector<F>& src, std::vector<T>& dst)
 {
 	F* r_src = (F*)src.data();
+	reinterpretCopy(src.data(), src.size(), dst);
+}
+
+template <typename F, typename T>
+void reinterpretCopy(const F* r_src, size_t count_src, std::vector<T>& dst)
+{
 	T* r_dst = (T*)dst.data();
 
-	auto byteSize_src = src.size() * sizeof(F);
+	auto byteSize_src = count_src * sizeof(F);
 	auto byteSize_dst = dst.size() * sizeof(T);
 	auto minSize = byteSize_dst < byteSize_src ? byteSize_dst : byteSize_src;
 
@@ -145,6 +155,96 @@ void maxVector(glm::vec3& max, const glm::vec3& point)
 	max.x = std::max(max.x, point.x);
 	max.y = std::max(max.y, point.y);
 	max.z = std::max(max.z, point.z);
+}
+
+bool Scene::loadFBX_Implementation(std::vector<Mesh>& meshes, std::vector<Material>& materials, std::vector<Renderer>& rendererIDs, const std::string& path, const std::string& name)
+{
+	auto fbxPath = Path(path + name + ".fbx");
+	auto charCollection = FileIO::readFile(fbxPath);
+
+	const ofbx::u8* ptr = reinterpret_cast<ofbx::u8*>(charCollection.data());
+	const auto* scene = ofbx::load(ptr, charCollection.size(), static_cast<ofbx::u64>(ofbx::LoadFlags::IGNORE_BLEND_SHAPES));
+	if (!scene) return false;
+
+	for (size_t meshID = 0; meshID < scene->getMeshCount(); meshID++)
+	{
+		auto* mesh = scene->getMesh(static_cast<int>(meshID));
+		auto* geom = mesh->getGeometry();
+
+		auto* mVerts = geom->getVertices();
+		auto mVertCount = geom->getVertexCount();
+
+		auto* mTexcoords = geom->getUVs(0);
+		auto* mNorms = geom->getNormals();
+
+		std::vector<MeshDescriptor::TVertexPosition> vertices(mVertCount);
+		std::vector<MeshDescriptor::TVertexNormal> normals(mVertCount);
+		std::vector<MeshDescriptor::TVertexUV> uvs(mVertCount);
+		std::vector<MeshDescriptor::TVertexColor> colors;
+
+		for(int vi = 0; vi < mVertCount; vi++)
+		{
+			vertices[vi] = glm::vec3(
+				static_cast<float>(mVerts[vi].x),
+				static_cast<float>(mVerts[vi].y),
+				static_cast<float>(mVerts[vi].z)
+			);
+
+			uvs[vi] = glm::vec2(
+				static_cast<float>(mTexcoords[vi].x),
+				static_cast<float>(mTexcoords[vi].y)
+			);
+
+			normals[vi] = glm::vec3(
+				static_cast<float>(mNorms[vi].x),
+				static_cast<float>(mNorms[vi].y),
+				static_cast<float>(mNorms[vi].z)
+			);
+		}
+
+		auto* mIndices = geom->getFaceIndices();
+		auto mIndexCount = geom->getIndexCount();
+		std::vector<MeshDescriptor::TVertexIndices> indices;
+		indices.reserve(mIndexCount / 2 * 3);
+
+		int bufIndex = 0;
+		for (int ii = 0; ii + 2 < mIndexCount; ii += 3)
+		{
+			auto a = mIndices[ii + 0],
+				b = mIndices[ii + 1],
+				c = mIndices[ii + 2];
+
+			if (c < 0)
+			{
+				c = ~c;
+
+				indices.push_back( a );
+				indices.push_back( b );
+				indices.push_back( c );
+			}
+			else
+			{
+				auto d = ~mIndices[ii + 3];
+				ii += 1;
+
+				indices.push_back( a );
+				indices.push_back( b );
+				indices.push_back( d );
+				indices.push_back( d );
+				indices.push_back( b );
+				indices.push_back( c );
+			}
+		}
+		std::vector<SubMesh> submeshes(1);
+		submeshes[0] = SubMesh(indices);
+
+		meshes.push_back(Mesh(vertices, uvs, normals, colors, submeshes));
+		rendererIDs.push_back(Renderer(meshID, { 0 }));
+	}
+
+	materials.push_back(Material(0, TextureSource("C:/Git/Vulkan_Engine/Resources/Serialized/sponza_column_a_spec.dds", VK_FORMAT_BC1_RGBA_SRGB_BLOCK, false)));
+
+	return true;
 }
 
 bool Scene::loadGLTF_Implementation(std::vector<Mesh>& meshes, std::vector<Material>& materials, std::vector<Renderer>& rendererIDs, const std::string& path, const std::string& name, bool isBinary)
@@ -453,6 +553,12 @@ bool Scene::tryLoadSupportedFormat(const std::string& path)
 	if (fileExists(path, ".obj"))
 	{
 		return loadOBJ_Implementation(m_meshes, m_materials, m_rendererIDs, directory, name);
+	}
+
+	/* ================ READ FROM FBX =============== */
+	if (fileExists(path, ".fbx"))
+	{
+		return loadFBX_Implementation(m_meshes, m_materials, m_rendererIDs, directory, name);
 	}
 
 	/* ================ READ FROM GLTF =============== */

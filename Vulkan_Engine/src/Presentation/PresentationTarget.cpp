@@ -206,7 +206,7 @@ namespace Presentation
 		VkGraphicsPipeline graphicsPipeline;
 		if (globalPipelineList.count(shader) == 0)
 		{
-			if (!createGraphicsPipeline(graphicsPipeline.pipeline, graphicsPipeline.pipelineLayout, *shader, device, Mesh::defaultVertexBinding, descriptorSetLayout, VK_CULL_MODE_BACK_BIT, m_hasDepthAttachment))
+			if (!createGraphicsPipeline(graphicsPipeline.pipeline, graphicsPipeline.pipelineLayout, *shader, device, Mesh::defaultVertexBinding, descriptorSetLayout, VK_CULL_MODE_NONE, m_hasDepthAttachment))
 				return false;
 			globalPipelineList[shader] = graphicsPipeline;
 		}

@@ -97,7 +97,7 @@ bool Texture::stbiLoad(Texture& texture, const std::string& path)
 	std::vector<LoadedTexture> textureData;
 	textureData.push_back(LoadedTexture(pixels, static_cast<size_t>(width) * static_cast<size_t>(height) * 4, width, height));
 
-	texture.Init(std::move(textureData), VK_FORMAT_R8G8B8_SRGB, as_uint32(width), as_uint32(height), as_uint32(channels));
+	texture.Init(std::move(textureData), VK_FORMAT_R8G8B8A8_SRGB, as_uint32(width), as_uint32(height), as_uint32(channels));
 	return true;
 }
 

@@ -20,15 +20,30 @@
 namespace boost::serialization
 {
 	template <typename Ar>
+	void serialize(Ar& ar, glm::vec2& v, unsigned _)
+	{
+		ar& make_nvp("x", v.x)& make_nvp("y", v.y);
+	}
+
+	template <typename Ar>
 	void serialize(Ar& ar, glm::vec3& v, unsigned _)
 	{
 		ar& make_nvp("x", v.x)& make_nvp("y", v.y)& make_nvp("z", v.z);
 	}
 
 	template <typename Ar>
-	void serialize(Ar& ar, glm::vec2& v, unsigned _)
+	void serialize(Ar& ar, glm::vec4& v, unsigned _)
 	{
-		ar& make_nvp("x", v.x)& make_nvp("y", v.y);
+		ar& make_nvp("x", v.x)& make_nvp("y", v.y)& make_nvp("z", v.z)& make_nvp("w", v.w);
+	}
+
+	template <typename Ar>
+	void serialize(Ar& ar, glm::mat4& m, unsigned _)
+	{
+		ar& make_nvp("m0", m[0])&
+			make_nvp("m1", m[1])&
+			make_nvp("m2", m[2])&
+			make_nvp("m3", m[3]);
 	}
 }
 
@@ -70,8 +85,6 @@ TEST(Serialization, SceneBinary)
 	scene.tryLoadSupportedFormat(modelPath);
 	EXPECT_TRUE(scene.getMeshes().size() > 0);
 
-	return;
-
 	// WRITE
 	{
 		auto stream = std::fstream(fullPath, std::ios::out | std::ios::binary);
@@ -92,6 +105,18 @@ TEST(Serialization, SceneBinary)
 		archive >> loadedScene;
 
 		EXPECT_TRUE(stream.is_open());
+
+		// Transforms
+		const auto& transforms = scene.getTransforms();
+		const auto& loadedTransforms = loadedScene.getTransforms();
+		{
+			EXPECT_TRUE(transforms.size() == loadedTransforms.size());
+
+			for (size_t i = 0; i < loadedTransforms.size(); i++)
+			{
+				EXPECT_EQ(loadedTransforms[i], transforms[i]);
+			}
+		}
 
 		// Meshes
 		const auto& meshes = scene.getMeshes();

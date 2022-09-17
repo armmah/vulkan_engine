@@ -36,5 +36,5 @@ struct Path
 
 	bool operator ==(const Path& other) const;
 	const char* c_str() const;
-	operator const std::string() const;
+	operator const std::string&() const;
 };

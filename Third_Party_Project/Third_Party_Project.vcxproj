@@ -263,7 +263,6 @@
     <ClCompile Include="OpenFBX\miniz.c" />
     <ClCompile Include="OpenFBX\ofbx.cpp" />
     <ClCompile Include="stb_implementation.cpp" />
-    <ClCompile Include="tinygltf_implementation.cpp" />
     <ClCompile Include="tinyobjloader_implementation.cpp" />
     <ClCompile Include="vma_implementation.cpp" />
   </ItemGroup>

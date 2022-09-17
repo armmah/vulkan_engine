@@ -45,12 +45,13 @@ namespace boost {
 struct Renderer
 {
 	size_t meshID;
+	size_t transformID;
 	std::vector<size_t> materialIDs;
 
-	Renderer(size_t meshID, std::vector<size_t>&&  materialIDs)
-		: meshID(meshID), materialIDs(materialIDs) { }
-	Renderer(size_t meshID, std::vector<size_t>& materialIDs)
-		: meshID(meshID), materialIDs(std::move(materialIDs)) { }
+	Renderer(size_t meshID, size_t transformID, std::vector<size_t>&& materialIDs)
+		: meshID(meshID), transformID(transformID), materialIDs(materialIDs) { }
+	Renderer(size_t meshID, size_t transformID, std::vector<size_t>& materialIDs)
+		: meshID(meshID), transformID(transformID), materialIDs(std::move(materialIDs)) { }
 
 	template<class Archive>
 	void serialize(Archive& ar, const unsigned int version)
@@ -74,7 +75,25 @@ struct Renderer
 
 private:
 	friend class boost::serialization::access;
-	Renderer() : meshID() { }
+	Renderer() : meshID(), transformID() { }
+};
+
+struct Transform
+{
+	glm::mat4 localToWorld;
+
+	Transform() : localToWorld(1.0f) { }
+	Transform(const glm::mat4& mat) : localToWorld(mat) { }
+	Transform(glm::mat4&& mat) : localToWorld(std::move(mat)) { }
+
+	template<class Archive>
+	void serialize(Archive& ar, const unsigned int version)
+	{
+		ar& localToWorld;
+	}
+
+	bool operator==(const Transform& other) const { return localToWorld == other.localToWorld; }
+	bool operator!=(const Transform& other) const { return !(*this != other); }
 };
 
 struct VkMeshRenderer
@@ -82,8 +101,9 @@ struct VkMeshRenderer
 	const VkMesh* mesh;
 	const VkMaterialVariant* variant;
 	const BoundsAABB* bounds;
+	const Transform* transform;
 	uint32_t submeshIndex;
 
-	VkMeshRenderer(const VkMesh* mesh, const BoundsAABB* bounds, const VkMaterialVariant* variant) : mesh(mesh), bounds(bounds), submeshIndex(0), variant(variant) {}
-	VkMeshRenderer(const VkMesh* mesh, uint32_t submeshIndex, const BoundsAABB* bounds, const VkMaterialVariant* variant) : mesh(mesh), submeshIndex(submeshIndex), bounds(bounds), variant(variant) {}
+	VkMeshRenderer(const VkMesh* mesh, const VkMaterialVariant* variant, const BoundsAABB* bounds, Transform* transform) : mesh(mesh), submeshIndex(0), variant(variant), bounds(bounds), transform(transform) {}
+	VkMeshRenderer(const VkMesh* mesh, uint32_t submeshIndex, const VkMaterialVariant* variant, const BoundsAABB* bounds, Transform* transform) : mesh(mesh), submeshIndex(submeshIndex), variant(variant), bounds(bounds), transform(transform) {}
 };

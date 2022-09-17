@@ -7,10 +7,12 @@ struct Mesh;
 struct VkMesh;
 
 class Material;
+struct Transform;
 struct TextureSource;
 struct VkTexture2D;
 struct VkMaterial;
 struct VkMeshRenderer;
+struct Path;
 
 namespace Presentation
 {
@@ -38,6 +40,7 @@ public:
 	~Scene();
 
 	const std::vector<Mesh>& getMeshes() const;
+	const std::vector<Transform>& getTransforms() const;
 	const std::vector<Material>& getMaterials() const;
 	const std::vector<Renderer>& getRendererIDs() const;
 	const std::vector<VkMesh>& getGraphicsMeshes() const;
@@ -47,8 +50,8 @@ public:
 	void release(VkDevice device, const VmaAllocator& allocator);
 
 
-	bool tryLoadSupportedFormat(const std::string& path);
-	bool tryLoadFromFile(const std::string& path, VkDescriptorPool descPool);
+	bool tryLoadSupportedFormat(const Path& path);
+	bool tryLoadFromFile(const Path& path, VkDescriptorPool descPool);
 
 	template<class Archive>
 	void serialize(Archive& ar, const unsigned int version)
@@ -56,12 +59,11 @@ public:
 		ar& m_meshes;
 		ar& m_materials;
 		ar& m_rendererIDs;
+		ar& m_transforms;
 	}
 
 private:
-	static bool loadFBX_Implementation(std::vector<Mesh>& meshes, std::vector<Material>& materials, std::vector<Renderer>& rendererIDs, const std::string& path, const std::string& name);
-	static bool loadOBJ_Implementation(std::vector<Mesh>& meshes, std::vector<Material>& materials, std::vector<Renderer>& rendererIDs, const std::string& path, const std::string& name);
-	static bool loadGLTF_Implementation(std::vector<Mesh>& meshes, std::vector<Material>& materials, std::vector<Renderer>& rendererIDs, const std::string& path, const std::string& name, bool isBinary);
+	static bool loadOBJ_Implementation(std::vector<Mesh>& meshes, std::vector<Material>& materials, std::vector<Renderer>& rendererIDs, std::vector<Transform>& transforms, const std::string& path, const std::string& name);
 
 	const Presentation::Device* m_presentationDevice;
 	Presentation::PresentationTarget* m_presentationTarget;
@@ -70,6 +72,7 @@ private:
 	std::vector<Mesh> m_meshes;
 	std::vector<Material> m_materials;
 	std::vector<Renderer> m_rendererIDs;
+	std::vector<Transform> m_transforms;
 
 	// Graphics data
 	std::vector<VkMeshRenderer> m_renderers;

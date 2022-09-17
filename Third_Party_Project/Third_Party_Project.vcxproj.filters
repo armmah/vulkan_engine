@@ -40,9 +40,6 @@
     <ClCompile Include="tinyobjloader_implementation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="tinygltf_implementation.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="dds_loader_implementation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

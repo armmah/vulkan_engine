@@ -29,4 +29,4 @@ void Path::removeDirectory(const std::string& str)
 
 bool Path::operator ==(const Path& other) const { return value == other.value; }
 const char* Path::c_str() const { return value.c_str(); }
-Path::operator const std::string() const { return value; }
+Path::operator const std::string&() const { return value; }

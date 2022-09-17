@@ -22,7 +22,6 @@ void VkMaterial::release(VkDevice device)
 }
 
 // WRITE
-
 void Material::serialize(boost::archive::binary_oarchive& ar, const unsigned int version)
 {
 	ar& m_shaderIdentifier;
@@ -37,6 +36,7 @@ void Material::serialize(boost::archive::binary_oarchive& ar, const unsigned int
 
 	// Always serializing relative path
 	m_textureParameters.path.removeDirectory(Directories::getWorkingDirectory());
+	assert(std::filesystem::exists(m_textureParameters.path.value));
 
 	ar& m_textureParameters.path.value;
 	ar& m_textureParameters.format;
@@ -44,7 +44,6 @@ void Material::serialize(boost::archive::binary_oarchive& ar, const unsigned int
 }
 
 // READ
-
 void Material::serialize(boost::archive::binary_iarchive& ar, const unsigned int version)
 {
 	ar& m_shaderIdentifier;

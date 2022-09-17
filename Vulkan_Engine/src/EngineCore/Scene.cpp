@@ -14,7 +14,9 @@
 #include "FileManager/Directories.h"
 #include "Profiling/ProfileMarker.h"
 
-#include "OpenFBX/ofbx.h"
+#include <assimp/Importer.hpp>      // C++ importer interface
+#include <assimp/scene.h>           // Output data structure
+#include <assimp/postprocess.h>     // Post processing flags
 
 Scene::~Scene() {}
 
@@ -25,9 +27,9 @@ bool Scene::load(VkDescriptorPool descPool)
 {
 	ProfileMarker _("Scene::load");
 
-	//Directories::getWorkingScene();
+	//auto path = Directories::getWorkingScene();
 	auto path = Directories::getWorkingModel();
-	tryLoadFromFile(path.value, descPool);
+	tryLoadFromFile(path, descPool);
 
 	printf("Initialized the scene with (renderers = %zi), (meshes = %zi), (textures = %zi), (materials = %zi).\n", m_renderers.size(), m_meshes.size(), m_textures.size(), m_materials.size());
 	return true;
@@ -67,6 +69,7 @@ void Scene::release(VkDevice device, const VmaAllocator& allocator)
 }
 
 const std::vector<Mesh>& Scene::getMeshes() const { return m_meshes; }
+const std::vector<Transform>& Scene::getTransforms() const { return m_transforms; }
 const std::vector<Material>& Scene::getMaterials() const { return m_materials; }
 const std::vector<Renderer>& Scene::getRendererIDs() const { return m_rendererIDs; }
 const std::vector<VkMesh>& Scene::getGraphicsMeshes() const { return m_graphicsMeshes; }
@@ -157,32 +160,91 @@ void maxVector(glm::vec3& max, const glm::vec3& point)
 	max.z = std::max(max.z, point.z);
 }
 
-bool Scene::loadFBX_Implementation(std::vector<Mesh>& meshes, std::vector<Material>& materials, std::vector<Renderer>& rendererIDs, const std::string& path, const std::string& name)
+glm::mat4 convertToGLM(aiMatrix4x4 src)
 {
-	auto fbxPath = Path(path + name + ".fbx");
-	auto charCollection = FileIO::readFile(fbxPath);
+	// row-major to column-major
+	// [x, y] => [y, x]
+	return glm::mat4(
+		src.a1, src.b1, src.c1, src.d1,
+		src.a2, src.b2, src.c2, src.d2,
+		src.a3, src.b3, src.c3, src.d3,
+		src.a4, src.b4, src.c4, src.d4
+	);
+}
 
-	const ofbx::u8* ptr = reinterpret_cast<ofbx::u8*>(charCollection.data());
-	const auto* scene = ofbx::load(ptr, charCollection.size(), static_cast<ofbx::u64>(ofbx::LoadFlags::IGNORE_BLEND_SHAPES));
-	if (!scene) return false;
+void crawl(std::vector<Transform>& globalTransformCollection, std::unordered_map<int, size_t>& meshToTransform, aiNode* node, aiMatrix4x4 parentMatrix, int depth)
+{
+	auto localMatrix = parentMatrix * node->mTransformation;
+	globalTransformCollection.push_back(Transform( convertToGLM(localMatrix) ));
 
-	for (size_t meshID = 0; meshID < scene->getMeshCount(); meshID++)
+	for (unsigned int mi = 0; mi < node->mNumMeshes; mi++)
 	{
-		auto* mesh = scene->getMesh(static_cast<int>(meshID));
-		auto* geom = mesh->getGeometry();
+		auto meshID = node->mMeshes[mi];
+		meshToTransform[meshID] = globalTransformCollection.size() - 1;
+	}
 
-		auto* mVerts = geom->getVertices();
-		auto mVertCount = geom->getVertexCount();
+#ifdef VERBOSE_INFO_MESSAGE
+	std::string padding = "";
+	for (int i = 0; i < depth; i++)
+		padding += '\t';
 
-		auto* mTexcoords = geom->getUVs(0);
-		auto* mNorms = geom->getNormals();
+	printf("%s%s\n", padding.c_str(), node->mName.C_Str());
+#endif
+	auto** childPtr = node->mChildren;
+	for(unsigned int chi = 0; chi < node->mNumChildren; chi++)
+	{
+		if(childPtr[chi]) 
+			crawl(globalTransformCollection, meshToTransform, childPtr[chi], localMatrix, depth + 1);
+	}
+}
 
-		std::vector<MeshDescriptor::TVertexPosition> vertices(mVertCount);
-		std::vector<MeshDescriptor::TVertexNormal> normals(mVertCount);
-		std::vector<MeshDescriptor::TVertexUV> uvs(mVertCount);
-		std::vector<MeshDescriptor::TVertexColor> colors;
+bool load_AssimpImplementation(std::vector<Mesh>& meshes, std::vector<Material>& materials, std::vector<Renderer>& rendererIDs, std::vector<Transform>& transforms, const Path& fullPath)
+{
+	// Create an instance of the Importer class
+	Assimp::Importer importer;
 
-		for(int vi = 0; vi < mVertCount; vi++)
+	// And have it read the given file with some example postprocessing
+	// Usually - if speed is not the most important aspect for you - you'll
+	// probably to request more postprocessing than we do in this example.
+	const aiScene* scene = importer.ReadFile(fullPath.c_str(),
+		aiProcess_CalcTangentSpace |
+		aiProcess_Triangulate |
+		aiProcess_JoinIdenticalVertices |
+		aiProcess_SortByPType);
+
+	// If the import failed, report it
+	if (!scene) 
+	{
+		printf("Loader Error: '%s'.\n", importer.GetErrorString());
+		return false;
+	}
+
+	// Now we can access the file's contents.
+	std::unordered_map<int, size_t> meshToTransform;
+	crawl(transforms, meshToTransform, scene->mRootNode, aiMatrix4x4(), 0);
+
+	std::unordered_map<int, std::vector<int>> textureToMeshMap;
+
+	std::vector<MeshDescriptor::TVertexIndices> indices;
+	std::vector<MeshDescriptor::TVertexPosition> vertices;
+	std::vector<MeshDescriptor::TVertexNormal> normals;
+	std::vector<MeshDescriptor::TVertexUV> uvs;
+	std::vector<MeshDescriptor::TVertexColor> colors;
+	for (unsigned int mi = 0; mi < scene->mNumMeshes; mi++)
+	{
+		const auto* mesh = scene->mMeshes[mi];
+		auto vertN = mesh->mNumVertices;
+
+		vertices.resize(vertN);
+		normals.resize(vertN);
+		uvs.resize(vertN);
+		//colors.resize(vertN);
+
+		const auto* mVerts = mesh->mVertices;
+		const auto* mTexcoords = mesh->mTextureCoords[0];
+		const auto* mNorms = mesh->mNormals;
+#ifdef ASSIMP_DOUBLE_PRECISION
+		for (int vi = 0; vi < vertN; vi++)
 		{
 			vertices[vi] = glm::vec3(
 				static_cast<float>(mVerts[vi].x),
@@ -201,7 +263,92 @@ bool Scene::loadFBX_Implementation(std::vector<Mesh>& meshes, std::vector<Materi
 				static_cast<float>(mNorms[vi].z)
 			);
 		}
+#else
+		reinterpretCopy(mVerts, vertN, vertices);
+		reinterpretCopy(mNorms, vertN, normals);
 
+		for (int vi = 0; vi < vertN; vi++)
+		{
+			uvs[vi] = glm::vec2(mTexcoords[vi].x, mTexcoords[vi].y);
+		}
+#endif
+
+		for (unsigned int fi = 0; fi < mesh->mNumFaces; fi++)
+		{
+			auto& face = mesh->mFaces[fi];
+
+			assert(face.mNumIndices == 3);
+
+			for(unsigned int ii = 0; ii < face.mNumIndices; ii++)
+			{
+#ifdef _DEBUG
+				if (face.mIndices[ii] >= std::numeric_limits< MeshDescriptor::TVertexIndices>::max())
+				{
+					printf("Loader: Index overflow, the mesh format not supported as it has more than %i indices.\n", std::numeric_limits< MeshDescriptor::TVertexIndices>::max());
+					break;
+				}
+#endif
+
+				indices.push_back( static_cast<unsigned short>( face.mIndices[ii]) );
+			}
+
+		}
+		auto matIndex = mesh->mMaterialIndex;
+
+		std::vector<SubMesh> submeshes(1);
+		submeshes[0] = SubMesh(indices);
+
+		auto boundsMin = mesh->mAABB.mMin,
+			boundsMax = mesh->mAABB.mMax;
+		//submeshes[0].m_bounds = BoundsAABB(
+		//		glm::vec3(boundsMin.x, boundsMin.y, boundsMin.z),
+		//		glm::vec3(boundsMax.x, boundsMax.y, boundsMax.z)
+		//	);
+
+		meshes.push_back(Mesh(vertices, uvs, normals, colors, submeshes));
+
+		// By default set the material ID to 0, when its loaded and processed successfuly will be replaced by actual ID.
+		rendererIDs.push_back(Renderer(static_cast<size_t>(mi), meshToTransform[mi], { 0 }));
+		textureToMeshMap[matIndex].push_back( mi );
+	}
+
+	auto dir = fullPath.getFileDirectory();
+	for (unsigned int mi = 0; mi < scene->mNumMaterials; mi++)
+	{
+		const auto* mat = scene->mMaterials[mi];
+
+		aiString res;
+		if (mat->Get("$tex.file", aiTextureType::aiTextureType_DIFFUSE, 0, res) == AI_SUCCESS)
+		{
+			auto texPath = dir + res.C_Str();
+			if (fileExists(texPath))
+			{
+				materials.push_back(Material(0, TextureSource(std::move(texPath), VK_FORMAT_R8G8B8A8_SRGB, false)));
+
+				// Replace the material ID, if successfuly loaded the texture, for all meshes referencing it.
+				for (auto& meshID : textureToMeshMap[mi])
+				{
+					rendererIDs[meshID].materialIDs[0] = materials.size() - 1;
+				}
+			}
+			else printf("Loader: Could not find texture at path '%s'.\n", texPath.c_str());
+		}
+		else printf("Loader: The diffuse texture did not exist in material '%s' properties.\n", mat->GetName().C_Str());
+	}
+
+	// Fallback - if all textures are missing.
+	if (meshes.size() > 0 && materials.size() == 0)
+	{
+		// To do - replace with a default 1x1 white texture
+		materials.push_back(Material(0, TextureSource("C:/Git/Vulkan_Engine/Resources/Serialized/sponza_column_a_spec.dds", VK_FORMAT_BC1_RGBA_SRGB_BLOCK, false)));
+	}
+
+	return true;
+}
+
+bool loadFBX_Implementation(std::vector<Mesh>& meshes, std::vector<Material>& materials, std::vector<Renderer>& rendererIDs, const std::string& path, const std::string& name)
+{
+	/*
 		auto* mIndices = geom->getFaceIndices();
 		auto mIndexCount = geom->getIndexCount();
 		std::vector<MeshDescriptor::TVertexIndices> indices;
@@ -235,62 +382,12 @@ bool Scene::loadFBX_Implementation(std::vector<Mesh>& meshes, std::vector<Materi
 				indices.push_back( c );
 			}
 		}
-		std::vector<SubMesh> submeshes(1);
-		submeshes[0] = SubMesh(indices);
-
-		meshes.push_back(Mesh(vertices, uvs, normals, colors, submeshes));
-		rendererIDs.push_back(Renderer(meshID, { 0 }));
-	}
-
-	materials.push_back(Material(0, TextureSource("C:/Git/Vulkan_Engine/Resources/Serialized/sponza_column_a_spec.dds", VK_FORMAT_BC1_RGBA_SRGB_BLOCK, false)));
-
-	return true;
-}
-
-bool Scene::loadGLTF_Implementation(std::vector<Mesh>& meshes, std::vector<Material>& materials, std::vector<Renderer>& rendererIDs, const std::string& path, const std::string& name, bool isBinary)
-{
-	tinygltf::Model model;
-	tinygltf::TinyGLTF loader;
-
-	//error and warning output from the load function
-	std::string err;
-	std::string warn;
-
-	auto loaded = isBinary ? loader.LoadBinaryFromFile(&model, &err, &warn, path) : loader.LoadASCIIFromFile(&model, &err, &warn, path);
-
-#ifdef VERBOSE_INFO_MESSAGE
-	if (!warn.empty()) printf("Warning: %s\n", warn.c_str());
-#endif
-	if (!err.empty()) printf("Error: %s\n", err.c_str());
-	if (!loaded)
-	{
-		return false;
-	}
-
-	printf("GLTF loading is not implemented yet.");
-	return false;
-	/*
-	const tinygltf::Scene& scene = model.scenes[model.defaultScene > -1 ? model.defaultScene : 0];
-	for (auto nodeIndex : scene.nodes)
-	{
-		auto& node = model.nodes[nodeIndex];
-		auto& mesh = model.meshes[node.mesh];
-		
-		for (auto& prim : mesh.primitives)
-		{
-			const auto& accessor = model.accessors[prim.attributes.find("POSITION")->second];
-			const auto& posView = model.bufferViews[accessor.bufferView];
-			
-			model.buffers[posView.buffer];
-		}
-	}
-
-	printf("loaded %s gltf\n", (isBinary ? "Binary" : "ASCII"));
-	return true;
 	*/
+
+	return false;
 }
 
-bool Scene::loadOBJ_Implementation(std::vector<Mesh>& meshes, std::vector<Material>& materials, std::vector<Renderer>& rendererIDs, const std::string& path, const std::string& name)
+bool Scene::loadOBJ_Implementation(std::vector<Mesh>& meshes, std::vector<Material>& materials, std::vector<Renderer>& rendererIDs, std::vector<Transform>& transforms, const std::string& path, const std::string& name)
 {
 	//attrib will contain the vertex arrays of the file
 	tinyobj::attrib_t objAttribs;
@@ -507,8 +604,10 @@ bool Scene::loadOBJ_Implementation(std::vector<Mesh>& meshes, std::vector<Materi
 			}
 		}
 
-		rendererIDs.push_back(Renderer(kv.first, globalBufMaterialIDs));
+		rendererIDs.push_back(Renderer(kv.first, 0, globalBufMaterialIDs));
 	}
+
+	transforms.push_back(Transform());
 
 	return true;
 }
@@ -516,25 +615,37 @@ bool Scene::loadOBJ_Implementation(std::vector<Mesh>& meshes, std::vector<Materi
 namespace boost::serialization
 {
 	template <typename Ar>
+	void serialize(Ar& ar, glm::vec2& v, unsigned _)
+	{
+		ar& make_nvp("x", v.x)& make_nvp("y", v.y);
+	}
+
+	template <typename Ar>
 	void serialize(Ar& ar, glm::vec3& v, unsigned _)
 	{
 		ar& make_nvp("x", v.x)& make_nvp("y", v.y)& make_nvp("z", v.z);
 	}
 
 	template <typename Ar>
-	void serialize(Ar& ar, glm::vec2& v, unsigned _)
+	void serialize(Ar& ar, glm::vec4& v, unsigned _)
 	{
-		ar& make_nvp("x", v.x)& make_nvp("y", v.y);
+		ar& make_nvp("x", v.x)& make_nvp("y", v.y)& make_nvp("z", v.z)& make_nvp("w", v.w);
+	}
+
+	template <typename Ar>
+	void serialize(Ar& ar, glm::mat4& m, unsigned _)
+	{
+		ar& make_nvp("m0", m[0])&
+			make_nvp("m1", m[1])&
+			make_nvp("m2", m[2])&
+			make_nvp("m3", m[3]);
 	}
 }
 
-bool Scene::tryLoadSupportedFormat(const std::string& path)
+bool Scene::tryLoadSupportedFormat(const Path& path)
 {
-	auto nameStart = path.find_last_of('/') + 1;
-	auto extensionIndex = path.find_last_of('.');
-	auto extensionLength = path.length() - extensionIndex;
-	auto directory = path.substr(0, nameStart);
-	auto name = path.substr(nameStart, path.length() - nameStart - extensionLength);
+	auto directory = path.getFileDirectory();
+	auto name = path.getFileName(false);
 
 	/* ================ READ SERIALIZED BINARY =============== */
 	if (fileExists(path, ".binary"))
@@ -552,26 +663,19 @@ bool Scene::tryLoadSupportedFormat(const std::string& path)
 	/* ================ READ FROM OBJ =============== */
 	if (fileExists(path, ".obj"))
 	{
-		return loadOBJ_Implementation(m_meshes, m_materials, m_rendererIDs, directory, name);
+		return loadOBJ_Implementation(m_meshes, m_materials, m_rendererIDs, m_transforms, directory, name);
 	}
 
 	/* ================ READ FROM FBX =============== */
 	if (fileExists(path, ".fbx"))
 	{
-		return loadFBX_Implementation(m_meshes, m_materials, m_rendererIDs, directory, name);
-	}
-
-	/* ================ READ FROM GLTF =============== */
-	if (fileExists(path, ".gltf"))
-	{
-		auto isBinary = (path.substr(extensionIndex + 1, extensionLength) == "glb");
-		return loadGLTF_Implementation(m_meshes, m_materials, m_rendererIDs, directory, name, isBinary);
+		return load_AssimpImplementation(m_meshes, m_materials, m_rendererIDs, m_transforms, Path(path));
 	}
 
 	return false;
 }
 
-bool Scene::tryLoadFromFile(const std::string& path, VkDescriptorPool descPool)
+bool Scene::tryLoadFromFile(const Path& path, VkDescriptorPool descPool)
 {
 	if (!tryLoadSupportedFormat(path))
 	{
@@ -605,6 +709,8 @@ bool Scene::tryLoadFromFile(const std::string& path, VkDescriptorPool descPool)
 				}
 				else
 				{
+					rendererIDs.materialIDs = { 0 };
+
 					m_textures.resize(size);
 					m_graphicsMaterials.resize(size);
 					printf("The texture at '%s' could not be loaded.\n", texSrc.path.c_str());
@@ -645,7 +751,13 @@ bool Scene::tryLoadFromFile(const std::string& path, VkDescriptorPool descPool)
 				continue;
 			}
 
-			m_renderers.push_back(VkMeshRenderer(&m_graphicsMeshes.back(), submeshIndex, mesh.getBounds(submeshIndex), &m_graphicsMaterials[loadedTextures[texPath]]->getMaterialVariant()));
+			m_renderers.push_back(
+				VkMeshRenderer(
+					&m_graphicsMeshes.back(), submeshIndex, 
+					&m_graphicsMaterials[loadedTextures[texPath]]->getMaterialVariant(), 
+					mesh.getBounds(submeshIndex), &m_transforms[ids.transformID]
+					)
+			);
 			++submeshIndex;
 		}
 	}

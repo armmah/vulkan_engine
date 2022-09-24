@@ -119,8 +119,9 @@ FrameStats CommandObjectsWrapper::renderIndexedMeshes(const std::vector<VkMeshRe
 		for (auto& renderer : renderers)
 		{
 			glm::mat4 model = renderer.transform->localToWorld;
-			if (renderer.bounds != nullptr && !cameraFrustum.isOnFrustum(*renderer.bounds))
-				continue;
+			// To do - transform the AABB from local to world space, before doing frustum check
+			//if (renderer.bounds != nullptr && !cameraFrustum.isOnFrustum(*renderer.bounds))
+			//	continue;
 
 			const auto& variant = *renderer.variant;
 			if (prevVariant != renderer.variant)

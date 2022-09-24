@@ -25,12 +25,34 @@ Scene::Scene(const Presentation::Device* device, Presentation::PresentationTarge
 
 Scene::~Scene() {}
 
+const bool serialize_from_origin = false;
+const int import_mesh_limitter = 15;
 bool Scene::load(VkDescriptorPool descPool)
 {
-	ProfileMarker _("Scene::load");
+	if (serialize_from_origin)
+	{
+		ProfileMarker _("Scene::import & serialize");
+		Scene scene(nullptr, nullptr);
+		const auto modelPaths = Directories::getWorkingModels();
+		const auto fullPath = Directories::getWorkingScene();
 
+		for (auto& model : modelPaths)
+		{
+			auto meshCount = scene.getMeshes().size();
+			scene.tryLoadSupportedFormat(model);
+		}
+
+		{
+			auto stream = std::fstream(fullPath, std::ios::out | std::ios::binary);
+			boost::archive::binary_oarchive archive(stream);
+
+			archive << scene;
+			stream.close();
+		}
+	}
+
+	ProfileMarker _("Scene::load");
 	auto path = Directories::getWorkingScene();
-	//auto path = Directories::getWorkingModels()[1];
 	tryLoadFromFile(path, descPool);
 
 	printf("Initialized the scene with (renderers = %zi), (transforms = %zi), (meshes = %zi), (textures = %zi), (materials = %zi).\n", m_renderers.size(), m_transforms.size(), m_meshes.size(), m_textures.size(), m_materials.size());
@@ -256,9 +278,10 @@ bool load_AssimpImplementation(std::vector<Mesh>& meshes, std::vector<Material>&
 		const auto* mesh = scene->mMeshes[mi];
 		auto vertN = mesh->mNumVertices;
 
-		//std::string str = mesh->mName.C_Str();
-		//if (str.find("columns_1stfloor") == std::string::npos)
-		//	continue;
+#if _DEBUG // The limiter helps when debugging some things to iterate quickly
+		if (meshes.size() > import_mesh_limitter)
+			break;
+#endif
 
 		vertices.resize(vertN);
 		normals.resize(vertN);
@@ -318,10 +341,10 @@ bool load_AssimpImplementation(std::vector<Mesh>& meshes, std::vector<Material>&
 
 		auto boundsMin = mesh->mAABB.mMin,
 			boundsMax = mesh->mAABB.mMax;
-		//submeshes[0].m_bounds = BoundsAABB(
-		//	glm::vec3(boundsMin.x, boundsMin.y, boundsMin.z), 
-		//	glm::vec3(boundsMax.x, boundsMax.y, boundsMax.z)
-		//);
+		submeshes[0].m_bounds = BoundsAABB(
+			glm::vec3(boundsMin.x, boundsMin.y, boundsMin.z), 
+			glm::vec3(boundsMax.x, boundsMax.y, boundsMax.z)
+		);
 
 		meshes.push_back(Mesh(vertices, uvs, normals, colors, submeshes));
 
@@ -355,13 +378,6 @@ bool load_AssimpImplementation(std::vector<Mesh>& meshes, std::vector<Material>&
 			else printf("Loader: Could not find texture at path '%s'.\n", texPath.c_str());
 		}
 		else printf("Loader: The diffuse texture did not exist in material '%s' properties.\n", mat->GetName().C_Str());
-	}
-
-	// Fallback - if all textures are missing.
-	if (meshes.size() > 0 && materials.size() == 0)
-	{
-		// To do - replace with a default 1x1 white texture
-		materials.push_back(Material(0, TextureSource("C:/Git/Vulkan_Engine/Resources/Serialized/arch_stone_wall_01_Roughness.dds", VK_FORMAT_BC1_RGBA_SRGB_BLOCK, true)));
 	}
 
 	return true;
@@ -804,6 +820,10 @@ namespace boost::serialization
 		ar& m[3];
 	}
 }
+BOOST_IS_BITWISE_SERIALIZABLE(glm::vec2)
+BOOST_IS_BITWISE_SERIALIZABLE(glm::vec3)
+BOOST_IS_BITWISE_SERIALIZABLE(glm::vec4)
+BOOST_IS_BITWISE_SERIALIZABLE(glm::mat4)
 
 bool Scene::tryLoadSupportedFormat(const Path& path)
 {

@@ -47,15 +47,22 @@ namespace boost::serialization
 	}
 }
 
-float genFloat(float LO, float HI)
-{
-	return LO + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (HI - LO)));
-}
+BOOST_IS_BITWISE_SERIALIZABLE(glm::vec2)
+BOOST_IS_BITWISE_SERIALIZABLE(glm::vec3)
+BOOST_IS_BITWISE_SERIALIZABLE(glm::vec4)
+BOOST_IS_BITWISE_SERIALIZABLE(glm::mat4)
+
+float genFloat(float LO, float HI) { return LO + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (HI - LO))); }
 
 TEST(Benchmark, Serialization)
 {
 	std::string path1 = "C:/Git/test_dir/bigFlatArray.bin",
 		path2 = "C:/Git/test_dir/bigVector.bin";
+
+	if (std::filesystem::exists(path1))
+		std::filesystem::remove(path1);
+	if(std::filesystem::exists(path2))
+		std::filesystem::remove(path2);
 
 	std::vector<float> bigFlatArray;
 	std::vector<glm::vec4> bigVector;
@@ -128,11 +135,8 @@ TEST(Benchmark, Serialization)
 }
 
 
-/*
 TEST(Texturesource, Path)
 {
-	return;
-
 	auto test1 = TextureSource("directory/file.png");
 	auto test2 = TextureSource("long_complex/white space\\directory\\file.png");
 	auto test3 = TextureSource("file.png");
@@ -243,4 +247,3 @@ TEST(Serialization, SceneBinary)
 		stream.close();
 	}
 }
-*/

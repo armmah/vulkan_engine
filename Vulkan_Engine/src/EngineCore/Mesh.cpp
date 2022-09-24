@@ -75,9 +75,9 @@ bool Mesh::isValid()
 	}
 
 	// We won't support more than 65535 verts for now due to 16bit indexing
-	if (n >= std::numeric_limits<uint16_t>::max())
+	if (n >= std::numeric_limits<MeshDescriptor::TVertexIndices>::max())
 	{
-		printf("The vertex array size '%zu' exceeds the allowed capacity '%i'.\n", n, std::numeric_limits<uint16_t>::max());
+		printf("The vertex array size '%zu' exceeds the allowed capacity '%i'.\n", n, std::numeric_limits<MeshDescriptor::TVertexIndices>::max());
 		return false;
 	}
 
@@ -225,8 +225,15 @@ bool Mesh::allocateIndexAttributes(VkMesh& graphicsMesh, const SubMesh& submesh,
 	// Release staging buffer back to the pool
 	stagingPool.freeBuffer(stagingBuffer);
 
+	VkIndexType indexPrecision = VkIndexType::VK_INDEX_TYPE_MAX_ENUM;
+	if (sizeof(MeshDescriptor::TVertexIndices) == sizeof(uint16_t))
+		indexPrecision = VkIndexType::VK_INDEX_TYPE_UINT16;
+	if(sizeof(MeshDescriptor::TVertexIndices) == sizeof(uint32_t)) 
+		indexPrecision = VkIndexType::VK_INDEX_TYPE_UINT32;
+	assert(indexPrecision != VkIndexType::VK_INDEX_TYPE_MAX_ENUM);
+
 	graphicsMesh.iAttributes.push_back(
-		IndexAttributes(iBuffer, iMemRange, as_uint32(indexCount), VkIndexType::VK_INDEX_TYPE_UINT16)
+		IndexAttributes(iBuffer, iMemRange, as_uint32(indexCount), indexPrecision)
 	);
 
 	return true;

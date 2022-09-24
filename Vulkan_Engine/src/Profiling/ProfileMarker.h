@@ -7,7 +7,7 @@ struct ProfileMarkerBase
 
 	Timestamp startTime;
 
-	static auto getNow() noexcept;
+	static std::chrono::steady_clock::time_point getNow() noexcept;
 	static auto getMiliseconds(Timestamp startTime, Timestamp endTime) noexcept;
 	static auto getMicroseconds(Timestamp startTime, Timestamp endTime) noexcept;
 
@@ -28,4 +28,13 @@ struct ProfileMarker : ProfileMarkerBase
 
 	ProfileMarker(std::string markerName);
 	~ProfileMarker();
+};
+
+struct ProfilerMarkerAccumulative : ProfileMarkerBase
+{
+	std::string markerName;
+	inline static std::unordered_map<std::string, long long> accumulated;
+
+	ProfilerMarkerAccumulative(std::string markerName);
+	~ProfilerMarkerAccumulative();
 };

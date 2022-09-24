@@ -58,7 +58,7 @@ Mesh Mesh::getPrimitiveQuad()
 	return Mesh(positions, uvs, normals, colors, SubMesh(indices));
 }
 
-void Mesh::makeFace(glm::vec3 pivot, glm::vec3 up, glm::vec3 right, uint16_t firstIndex)
+void Mesh::makeFace(glm::vec3 pivot, glm::vec3 up, glm::vec3 right, MeshDescriptor::TVertexIndices firstIndex)
 {
 	m_positions.push_back(pivot + up - right);
 	m_positions.push_back(pivot + up + right);
@@ -111,9 +111,9 @@ void Mesh::makeFace(glm::vec3 pivot, glm::vec3 up, glm::vec3 right, uint16_t fir
 
 Mesh Mesh::getPrimitiveCube()
 {
-	constexpr uint16_t vertPerFace = 4u;
-	constexpr uint16_t indexPerFace = 6u;
-	constexpr uint16_t numOfFaces = 6u;
+	constexpr MeshDescriptor::TVertexIndices vertPerFace = 4u;
+	constexpr MeshDescriptor::TVertexIndices indexPerFace = 6u;
+	constexpr MeshDescriptor::TVertexIndices numOfFaces = 6u;
 	Mesh mesh(vertPerFace * numOfFaces, indexPerFace * numOfFaces);
 
 	const glm::vec3 right(0.5f, 0.f, 0.f);

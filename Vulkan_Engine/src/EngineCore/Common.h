@@ -37,6 +37,7 @@ static bool fileExists(const std::string& path, const std::string& supportedForm
 		path.length() > supportedFormat.length() && 
 		std::equal(supportedFormat.rbegin(), supportedFormat.rend(), path.rbegin());
 }
+
 static bool fileExists(const std::string& path, const std::vector<std::string>& supportedFormats)
 {
 	if (!std::filesystem::exists(path))

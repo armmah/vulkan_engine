@@ -4,7 +4,7 @@
 
 struct MeshDescriptor
 {
-	using TVertexIndices = uint16_t;
+	using TVertexIndices = uint32_t;
 
 	using TVertexPosition = glm::vec3;
 	using TVertexUV = glm::vec2;

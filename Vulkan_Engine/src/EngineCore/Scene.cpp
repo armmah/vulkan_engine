@@ -18,20 +18,22 @@
 #include <assimp/scene.h>           // Output data structure
 #include <assimp/postprocess.h>     // Post processing flags
 
-Scene::~Scene() {}
+#include "OpenFBX/ofbx.h"
 
 Scene::Scene(const Presentation::Device* device, Presentation::PresentationTarget* target)
 	: m_presentationDevice(device), m_presentationTarget(target) { }
+
+Scene::~Scene() {}
 
 bool Scene::load(VkDescriptorPool descPool)
 {
 	ProfileMarker _("Scene::load");
 
-	//auto path = Directories::getWorkingScene();
-	auto path = Directories::getWorkingModel();
+	auto path = Directories::getWorkingScene();
+	//auto path = Directories::getWorkingModels()[1];
 	tryLoadFromFile(path, descPool);
 
-	printf("Initialized the scene with (renderers = %zi), (meshes = %zi), (textures = %zi), (materials = %zi).\n", m_renderers.size(), m_meshes.size(), m_textures.size(), m_materials.size());
+	printf("Initialized the scene with (renderers = %zi), (transforms = %zi), (meshes = %zi), (textures = %zi), (materials = %zi).\n", m_renderers.size(), m_transforms.size(), m_meshes.size(), m_textures.size(), m_materials.size());
 	return true;
 }
 
@@ -160,6 +162,15 @@ void maxVector(glm::vec3& max, const glm::vec3& point)
 	max.z = std::max(max.z, point.z);
 }
 
+void assertIndex(int index, int vertCount, const char* name)
+{
+	if (index >= std::numeric_limits<MeshDescriptor::TVertexIndices>::max())
+		printf("The index of mesh '%s' exceeded the 16 bit precision limit with id {%i}.\n", name, index);
+
+	if (index < 0 || index >= vertCount)
+		printf("The index of mesh '%s' was pointing outside of the vertex array {0 <= %i < %i}.\n", name, index, vertCount);
+}
+
 glm::mat4 convertToGLM(aiMatrix4x4 src)
 {
 	// row-major to column-major
@@ -175,6 +186,8 @@ glm::mat4 convertToGLM(aiMatrix4x4 src)
 void crawl(std::vector<Transform>& globalTransformCollection, std::unordered_map<int, size_t>& meshToTransform, aiNode* node, aiMatrix4x4 parentMatrix, int depth)
 {
 	auto localMatrix = parentMatrix * node->mTransformation;
+
+	auto mat = convertToGLM(localMatrix);
 	globalTransformCollection.push_back(Transform( convertToGLM(localMatrix) ));
 
 	for (unsigned int mi = 0; mi < node->mNumMeshes; mi++)
@@ -207,9 +220,7 @@ bool load_AssimpImplementation(std::vector<Mesh>& meshes, std::vector<Material>&
 	// Usually - if speed is not the most important aspect for you - you'll
 	// probably to request more postprocessing than we do in this example.
 	const aiScene* scene = importer.ReadFile(fullPath.c_str(),
-		aiProcess_CalcTangentSpace |
 		aiProcess_Triangulate |
-		aiProcess_JoinIdenticalVertices |
 		aiProcess_SortByPType);
 
 	// If the import failed, report it
@@ -219,12 +230,22 @@ bool load_AssimpImplementation(std::vector<Mesh>& meshes, std::vector<Material>&
 		return false;
 	}
 
+	auto existingElementsCount = meshes.size();
+	meshes.reserve(existingElementsCount + scene->mNumMeshes);
+	rendererIDs.reserve(existingElementsCount + scene->mNumMeshes);
+	materials.reserve(materials.size() + scene->mNumMaterials);
+	transforms.reserve(transforms.size() + scene->mNumMeshes);
+
 	// Now we can access the file's contents.
 	std::unordered_map<int, size_t> meshToTransform;
-	crawl(transforms, meshToTransform, scene->mRootNode, aiMatrix4x4(), 0);
+	{
+		ProfileMarker _("	Loader::Crawl_Nodes");
+		crawl(transforms, meshToTransform, scene->mRootNode, aiMatrix4x4(), 0);
+	}
 
 	std::unordered_map<int, std::vector<int>> textureToMeshMap;
 
+	ProfileMarker _("	Loader::CreateMesh");
 	std::vector<MeshDescriptor::TVertexIndices> indices;
 	std::vector<MeshDescriptor::TVertexPosition> vertices;
 	std::vector<MeshDescriptor::TVertexNormal> normals;
@@ -234,6 +255,10 @@ bool load_AssimpImplementation(std::vector<Mesh>& meshes, std::vector<Material>&
 	{
 		const auto* mesh = scene->mMeshes[mi];
 		auto vertN = mesh->mNumVertices;
+
+		//std::string str = mesh->mName.C_Str();
+		//if (str.find("columns_1stfloor") == std::string::npos)
+		//	continue;
 
 		vertices.resize(vertN);
 		normals.resize(vertN);
@@ -276,20 +301,13 @@ bool load_AssimpImplementation(std::vector<Mesh>& meshes, std::vector<Material>&
 		for (unsigned int fi = 0; fi < mesh->mNumFaces; fi++)
 		{
 			auto& face = mesh->mFaces[fi];
-
 			assert(face.mNumIndices == 3);
 
 			for(unsigned int ii = 0; ii < face.mNumIndices; ii++)
 			{
-#ifdef _DEBUG
-				if (face.mIndices[ii] >= std::numeric_limits< MeshDescriptor::TVertexIndices>::max())
-				{
-					printf("Loader: Index overflow, the mesh format not supported as it has more than %i indices.\n", std::numeric_limits< MeshDescriptor::TVertexIndices>::max());
-					break;
-				}
-#endif
+				assertIndex(face.mIndices[ii], vertN, mesh->mName.C_Str());
 
-				indices.push_back( static_cast<unsigned short>( face.mIndices[ii]) );
+				indices.push_back( static_cast<unsigned short>(face.mIndices[ii]) );
 			}
 
 		}
@@ -301,15 +319,16 @@ bool load_AssimpImplementation(std::vector<Mesh>& meshes, std::vector<Material>&
 		auto boundsMin = mesh->mAABB.mMin,
 			boundsMax = mesh->mAABB.mMax;
 		//submeshes[0].m_bounds = BoundsAABB(
-		//		glm::vec3(boundsMin.x, boundsMin.y, boundsMin.z),
-		//		glm::vec3(boundsMax.x, boundsMax.y, boundsMax.z)
-		//	);
+		//	glm::vec3(boundsMin.x, boundsMin.y, boundsMin.z), 
+		//	glm::vec3(boundsMax.x, boundsMax.y, boundsMax.z)
+		//);
 
 		meshes.push_back(Mesh(vertices, uvs, normals, colors, submeshes));
 
 		// By default set the material ID to 0, when its loaded and processed successfuly will be replaced by actual ID.
-		rendererIDs.push_back(Renderer(static_cast<size_t>(mi), meshToTransform[mi], { 0 }));
-		textureToMeshMap[matIndex].push_back( mi );
+		auto meshFinalIndex = meshes.size() - 1;
+		rendererIDs.push_back(Renderer(meshFinalIndex, meshToTransform[mi], {0}));
+		textureToMeshMap[matIndex].push_back(meshFinalIndex);
 	}
 
 	auto dir = fullPath.getFileDirectory();
@@ -323,11 +342,13 @@ bool load_AssimpImplementation(std::vector<Mesh>& meshes, std::vector<Material>&
 			auto texPath = dir + res.C_Str();
 			if (fileExists(texPath))
 			{
-				materials.push_back(Material(0, TextureSource(std::move(texPath), VK_FORMAT_R8G8B8A8_SRGB, false)));
+				materials.push_back(Material(0, TextureSource(std::move(texPath), VK_FORMAT_R8G8B8A8_SRGB, true)));
 
 				// Replace the material ID, if successfuly loaded the texture, for all meshes referencing it.
 				for (auto& meshID : textureToMeshMap[mi])
 				{
+					if (meshID >= rendererIDs.size())
+						continue;
 					rendererIDs[meshID].materialIDs[0] = materials.size() - 1;
 				}
 			}
@@ -340,20 +361,109 @@ bool load_AssimpImplementation(std::vector<Mesh>& meshes, std::vector<Material>&
 	if (meshes.size() > 0 && materials.size() == 0)
 	{
 		// To do - replace with a default 1x1 white texture
-		materials.push_back(Material(0, TextureSource("C:/Git/Vulkan_Engine/Resources/Serialized/sponza_column_a_spec.dds", VK_FORMAT_BC1_RGBA_SRGB_BLOCK, false)));
+		materials.push_back(Material(0, TextureSource("C:/Git/Vulkan_Engine/Resources/Serialized/arch_stone_wall_01_Roughness.dds", VK_FORMAT_BC1_RGBA_SRGB_BLOCK, true)));
 	}
 
 	return true;
 }
 
-bool loadFBX_Implementation(std::vector<Mesh>& meshes, std::vector<Material>& materials, std::vector<Renderer>& rendererIDs, const std::string& path, const std::string& name)
+bool loadFBX_Implementation(std::vector<Mesh>& meshes, std::vector<Material>& materials, std::vector<Renderer>& rendererIDs, std::vector<Transform>& transforms, const std::string& path, const std::string& name)
 {
-	/*
+	auto fbxPath = Path(path + name + ".fbx");
+	auto charCollection = FileIO::readFile(fbxPath);
+
+	const ofbx::u8* ptr = reinterpret_cast<ofbx::u8*>(charCollection.data());
+	const auto* scene = ofbx::load(ptr, charCollection.size(), static_cast<ofbx::u64>(ofbx::LoadFlags::IGNORE_BLEND_SHAPES));
+	if (!scene) return false;
+
+	std::unordered_map<int, int> polygonDistr;
+	for (size_t meshID = 0; meshID < scene->getMeshCount(); meshID++)
+	{
+		auto* mesh = scene->getMesh(static_cast<int>(meshID));
+		auto meshName = mesh->name;
+		auto* geom = mesh->getGeometry();
+		
+		auto* mVerts = geom->getVertices();
+		auto mVertCount = geom->getVertexCount();
+
+		auto* mTexcoords = geom->getUVs(0);
+		auto* mNorms = geom->getNormals();
+
+		std::vector<MeshDescriptor::TVertexPosition> vertices(mVertCount);
+		std::vector<MeshDescriptor::TVertexNormal> normals(mVertCount);
+		std::vector<MeshDescriptor::TVertexUV> uvs(mVertCount);
+		std::vector<MeshDescriptor::TVertexColor> colors;
+
+		for (int vi = 0; vi < mVertCount; vi++)
+		{
+			vertices[vi] = glm::vec3(
+				static_cast<float>(mVerts[vi].x),
+				static_cast<float>(mVerts[vi].y),
+				static_cast<float>(mVerts[vi].z)
+			);
+
+			uvs[vi] = glm::vec2(
+				static_cast<float>(mTexcoords[vi].x),
+				static_cast<float>(mTexcoords[vi].y)
+			);
+
+			normals[vi] = glm::vec3(
+				static_cast<float>(mNorms[vi].x),
+				static_cast<float>(mNorms[vi].y),
+				static_cast<float>(mNorms[vi].z)
+			);
+		}
+
 		auto* mIndices = geom->getFaceIndices();
 		auto mIndexCount = geom->getIndexCount();
 		std::vector<MeshDescriptor::TVertexIndices> indices;
 		indices.reserve(mIndexCount / 2 * 3);
 
+		/*
+		auto polygonCount = 0;
+		for (int ii = 0; ii < mIndexCount; ii++)
+		{
+			polygonCount += 1;
+
+			if (mIndices[ii] < 0)
+			{
+				polygonDistr[polygonCount] += 1;
+				polygonCount = 0;
+			}
+		}*/
+
+		for (int ii = 0; ii < mIndexCount;)
+		{
+			auto pin = ii;
+			auto we = ii + 1;
+
+			while (we + 1 < mIndexCount)
+			{
+				assertIndex(mIndices[pin], mVertCount, meshName);
+				assertIndex(mIndices[we], mVertCount, meshName);
+				indices.push_back(mIndices[pin]);
+				indices.push_back(mIndices[we]);
+
+				if (mIndices[we + 1] >= 0)
+				{
+					assertIndex(mIndices[we + 1], mVertCount, meshName);
+					indices.push_back(mIndices[we + 1]);
+
+					we += 1;
+				}
+				else
+				{
+					assertIndex(~mIndices[we + 1], mVertCount, meshName);
+					indices.push_back(~mIndices[we + 1]);
+
+					ii = we + 2;
+					break;
+				}
+
+			}
+		}
+
+		/*
 		int bufIndex = 0;
 		for (int ii = 0; ii + 2 < mIndexCount; ii += 3)
 		{
@@ -361,30 +471,81 @@ bool loadFBX_Implementation(std::vector<Mesh>& meshes, std::vector<Material>& ma
 				b = mIndices[ii + 1],
 				c = mIndices[ii + 2];
 
+			if (b < 0)
+			{
+				printf("Not handled - second index \n");
+				ii -= 1;
+
+				continue;
+			}
+
 			if (c < 0)
 			{
 				c = ~c;
 
-				indices.push_back( a );
-				indices.push_back( b );
-				indices.push_back( c );
+				assertIndex(a, mVertCount, meshName);
+				assertIndex(b, mVertCount, meshName);
+				assertIndex(c, mVertCount, meshName);
+
+				indices.push_back(a);
+				indices.push_back(b);
+				indices.push_back(c);
+
+				continue;
 			}
-			else
+
+			if (mIndices[ii + 3] < 0)
 			{
 				auto d = ~mIndices[ii + 3];
 				ii += 1;
 
-				indices.push_back( a );
-				indices.push_back( b );
-				indices.push_back( d );
-				indices.push_back( d );
-				indices.push_back( b );
-				indices.push_back( c );
-			}
-		}
-	*/
+				assertIndex(a, mVertCount, meshName);
+				assertIndex(b, mVertCount, meshName);
+				assertIndex(c, mVertCount, meshName);
+				assertIndex(d, mVertCount, meshName);
 
-	return false;
+				indices.push_back(a);
+				indices.push_back(b);
+				indices.push_back(d);
+				indices.push_back(d);
+				indices.push_back(b);
+				indices.push_back(c);
+
+				continue;
+			}
+
+			ii += 1;
+			printf("[wtf] Not handled - all four indices were positive > 0 ? \n");
+		}
+
+		/*
+		
+			mIndices[ii + 0]
+			mIndices[ii + 1]
+			mIndices[ii + 3]
+			mIndices[ii + 3]
+			mIndices[ii + 1]
+			mIndices[ii + 2]
+		
+		*/
+
+
+		std::vector<SubMesh> submeshes(1);
+		submeshes[0] = SubMesh(indices);
+
+		meshes.push_back(Mesh(vertices, uvs, normals, colors, submeshes));
+		rendererIDs.push_back(Renderer(meshes.size() - 1, 0, {0}));
+	}
+
+	//for (auto& pair : polygonDistr)
+	//{
+	//	printf("Polygon edges {%i}, count {%i}.\n", pair.first, pair.second);
+	//}
+
+	transforms.push_back(Transform());
+	materials.push_back(Material(0, TextureSource("C:/Git/Vulkan_Engine/Resources/Serialized/arch_stone_wall_01_Roughness.dds", VK_FORMAT_BC1_RGBA_SRGB_BLOCK, true)));
+
+	return true;
 }
 
 bool Scene::loadOBJ_Implementation(std::vector<Mesh>& meshes, std::vector<Material>& materials, std::vector<Renderer>& rendererIDs, std::vector<Transform>& transforms, const std::string& path, const std::string& name)
@@ -440,8 +601,8 @@ bool Scene::loadOBJ_Implementation(std::vector<Mesh>& meshes, std::vector<Materi
 	std::vector<SubMesh> submeshes;
 	std::vector<size_t> materialIDs;
 	// MESHES
-	meshes.reserve(objShapes.size());
-	rendererIDs.reserve(objShapes.size());
+	meshes.reserve(meshes.size() + objShapes.size());
+	rendererIDs.reserve(meshes.size() + objShapes.size());
 	for (MeshID i = 0; i < objShapes.size(); i++)
 	{
 		indexMapping.clear();
@@ -452,7 +613,6 @@ bool Scene::loadOBJ_Implementation(std::vector<Mesh>& meshes, std::vector<Materi
 
 		// The shape's vertex index here is referencing the big obj vertex buffer,
 		// Our vertex buffer for mesh will be much smaller and should be indexed per-mesh, instead of globally.
-
 		if (mesh.material_ids.size() * 3 < shapeIndices.size())
 		{
 			printf("The material ID array size (3 * %zi) does not match the shapeIndices array size (%zi).\n", mesh.material_ids.size(), shapeIndices.size());
@@ -562,7 +722,7 @@ bool Scene::loadOBJ_Implementation(std::vector<Mesh>& meshes, std::vector<Materi
 			uvs[kv.second] = reinterpretAt_orFallback<float, MeshDescriptor::TVertexUV>(objAttribs.texcoords, uvi);
 		}
 
-		std::vector<MeshDescriptor::TVertexColor> colors;		
+		std::vector<MeshDescriptor::TVertexColor> colors;
 		meshes.push_back(Mesh(vertices, uvs, normals, colors, submeshes));
 	}
 
@@ -570,7 +730,7 @@ bool Scene::loadOBJ_Implementation(std::vector<Mesh>& meshes, std::vector<Materi
 	typedef size_t GlobalBufferMaterialID;
 	std::unordered_map<MaterialID, GlobalBufferMaterialID> uniqueMaterials;
 	std::vector<size_t> globalBufMaterialIDs;
-	materials.reserve(objMats.size());
+	materials.reserve(materials.size() + objMats.size());
 	for (const auto& kv : meshToMaterialMapping)
 	{
 		const auto& meshMaterials = kv.second;
@@ -607,7 +767,10 @@ bool Scene::loadOBJ_Implementation(std::vector<Mesh>& meshes, std::vector<Materi
 		rendererIDs.push_back(Renderer(kv.first, 0, globalBufMaterialIDs));
 	}
 
-	transforms.push_back(Transform());
+	if (transforms.size() == 0)
+	{
+		transforms.push_back(Transform());
+	}
 
 	return true;
 }
@@ -617,28 +780,28 @@ namespace boost::serialization
 	template <typename Ar>
 	void serialize(Ar& ar, glm::vec2& v, unsigned _)
 	{
-		ar& make_nvp("x", v.x)& make_nvp("y", v.y);
+		ar& v.x & v.y;
 	}
 
 	template <typename Ar>
 	void serialize(Ar& ar, glm::vec3& v, unsigned _)
 	{
-		ar& make_nvp("x", v.x)& make_nvp("y", v.y)& make_nvp("z", v.z);
+		ar& v.x & v.y & v.z;
 	}
 
 	template <typename Ar>
 	void serialize(Ar& ar, glm::vec4& v, unsigned _)
 	{
-		ar& make_nvp("x", v.x)& make_nvp("y", v.y)& make_nvp("z", v.z)& make_nvp("w", v.w);
+		ar& v.x & v.y & v.z & v.w;
 	}
 
 	template <typename Ar>
 	void serialize(Ar& ar, glm::mat4& m, unsigned _)
 	{
-		ar& make_nvp("m0", m[0])&
-			make_nvp("m1", m[1])&
-			make_nvp("m2", m[2])&
-			make_nvp("m3", m[3]);
+		ar& m[0];
+		ar& m[1];
+		ar& m[2];
+		ar& m[3];
 	}
 }
 
@@ -650,8 +813,9 @@ bool Scene::tryLoadSupportedFormat(const Path& path)
 	/* ================ READ SERIALIZED BINARY =============== */
 	if (fileExists(path, ".binary"))
 	{
-		// Deserialize
+		ProfileMarker _("Loader::Binary");
 
+		// Deserialize
 		auto stream = std::fstream(path, std::ios::in | std::ios::binary);
 		boost::archive::binary_iarchive archive(stream);
 
@@ -660,15 +824,31 @@ bool Scene::tryLoadSupportedFormat(const Path& path)
 		return true;
 	}
 
+	/* ================ READ FROM GLTF =============== */
+	if (fileExists(path, ".gltf"))
+	{
+		ProfileMarker _("Loader::ASSIMP");
+		return load_AssimpImplementation(m_meshes, m_materials, m_rendererIDs, m_transforms, Path(path));
+	}
+
 	/* ================ READ FROM OBJ =============== */
 	if (fileExists(path, ".obj"))
 	{
+		ProfileMarker _("Loader::Custom_OBJ");
 		return loadOBJ_Implementation(m_meshes, m_materials, m_rendererIDs, m_transforms, directory, name);
 	}
 
 	/* ================ READ FROM FBX =============== */
 	if (fileExists(path, ".fbx"))
 	{
+		ProfileMarker _("Loader::Custom_FBX");
+		return loadFBX_Implementation(m_meshes, m_materials, m_rendererIDs, m_transforms, directory, name);
+	}
+
+	// Fallback
+	if (fileExists(path))
+	{
+		ProfileMarker _("Loader::ASSIMP");
 		return load_AssimpImplementation(m_meshes, m_materials, m_rendererIDs, m_transforms, Path(path));
 	}
 
@@ -683,82 +863,88 @@ bool Scene::tryLoadFromFile(const Path& path, VkDescriptorPool descPool)
 		return false;
 	}
 
-	/* ================= CREATE TEXTURES ================*/
-	/* ================= CREATE GRAPHICS MATERIALS ================*/
 	std::unordered_map<TextureSource, uint32_t> loadedTextures;
-	m_graphicsMaterials.reserve(m_textures.size());
-	auto device = m_presentationDevice->getDevice();
 	StagingBufferPool stagingBufPool{};
-	for (auto& rendererIDs : m_rendererIDs)
 	{
-		for (auto& matIndex : rendererIDs.materialIDs)
+		ProfileMarker _("Scene::Create_Graphics_Materials");
+		/* ================= CREATE TEXTURES ================*/
+		/* ================= CREATE GRAPHICS MATERIALS ================*/
+		m_graphicsMaterials.reserve(m_textures.size());
+		auto device = m_presentationDevice->getDevice();
+		for (auto& rendererIDs : m_rendererIDs)
 		{
-			const auto& mat = m_materials[matIndex];
-			const auto& texSrc = mat.getTextureSource();
-			if (loadedTextures.count(texSrc) == 0)
+			for (auto& matIndex : rendererIDs.materialIDs)
 			{
-				auto size = m_textures.size();
-				m_textures.resize(size + 1);
-				m_graphicsMaterials.resize(size + 1);
-				if (VkTexture2D::tryCreateTexture(m_textures.back(), texSrc, m_presentationDevice, stagingBufPool))
+				const auto& mat = m_materials[matIndex];
+				const auto& texSrc = mat.getTextureSource();
+				if (loadedTextures.count(texSrc) == 0)
 				{
-					loadedTextures[texSrc] = as_uint32(size);
+					auto size = m_textures.size();
+					m_textures.resize(size + 1);
+					m_graphicsMaterials.resize(size + 1);
+					if (VkTexture2D::tryCreateTexture(m_textures.back(), texSrc, m_presentationDevice, stagingBufPool))
+					{
+						loadedTextures[texSrc] = as_uint32(size);
 
-					auto* shader = VkShader::findShader(mat.getShaderIdentifier());
-					m_presentationTarget->createGraphicsMaterial(m_graphicsMaterials.back(), device, descPool, shader, m_textures.back().get());
-				}
-				else
-				{
-					rendererIDs.materialIDs = { 0 };
+						auto* shader = VkShader::findShader(mat.getShaderIdentifier());
+						m_presentationTarget->createGraphicsMaterial(m_graphicsMaterials.back(), device, descPool, shader, m_textures.back().get());
+					}
+					else
+					{
+						rendererIDs.materialIDs = { 0 };
 
-					m_textures.resize(size);
-					m_graphicsMaterials.resize(size);
-					printf("The texture at '%s' could not be loaded.\n", texSrc.path.c_str());
+						m_textures.resize(size);
+						m_graphicsMaterials.resize(size);
+						printf("The texture at '%s' could not be loaded.\n", texSrc.path.c_str());
+					}
 				}
 			}
 		}
 	}
 
-	/* ================= CREATE GRAPHICS MESHES ================*/
-	auto defaultMeshDescriptor = Mesh::defaultMeshDescriptor;
-	auto vmaAllocator = VkMemoryAllocator::getInstance()->m_allocator;
-	const auto count = m_meshes.size();
-
-	m_graphicsMeshes.reserve(count);
-	m_renderers.reserve(count);
-	for (auto& ids : m_rendererIDs)
 	{
-		auto& mesh = m_meshes[ids.meshID];
+		ProfileMarker _("Scene::Create_Graphics_Meshes");
+		/* ================= CREATE GRAPHICS MESHES ================*/
+		auto defaultMeshDescriptor = Mesh::defaultMeshDescriptor;
+		auto vmaAllocator = VkMemoryAllocator::getInstance()->m_allocator;
+		const auto count = m_meshes.size();
 
-		auto newGraphicsMesh = VkMesh();
-		if (!mesh.allocateGraphicsMesh(newGraphicsMesh, vmaAllocator, m_presentationDevice, stagingBufPool) || !mesh.isValid())
-			return false;
-
-		if (defaultMeshDescriptor != mesh.getMeshDescriptor())
+		m_graphicsMeshes.reserve(count);
+		m_renderers.reserve(count);
+		for (auto& ids : m_rendererIDs)
 		{
-			printf("Mesh metadata does not match - can not bind to the same pipeline.\n");
-			return false;
-		}
-		m_graphicsMeshes.push_back(std::move(newGraphicsMesh));
+			auto& mesh = m_meshes[ids.meshID];
 
-		uint32_t submeshIndex = 0;
-		for (auto materialIDs : ids.materialIDs)
-		{
-			const auto& texPath = m_materials[materialIDs].getTextureSource();
-			if (!loadedTextures.count(texPath) && loadedTextures[texPath] > 0 && loadedTextures[texPath] < m_graphicsMaterials.size())
-			{
-				printf("SceneLoader - The material not found for '%zu' mesh.\n", ids.meshID);
+			auto newGraphicsMesh = VkMesh();
+			if (!mesh.allocateGraphicsMesh(newGraphicsMesh, vmaAllocator, m_presentationDevice, stagingBufPool) || !mesh.isValid())
 				continue;
-			}
 
-			m_renderers.push_back(
-				VkMeshRenderer(
-					&m_graphicsMeshes.back(), submeshIndex, 
-					&m_graphicsMaterials[loadedTextures[texPath]]->getMaterialVariant(), 
-					mesh.getBounds(submeshIndex), &m_transforms[ids.transformID]
+			if (defaultMeshDescriptor != mesh.getMeshDescriptor())
+			{
+				printf("Mesh metadata does not match - can not bind to the same pipeline.\n");
+				return false;
+			}
+			m_graphicsMeshes.push_back(std::move(newGraphicsMesh));
+
+			uint32_t submeshIndex = 0;
+			for (auto materialIDs : ids.materialIDs)
+			{
+				const auto& texPath = m_materials[materialIDs].getTextureSource();
+				if (!loadedTextures.count(texPath) && loadedTextures[texPath] > 0 && loadedTextures[texPath] < m_graphicsMaterials.size())
+				{
+					printf("SceneLoader - The material not found for '%zu' mesh.\n", ids.meshID);
+					continue;
+				}
+
+				m_renderers.push_back(
+					VkMeshRenderer(
+						&m_graphicsMeshes.back(), submeshIndex,
+						&m_graphicsMaterials[loadedTextures[texPath]]->getMaterialVariant(),
+						mesh.getBounds(submeshIndex), &m_transforms[ids.transformID]
 					)
-			);
-			++submeshIndex;
+				);
+				++submeshIndex;
+			}
 		}
 	}
 	stagingBufPool.releaseAllResources();

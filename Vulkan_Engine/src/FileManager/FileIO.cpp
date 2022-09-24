@@ -8,7 +8,7 @@ std::vector<char> FileIO::readFile(const Path& filename)
 
 	if (!file.good() || file.fail() || !file.is_open())
 	{
-		throw std::runtime_error("failed to open file!");
+		throw std::runtime_error("FileIO: Failed to open file " + filename.value);
 	}
 
 	size_t fileSize = (size_t)file.tellg();

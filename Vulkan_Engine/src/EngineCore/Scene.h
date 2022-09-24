@@ -33,6 +33,7 @@ struct SerializedScene
 	std::vector<Renderer> m_rendererIDs;
 };
 
+#include "Profiling/ProfileMarker.h"
 class Scene
 {
 public:
@@ -49,17 +50,18 @@ public:
 	bool load(VkDescriptorPool descPool);
 	void release(VkDevice device, const VmaAllocator& allocator);
 
-
 	bool tryLoadSupportedFormat(const Path& path);
 	bool tryLoadFromFile(const Path& path, VkDescriptorPool descPool);
 
 	template<class Archive>
 	void serialize(Archive& ar, const unsigned int version)
 	{
-		ar& m_meshes;
-		ar& m_materials;
-		ar& m_rendererIDs;
-		ar& m_transforms;
+		ProfileMarker _("Scene::Serialize");
+
+		ar& m_meshes
+			& m_materials
+			& m_rendererIDs
+			& m_transforms;
 	}
 
 private:

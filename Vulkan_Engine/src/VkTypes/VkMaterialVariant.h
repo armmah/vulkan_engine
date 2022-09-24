@@ -58,6 +58,7 @@ struct Renderer
 	{
 		ar& meshID;
 		ar& materialIDs;
+		ar& transformID;
 	}
 
 	bool operator ==(const Renderer& other) const

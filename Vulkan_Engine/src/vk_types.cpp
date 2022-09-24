@@ -118,9 +118,7 @@ FrameStats CommandObjectsWrapper::renderIndexedMeshes(const std::vector<VkMeshRe
 		// To do - Add sorting to minimize state change
 		for (auto& renderer : renderers)
 		{
-			// glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f);
-			glm::mat4 model = renderer.transform->localToWorld; //glm::translate(glm::mat4(1.f), position);
-
+			glm::mat4 model = renderer.transform->localToWorld;
 			if (renderer.bounds != nullptr && !cameraFrustum.isOnFrustum(*renderer.bounds))
 				continue;
 

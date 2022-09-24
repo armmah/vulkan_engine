@@ -22,31 +22,113 @@ namespace boost::serialization
 	template <typename Ar>
 	void serialize(Ar& ar, glm::vec2& v, unsigned _)
 	{
-		ar& make_nvp("x", v.x)& make_nvp("y", v.y);
+		ar& v.x & v.y;
 	}
 
 	template <typename Ar>
 	void serialize(Ar& ar, glm::vec3& v, unsigned _)
 	{
-		ar& make_nvp("x", v.x)& make_nvp("y", v.y)& make_nvp("z", v.z);
+		ar& v.x & v.y & v.z;
 	}
 
 	template <typename Ar>
 	void serialize(Ar& ar, glm::vec4& v, unsigned _)
 	{
-		ar& make_nvp("x", v.x)& make_nvp("y", v.y)& make_nvp("z", v.z)& make_nvp("w", v.w);
+		ar& v.x & v.y & v.z & v.w;
 	}
 
 	template <typename Ar>
 	void serialize(Ar& ar, glm::mat4& m, unsigned _)
 	{
-		ar& make_nvp("m0", m[0])&
-			make_nvp("m1", m[1])&
-			make_nvp("m2", m[2])&
-			make_nvp("m3", m[3]);
+		ar& m[0];
+		ar& m[1];
+		ar& m[2];
+		ar& m[3];
 	}
 }
 
+float genFloat(float LO, float HI)
+{
+	return LO + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (HI - LO)));
+}
+
+TEST(Benchmark, Serialization)
+{
+	std::string path1 = "C:/Git/test_dir/bigFlatArray.bin",
+		path2 = "C:/Git/test_dir/bigVector.bin";
+
+	std::vector<float> bigFlatArray;
+	std::vector<glm::vec4> bigVector;
+
+	const int COUNT = 10000000;
+	const float RANGE = 10000.f;
+	bigFlatArray.resize(COUNT);
+	bigVector.resize(COUNT / 4);
+
+	const float MIN = - RANGE / 2;
+	const float MAX = RANGE / 2;
+	for (int i = 0; i < COUNT / 4; i++)
+	{
+		float a = genFloat(MIN, MAX),
+			b = genFloat(MIN, MAX),
+			c = genFloat(MIN, MAX),
+			d = genFloat(MIN, MAX);
+
+		bigFlatArray[i * 4 + 0] = a;
+		bigFlatArray[i * 4 + 1] = b;
+		bigFlatArray[i * 4 + 2] = c;
+		bigFlatArray[i * 4 + 3] = d;
+
+		bigVector[i] = glm::vec4(a, b, c, d);
+	}
+
+	{
+		{
+			ProfileMarker _("WRITE - Big Flat Array");
+			auto stream = std::fstream(path1, std::ios::out | std::ios::binary);
+			boost::archive::binary_oarchive archive(stream);
+
+			archive << bigFlatArray;
+			stream.close();
+		}
+		bigFlatArray.clear();
+		bigFlatArray = std::vector<float>();
+
+		{
+			ProfileMarker _("READ - Big Flat Array");
+			auto stream = std::fstream(path1, std::ios::in | std::ios::binary);
+			boost::archive::binary_iarchive archive(stream);
+
+			archive >> bigFlatArray;
+			stream.close();
+		}
+	}
+
+	{
+		{
+			ProfileMarker _("WRITE - Big Vector 4");
+			auto stream = std::fstream(path2, std::ios::out | std::ios::binary);
+			boost::archive::binary_oarchive archive(stream);
+
+			archive << bigVector;
+			stream.close();
+		}
+		bigVector.clear();
+		bigVector = std::vector<glm::vec4>();
+
+		{
+			ProfileMarker _("READ - Big Vector 4");
+			auto stream = std::fstream(path2, std::ios::in | std::ios::binary);
+			boost::archive::binary_iarchive archive(stream);
+
+			archive >> bigVector;
+			stream.close();
+		}
+	}
+}
+
+
+/*
 TEST(Texturesource, Path)
 {
 	return;
@@ -79,11 +161,16 @@ TEST(Texturesource, Path)
 TEST(Serialization, SceneBinary)
 {
 	Scene scene(nullptr, nullptr);
-	const auto modelPath = Directories::getWorkingModel();
+	const auto modelPaths = Directories::getWorkingModels();
 	const auto fullPath = Directories::getWorkingScene();
 	
-	scene.tryLoadSupportedFormat(modelPath);
-	EXPECT_TRUE(scene.getMeshes().size() > 0);
+	for (auto& model : modelPaths)
+	{
+		auto meshCount = scene.getMeshes().size();
+		scene.tryLoadSupportedFormat(model);
+
+		EXPECT_TRUE(scene.getMeshes().size() - meshCount > 0);
+	}
 
 	// WRITE
 	{
@@ -156,3 +243,4 @@ TEST(Serialization, SceneBinary)
 		stream.close();
 	}
 }
+*/

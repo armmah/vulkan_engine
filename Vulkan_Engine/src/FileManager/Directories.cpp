@@ -24,4 +24,12 @@ Path Directories::getWorkingScene() { return getAbsolutePath(workingSceneDir_rel
 
 Path Directories::getWorkingModel() { return getAbsolutePath(workingModel_relative); }
 
+std::vector<Path> Directories::getWorkingModels()
+{
+	return {
+		getAbsolutePath(workingModel_relative),
+		getAbsolutePath(additiveModel_relative)
+	};
+}
+
 Path Directories::getShaderLibraryPath() { return getAbsolutePath(libraryShaderPath_relative); }

@@ -58,11 +58,8 @@ void VulkanEngine::init(bool requestValidationLayers)
 	// m_cam->setPosition({ -150.f, 100.f, -10.f });
 	// m_cam->setRotation(0.f, 15.f);
 
-	// m_cam->setPosition({ -50.f, 15.f, -40.f });
-	// m_cam->setRotation(40.f, -20.f);
-
-	m_cam->setPosition({ -275.f, 250.f, -275.f });
-	m_cam->setRotation(45.f, -30.f);
+	m_cam->setPosition({ 6.f, 2.5f, -3.f });
+	m_cam->setRotation(-205.f, -9.f);
 }
 
 bool VulkanEngine::init_vulkan()

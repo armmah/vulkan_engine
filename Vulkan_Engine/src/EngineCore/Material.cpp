@@ -36,7 +36,8 @@ void Material::serialize(boost::archive::binary_oarchive& ar, const unsigned int
 
 	// Always serializing relative path
 	m_textureParameters.path.removeDirectory(Directories::getWorkingDirectory());
-	assert(std::filesystem::exists(m_textureParameters.path.value));
+	printf("path: %s\n", Directories::getWorkingDirectory().combine(m_textureParameters.path.value).value.c_str());
+	assert(std::filesystem::exists(Directories::getWorkingDirectory().combine(m_textureParameters.path.value).value));
 
 	ar& m_textureParameters.path.value;
 	ar& m_textureParameters.format;

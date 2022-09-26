@@ -335,3 +335,50 @@ void Mesh::updateMetaData()
 	metaData.elementByteSizes[3] = vectorElementsizeof(m_colors);
 }
 
+bool Mesh::operator==(const Mesh& other) const
+{
+	if (m_positions.size() != other.m_positions.size() ||
+		m_uvs.size() != other.m_uvs.size() ||
+		m_normals.size() != other.m_normals.size() ||
+		m_colors.size() != other.m_colors.size() ||
+		m_submeshes.size() != other.m_submeshes.size())
+		return false;
+
+	for (size_t i = 0; i < m_submeshes.size(); i++)
+	{
+		if (m_submeshes[i] != other.m_submeshes[i])
+			return false;
+	}
+
+	const auto EPSILON3 = glm::vec3(1e-6f);
+	for (size_t i = 0; i < m_positions.size(); i++)
+	{
+		auto res = glm::epsilonNotEqual(m_positions[i], other.m_positions[i], EPSILON3);
+		if (res.x || res.y || res.z)
+			return false;
+	}
+
+	const auto EPSILON2 = glm::vec2(1e-6f);
+	for (size_t i = 0; i < m_uvs.size(); i++)
+	{
+		auto res = glm::epsilonNotEqual(m_uvs[i], other.m_uvs[i], EPSILON2);
+		if (res.x || res.y)
+			return false;
+	}
+
+	for (size_t i = 0; i < m_normals.size(); i++)
+	{
+		auto res = glm::epsilonNotEqual(m_normals[i], other.m_normals[i], EPSILON3);
+		if (res.x || res.y || res.z)
+			return false;
+	}
+
+	for (size_t i = 0; i < m_colors.size(); i++)
+	{
+		auto res = glm::epsilonNotEqual(m_colors[i], other.m_colors[i], EPSILON3);
+		if (res.x || res.y || res.z)
+			return false;
+	}
+
+	return true;
+}

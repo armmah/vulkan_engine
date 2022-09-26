@@ -63,6 +63,12 @@
     <Filter Include="Source Files\FileManager">
       <UniqueIdentifier>{f070804f-9d36-4133-bf98-a8b1d302dce0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Loaders">
+      <UniqueIdentifier>{56923d5e-fc08-4f56-a6b2-c159987b78ff}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Loaders\Model">
+      <UniqueIdentifier>{f0add6d5-6733-4e57-bb54-2b590a2a6432}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\vk_engine.cpp">
@@ -178,6 +184,18 @@
     </ClCompile>
     <ClCompile Include="src\FileManager\FileIO.cpp">
       <Filter>Source Files\FileManager</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Loaders\Model\Common.cpp">
+      <Filter>Source Files\Loaders\Model</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Loaders\Model\Loader_OBJ.cpp">
+      <Filter>Source Files\Loaders\Model</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Loaders\Model\Loader_ASSIMP.cpp">
+      <Filter>Source Files\Loaders\Model</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Loaders\Model\Loader_FBX.cpp">
+      <Filter>Source Files\Loaders\Model</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -303,6 +321,18 @@
     </ClInclude>
     <ClInclude Include="src\FileManager\FileIO.h">
       <Filter>Header Files\FileManager</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Loaders\Model\Common.h">
+      <Filter>Header Files\Loaders\Model</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Loaders\Model\Loader_OBJ.h">
+      <Filter>Header Files\Loaders\Model</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Loaders\Model\Loader_FBX.h">
+      <Filter>Header Files\Loaders\Model</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Loaders\Model\Loader_ASSIMP.h">
+      <Filter>Header Files\Loaders\Model</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -20,20 +20,6 @@ namespace Presentation
 	class PresentationTarget;
 }
 
-typedef size_t MeshIndex;
-typedef std::vector<TextureSource> SubmeshMaterials;
-
-typedef size_t MaterialID;
-typedef size_t IndexCount;
-
-struct SerializedScene 
-{
-	std::vector<Mesh> m_meshes;
-	std::vector<Material> m_materials;
-	std::vector<Renderer> m_rendererIDs;
-};
-
-#include "Profiling/ProfileMarker.h"
 class Scene
 {
 public:
@@ -50,23 +36,13 @@ public:
 	bool load(VkDescriptorPool descPool);
 	void release(VkDevice device, const VmaAllocator& allocator);
 
-	bool tryLoadSupportedFormat(const Path& path);
-	bool tryLoadFromFile(const Path& path, VkDescriptorPool descPool);
+	bool tryInitializeFromFile(const Path& path);
+	void createGraphicsRepresentation(VkDescriptorPool descPool);
 
 	template<class Archive>
-	void serialize(Archive& ar, const unsigned int version)
-	{
-		ProfileMarker _("Scene::Serialize");
-
-		ar& m_meshes
-			& m_materials
-			& m_rendererIDs
-			& m_transforms;
-	}
+	void serialize(Archive& ar, const unsigned int version);
 
 private:
-	static bool loadOBJ_Implementation(std::vector<Mesh>& meshes, std::vector<Material>& materials, std::vector<Renderer>& rendererIDs, std::vector<Transform>& transforms, const std::string& path, const std::string& name);
-
 	const Presentation::Device* m_presentationDevice;
 	Presentation::PresentationTarget* m_presentationTarget;
 

@@ -5,6 +5,9 @@
 #include "Mesh.h"
 #include "FileManager/Directories.h"
 
+#include "Profiling/ProfileMarker.h"
+#include "Loaders/Model/Common.h"
+
 #include <iostream>
 #include <sstream>
 
@@ -16,41 +19,6 @@
 
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/nvp.hpp>
-
-namespace boost::serialization
-{
-	template <typename Ar>
-	void serialize(Ar& ar, glm::vec2& v, unsigned _)
-	{
-		ar& v.x & v.y;
-	}
-
-	template <typename Ar>
-	void serialize(Ar& ar, glm::vec3& v, unsigned _)
-	{
-		ar& v.x & v.y & v.z;
-	}
-
-	template <typename Ar>
-	void serialize(Ar& ar, glm::vec4& v, unsigned _)
-	{
-		ar& v.x & v.y & v.z & v.w;
-	}
-
-	template <typename Ar>
-	void serialize(Ar& ar, glm::mat4& m, unsigned _)
-	{
-		ar& m[0];
-		ar& m[1];
-		ar& m[2];
-		ar& m[3];
-	}
-}
-
-BOOST_IS_BITWISE_SERIALIZABLE(glm::vec2)
-BOOST_IS_BITWISE_SERIALIZABLE(glm::vec3)
-BOOST_IS_BITWISE_SERIALIZABLE(glm::vec4)
-BOOST_IS_BITWISE_SERIALIZABLE(glm::mat4)
 
 float genFloat(float LO, float HI) { return LO + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (HI - LO))); }
 
@@ -134,7 +102,6 @@ TEST(Benchmark, Serialization)
 	}
 }
 
-
 TEST(Texturesource, Path)
 {
 	auto test1 = TextureSource("directory/file.png");
@@ -171,7 +138,7 @@ TEST(Serialization, SceneBinary)
 	for (auto& model : modelPaths)
 	{
 		auto meshCount = scene.getMeshes().size();
-		scene.tryLoadSupportedFormat(model);
+		scene.tryInitializeFromFile(model);
 
 		EXPECT_TRUE(scene.getMeshes().size() - meshCount > 0);
 	}

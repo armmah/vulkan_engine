@@ -6,12 +6,29 @@
 BoundsAABB::BoundsAABB() : center(), extents(std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max()) {}
 
 BoundsAABB::BoundsAABB(const glm::vec3& min, const glm::vec3& max)
-	: center((max + min) * 0.5f), extents(max.x - center.x, max.y - center.y, max.z - center.z) { }
+	: center((max + min) * 0.5f), extents(max.x - center.x, max.y - center.y, max.z - center.z) {}
 
 BoundsAABB::BoundsAABB(const glm::vec3& center, float x, float y, float z) : center(center), extents(x, y, z) {}
 
 BoundsAABB BoundsAABB::getTransformed(const glm::mat4& matrix) const
 {
+#ifndef SAFE_FALLBACK
+	BoundsAABB result{};
+
+	for (int i = 0; i < 3; i++)
+	{
+		result.center[i] = matrix[3][i];
+		result.extents[i] = 0.f;
+
+		for (int k = 0; k < 3; k++)
+		{
+			result.center[i] += matrix[k][i] * center[k];
+			result.extents[i] += std::abs(matrix[k][i]) * extents[k];
+		}
+	}
+
+	return result;
+#else
 	std::array<glm::vec4, 8> corners = {
 		glm::vec4((center - glm::vec3(-extents.x, extents.y, -extents.z)), 1.0f),
 		glm::vec4((center - glm::vec3(-extents.x, extents.y, extents.z)), 1.0f),
@@ -24,8 +41,8 @@ BoundsAABB BoundsAABB::getTransformed(const glm::mat4& matrix) const
 		glm::vec4((center - glm::vec3(extents.x, -extents.y, extents.z)), 1.0f),
 	};
 
-	auto min = glm::vec3(std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
-	auto max = glm::vec3(std::numeric_limits<float>::min(), std::numeric_limits<float>::min(), std::numeric_limits<float>::min());
+	auto min = glm::vec3(std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity());
+	auto max = glm::vec3(-std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity());
 
 	for (auto& c : corners)
 	{
@@ -35,7 +52,16 @@ BoundsAABB BoundsAABB::getTransformed(const glm::mat4& matrix) const
 		max = glm::vec3(std::max(max.x, c.x), std::max(max.y, c.y), std::max(max.z, c.z));
 	}
 
-	return BoundsAABB(min, max);
+	auto bnd = BoundsAABB(min, max);
+
+	auto EPSILON = 0.01f;
+	assert(
+		glm::length(result.center - bnd.center) < EPSILON &&
+		glm::length(result.extents - bnd.extents) < EPSILON
+	);
+
+	return bnd;
+#endif
 }
 
 bool BoundsAABB::isOnOrForwardPlane(const Plane& plane) const

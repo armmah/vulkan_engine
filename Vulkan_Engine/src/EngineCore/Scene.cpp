@@ -23,7 +23,7 @@ Scene::Scene(const Presentation::Device* device, Presentation::PresentationTarge
 
 Scene::~Scene() { }
 
-const bool serialize_from_origin = true;
+const bool serialize_from_origin = false;
 bool Scene::load(VkDescriptorPool descPool)
 {
 	/*****************************				IMPORT					****************************************/

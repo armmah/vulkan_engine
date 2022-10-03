@@ -40,23 +40,22 @@ struct LoadedTexture : ITextureContainer
 	LoadedTexture(LoadedTexture&& texture) = default;
 	LoadedTexture(const LoadedTexture& other) = default;
 	LoadedTexture(unsigned char* const data, uint32_t byteSize, uint32_t width, uint32_t height)
-		: pixels(data), imageByteSize(byteSize), width(width), height(height) { }
+		: pixels(data, data + byteSize), imageByteSize(byteSize), width(width), height(height) { }
 
 	uint32_t getByteSize() const override { return as_uint32(imageByteSize); }
 	MipDesc getDimensions() const { return MipDesc(width, height, imageByteSize); }
-	void copyToMappedBuffer(void* destination, size_t offset = 0) const override { copy(destination, offset, pixels, imageByteSize); }
+	void copyToMappedBuffer(void* destination, size_t offset = 0) const override { copy(destination, offset, pixels.data(), imageByteSize); }
 
 	void release() noexcept
 	{
-		if (pixels != nullptr && imageByteSize > 0)
+		if (pixels.size() > 0 && imageByteSize > 0)
 		{
-			delete[] pixels;
-			pixels = nullptr;
+			pixels.clear();
 		}
 	}
 
 private:
-	unsigned char* pixels;
+	std::vector<unsigned char> pixels;
 	uint32_t imageByteSize;
 
 	uint32_t width, height;

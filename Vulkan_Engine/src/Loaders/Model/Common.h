@@ -7,7 +7,7 @@
 
 // The limiter helps when debugging some things to iterate quickly
 #ifdef IMPORT_LIMITER_ENABLED
-const int import_mesh_limitter = 0;
+constexpr int import_mesh_limitter = 0;
 #endif
 #endif
 
@@ -103,7 +103,7 @@ namespace Loader
 
 			// Fill the rest, if necessary.
 			//fillArrayWithDefaultValue(dst, minSize / sizeof(T), dst.size());
-			for (int i = minSize / sizeof(T); i < dst.size(); i++)
+			for (size_t i = minSize / sizeof(T); i < dst.size(); i++)
 			{
 				dst[i] = T();
 			}

@@ -18,7 +18,7 @@ bool Loader::loadFBX_Implementation(std::vector<Mesh>& meshes, std::vector<Mater
 	auto charCollection = FileIO::readFile(fbxPath);
 
 	const ofbx::u8* ptr = reinterpret_cast<ofbx::u8*>(charCollection.data());
-	const auto* scene = ofbx::load(ptr, charCollection.size(), static_cast<ofbx::u64>(ofbx::LoadFlags::IGNORE_BLEND_SHAPES));
+	const auto* scene = ofbx::load(ptr, static_cast<int>(charCollection.size()), static_cast<ofbx::u64>(ofbx::LoadFlags::IGNORE_BLEND_SHAPES));
 	if (!scene) return false;
 
 	std::unordered_map<int, int> polygonDistr;
@@ -60,7 +60,7 @@ bool Loader::loadFBX_Implementation(std::vector<Mesh>& meshes, std::vector<Mater
 		}
 
 		auto* mIndices = geom->getFaceIndices();
-		auto mIndexCount = geom->getIndexCount();
+		auto mIndexCount = static_cast<size_t>(geom->getIndexCount());
 		std::vector<MeshDescriptor::TVertexIndices> indices;
 		indices.reserve(mIndexCount / 2 * 3);
 

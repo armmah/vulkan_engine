@@ -31,9 +31,9 @@ void Loader::Utility::maxVector(glm::vec3& max, const glm::vec3& point)
 
 void Loader::Utility::assertIndex(int index, int vertCount, const char* name)
 {
-	if (index >= std::numeric_limits<MeshDescriptor::TVertexIndices>::max())
-		printf("The index of mesh '%s' exceeded the 16 bit precision limit with id {%i}.\n", name, index);
-
 	if (index < 0 || index >= vertCount)
 		printf("The index of mesh '%s' was pointing outside of the vertex array {0 <= %i < %i}.\n", name, index, vertCount);
+
+	if (static_cast<unsigned int>(index) >= std::numeric_limits<MeshDescriptor::TVertexIndices>::max())
+		printf("The index of mesh '%s' exceeded the 16 bit precision limit with id {%i}.\n", name, index);
 }

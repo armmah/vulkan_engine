@@ -26,6 +26,10 @@ ProfilerMarkerAccumulative::ProfilerMarkerAccumulative(std::string markerName)
 ProfilerMarkerAccumulative::~ProfilerMarkerAccumulative()
 {
 	auto msElapsed = getMiliseconds(startTime, getNow());
-	accumulated[markerName] += msElapsed;
-	printf("=\\ %s /=: total {%lld ms}, self {%lld ms}\n", markerName.c_str(), accumulated[markerName], msElapsed);
+	try
+	{
+		accumulated[markerName] += msElapsed;
+		printf("=\\ %s /=: total {%lld ms}, self {%lld ms}\n", markerName.c_str(), accumulated[markerName], msElapsed);
+	}
+	catch(...) { }
 }

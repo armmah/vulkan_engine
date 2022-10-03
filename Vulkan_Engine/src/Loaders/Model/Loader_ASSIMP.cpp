@@ -111,7 +111,7 @@ bool Loader::load_AssimpImplementation(std::vector<Mesh>& meshes, std::vector<Ma
 		Loader::crawl(transforms, meshToTransform, scene->mRootNode, aiMatrix4x4(), 0);
 	}
 
-	std::unordered_map<int, std::vector<int>> textureToMeshMap;
+	std::unordered_map<int, std::vector<size_t>> textureToMeshMap;
 
 	ProfileMarker _("	Loader::CreateMesh");
 	std::vector<MeshDescriptor::TVertexIndices> indices;
@@ -161,7 +161,7 @@ bool Loader::load_AssimpImplementation(std::vector<Mesh>& meshes, std::vector<Ma
 		Utility::reinterpretCopy(mVerts, vertN, vertices);
 		Utility::reinterpretCopy(mNorms, vertN, normals);
 
-		for (int vi = 0; vi < vertN; vi++)
+		for (unsigned int vi = 0; vi < vertN; vi++)
 		{
 			uvs[vi] = glm::vec2(mTexcoords[vi].x, mTexcoords[vi].y);
 		}

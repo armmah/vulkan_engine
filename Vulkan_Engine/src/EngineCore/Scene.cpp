@@ -23,7 +23,7 @@ Scene::Scene(const Presentation::Device* device, Presentation::PresentationTarge
 
 Scene::~Scene() { }
 
-const bool serialize_from_origin = false;
+constexpr bool serialize_from_origin = false;
 bool Scene::load(VkDescriptorPool descPool)
 {
 	/*****************************				IMPORT					****************************************/
@@ -153,13 +153,6 @@ bool Scene::tryInitializeFromFile(const Path& path)
 	{
 		ProfileMarker _("Loader::Custom_OBJ");
 		return Loader::loadOBJ_Implementation(m_meshes, m_materials, m_rendererIDs, m_transforms, directory, name);
-	}
-
-	/* ================ READ FROM FBX =============== */
-	if (fileExists(path, ".fbx"))
-	{
-		ProfileMarker _("Loader::Custom_FBX");
-		return Loader::loadFBX_Implementation(m_meshes, m_materials, m_rendererIDs, m_transforms, directory, name);
 	}
 
 	// Fallback

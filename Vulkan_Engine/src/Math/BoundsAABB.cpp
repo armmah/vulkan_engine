@@ -10,6 +10,34 @@ BoundsAABB::BoundsAABB(const glm::vec3& min, const glm::vec3& max)
 
 BoundsAABB::BoundsAABB(const glm::vec3& center, float x, float y, float z) : center(center), extents(x, y, z) {}
 
+BoundsAABB BoundsAABB::getTransformed(const glm::mat4& matrix) const
+{
+	std::array<glm::vec4, 8> corners = {
+		glm::vec4((center - glm::vec3(-extents.x, extents.y, -extents.z)), 1.0f),
+		glm::vec4((center - glm::vec3(-extents.x, extents.y, extents.z)), 1.0f),
+		glm::vec4((center - glm::vec3(extents.x, extents.y, -extents.z)), 1.0f),
+		glm::vec4((center - glm::vec3(extents.x, extents.y, extents.z)), 1.0f),
+
+		glm::vec4((center - glm::vec3(-extents.x, -extents.y, -extents.z)), 1.0f),
+		glm::vec4((center - glm::vec3(-extents.x, -extents.y, extents.z)), 1.0f),
+		glm::vec4((center - glm::vec3(extents.x, -extents.y, -extents.z)), 1.0f),
+		glm::vec4((center - glm::vec3(extents.x, -extents.y, extents.z)), 1.0f),
+	};
+
+	auto min = glm::vec3(std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
+	auto max = glm::vec3(std::numeric_limits<float>::min(), std::numeric_limits<float>::min(), std::numeric_limits<float>::min());
+
+	for (auto& c : corners)
+	{
+		c = matrix * c;
+
+		min = glm::vec3(std::min(min.x, c.x), std::min(min.y, c.y), std::min(min.z, c.z));
+		max = glm::vec3(std::max(max.x, c.x), std::max(max.y, c.y), std::max(max.z, c.z));
+	}
+
+	return BoundsAABB(min, max);
+}
+
 bool BoundsAABB::isOnOrForwardPlane(const Plane& plane) const
 {
 	const auto& normal = plane.getNormal();

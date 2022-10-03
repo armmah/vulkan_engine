@@ -88,6 +88,7 @@ bool Loader::load_AssimpImplementation(std::vector<Mesh>& meshes, std::vector<Ma
 	// probably to request more postprocessing than we do in this example.
 	const aiScene* scene = importer.ReadFile(fullPath.c_str(),
 		aiProcess_Triangulate |
+		aiProcess_GenBoundingBoxes |
 		aiProcess_SortByPType);
 
 	// If the import failed, report it
@@ -177,7 +178,6 @@ bool Loader::load_AssimpImplementation(std::vector<Mesh>& meshes, std::vector<Ma
 
 				indices.push_back(static_cast<unsigned short>(face.mIndices[ii]));
 			}
-
 		}
 		auto matIndex = mesh->mMaterialIndex;
 

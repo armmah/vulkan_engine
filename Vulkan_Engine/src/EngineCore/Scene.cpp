@@ -14,8 +14,8 @@
 #include "FileManager/Directories.h"
 #include "Profiling/ProfileMarker.h"
 
+#include "Loaders/Model/Common.h"
 #include "Loaders/Model/Loader_OBJ.h"
-#include "Loaders/Model/Loader_FBX.h"
 #include "Loaders/Model/Loader_ASSIMP.h"
 
 Scene::Scene(const Presentation::Device* device, Presentation::PresentationTarget* target)

@@ -1,6 +1,5 @@
 #pragma once
 #include "pch.h"
-#include "Loaders/Model/Common.h"
 
 struct Mesh;
 class Material;

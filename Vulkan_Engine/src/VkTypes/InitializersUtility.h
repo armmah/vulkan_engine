@@ -23,6 +23,7 @@ namespace vkinit
 	struct Surface
 	{
 		static bool createSurface(VkSurfaceKHR& surface, VkInstance instance, const Window* window);
+		static bool createRenderPass(VkRenderPass& renderPass, VkDevice device, VkFormat swapchainImageFormat, bool enableDepthAttachment);
 	};
 
 	struct Commands

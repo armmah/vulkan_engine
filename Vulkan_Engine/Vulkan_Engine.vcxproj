@@ -279,6 +279,8 @@
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">pch.h</PrecompiledHeaderFile>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">pch.h</PrecompiledHeaderFile>
     </ClCompile>
+    <ClCompile Include="src\Presentation\PresentationTarget_GraphicsMaterial.cpp" />
+    <ClCompile Include="src\Presentation\PresentationTarget_RenderLoop.cpp" />
     <ClCompile Include="src\Profiling\ProfileMarker.cpp" />
     <ClCompile Include="src\vkinit_instance.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>

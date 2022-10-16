@@ -3,6 +3,8 @@
 #include "VertexBinding.h"
 #include "Mesh.h"
 
+#include "VkTypes/InitializersUtility.h"
+
 VertexBinding::VertexBinding(const MeshDescriptor& meshDescriptor)
 {
 	auto descriptorCount = meshDescriptor.descriptorCount;

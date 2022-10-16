@@ -2,7 +2,6 @@
 #include "EngineCore/pch.h"
 #include "Common.h"
 #include "vulkan/vulkan.h"
-#include "Presentation/Device.h"
 #include "VkTypes/VkMaterialVariant.h"
 #include "Engine/RenderLoopStatistics.h"
 
@@ -37,8 +36,4 @@ struct CommandObjectsWrapper
 	};
 
 	static void HelloTriangleCommand(VkCommandBuffer buffer, VkPipeline m_pipeline, VkRenderPass m_renderPass, VkFramebuffer frameBuffer, VkExtent2D extent, VkBuffer vertexBuffer, uint32_t size);
-
-	static void drawAt(VkCommandBuffer commandBuffer, const VkMeshRenderer& renderer, const Camera& cam, const glm::mat4& model);
-
-	static FrameStats renderIndexedMeshes(const std::vector<VkMeshRenderer>& renderers, Camera& cam, VkCommandBuffer commandBuffer, VkRenderPass m_renderPass, VkFramebuffer frameBuffer, VkExtent2D extent, uint32_t frameNumber);
 };

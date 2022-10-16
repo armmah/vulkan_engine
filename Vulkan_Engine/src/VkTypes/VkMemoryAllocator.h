@@ -8,21 +8,14 @@ struct MemAllocationInfo
 	VmaMemoryUsage usage;
 	VmaAllocationCreateFlags flags;
 
-	VmaAllocationCreateInfo getAllocationCreateInfo() const
-	{
-		VmaAllocationCreateInfo aci = {};
-		aci.usage = usage;
-		aci.flags = flags;
-
-		return aci;
-	}
+	VmaAllocationCreateInfo getAllocationCreateInfo() const;
 };
 
 class VkMemoryAllocator : IRequireInitialization
 {
 public:
 	const static VkMemoryAllocator* getInstance() { return m_instance; }
-	virtual bool isInitialized() const override { return m_isInitialized; }
+	virtual bool isInitialized() const override;
 
 	VkMemoryAllocator(VkInstance instance, VkPhysicalDevice hardware, VkDevice device);
 	void release();

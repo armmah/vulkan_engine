@@ -12,9 +12,19 @@
 #include "PresentationTarget.h"
 #include "Mesh.h"
 
+#include "Camera.h"
+#include "vk_types.h"
+#include "Profiling/ProfileMarker.h"
+#include "Math/Frustum.h"
+#include "VkMesh.h"
+#include "EngineCore/VertexAttributes.h"
+#include "EngineCore/PipelineBinding.h"
+#include "BuffersUBO.h"
+#include "DescriptorPoolManager.h"
+
 namespace Presentation
 {
-	bool PresentationTarget::createGraphicsPipeline(VkPipeline& pipeline, VkPipelineLayout& layout, const VkShader& shader, VkDevice device, const VertexBinding& vBinding, VkDescriptorSetLayout descriptorSetLayout, VkCullModeFlagBits faceCullingMode, bool depthStencilAttachement) const
+	bool PresentationTarget::createGraphicsPipeline(VkPipeline& pipeline, const VkPipelineLayout layout, const VkShader& shader, VkDevice device, const VertexBinding& vBinding, VkCullModeFlagBits faceCullingMode, bool depthStencilAttachement) const
 	{
 		vBinding.runValidations();
 		auto vertexInputInfo = vBinding.getVertexInputCreateInfo();
@@ -107,23 +117,6 @@ namespace Presentation
 			depthStencil.back = {};
 		}
 
-		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipelineLayoutInfo.setLayoutCount = 1;
-		pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
-
-		VkPushConstantRange pushConstantRange {};
-		pushConstantRange.offset = 0;
-		pushConstantRange.size = sizeof(TransformPushConstant);
-		pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-		pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
-		pipelineLayoutInfo.pushConstantRangeCount = 1;
-
-		if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &layout) != VK_SUCCESS)
-		{
-			throw std::runtime_error("failed to create pipeline layout!");
-		}
-
 		// Creating graphics pipeline with its creation descriptor struct
 		VkGraphicsPipelineCreateInfo pipelineInfo{};
 		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -169,6 +162,110 @@ namespace Presentation
 		return true;
 	}
 
+	void drawAt(VkCommandBuffer commandBuffer, const VkMeshRenderer& renderer, const Camera& cam, const glm::mat4& model)
+	{
+		if (renderer.submeshIndex >= renderer.mesh->iAttributes.size())
+			return;
+
+		TransformPushConstant pushConstant{};
+		pushConstant.model_matrix = model;
+
+		renderer.mesh->vAttributes->bind(commandBuffer);
+
+		auto& indices = renderer.mesh->iAttributes[renderer.submeshIndex];
+		{
+			indices.bind(commandBuffer);
+
+			vkCmdPushConstants(commandBuffer, renderer.variant->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(TransformPushConstant), &pushConstant);
+			vkCmdDrawIndexed(commandBuffer, indices.getIndexCount(), 1, 0, 0, 0);
+		}
+	}
+
+	FrameStats PresentationTarget::renderLoop(const std::vector<VkMeshRenderer>& renderers, Camera& cam, VkCommandBuffer commandBuffer, uint32_t frameNumber)
+	{
+		FrameStats stats{};
+		const auto injectionMarker = ProfileMarkerInjectResult(stats.renderLoop_ms);
+
+		auto cbs = CommandObjectsWrapper::CommandBufferScope(commandBuffer);
+		{
+			const auto extent = getSwapchainExtent();
+			cam.updateWindowExtent(extent);
+
+			vkCmdSetViewport(commandBuffer, 0, 1, &cam.getViewport());
+			vkCmdSetScissor(commandBuffer, 0, 1, &cam.getScissorRect());
+
+			auto rps = CommandObjectsWrapper::RenderPassScope(commandBuffer, m_renderPass, getSwapchainFrameBuffers(frameNumber), extent, true);
+
+			renderIndexedMeshes(stats, renderers, cam, commandBuffer, frameNumber);
+
+			if (ImGui::GetDrawData())
+			{
+				ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+			}
+		}
+
+		stats.frameNumber = frameNumber;
+		return stats;
+	}
+
+	void PresentationTarget::renderIndexedMeshes(FrameStats& stats, const std::vector<VkMeshRenderer>& renderers, const Camera& cam, VkCommandBuffer commandBuffer, uint32_t frameNumber)
+	{
+		const auto handleConstantsUBO = m_globalPipelineState->fillGlobalConstantsUBO(frameNumber);
+		const auto handleViewUBO = m_globalPipelineState->fillCameraUBO(frameNumber, cam);
+
+		auto pipelineLayout = m_globalPipelineState->getPipelineLayout();
+
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+			pipelineLayout, 0, 1, &handleConstantsUBO.descriptorSet, 0, nullptr);
+		stats.descriptorSetCount += 1;
+
+		// For each camera
+		{
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+				pipelineLayout, 1, 1, &handleViewUBO.descriptorSet, 0, nullptr);
+			stats.descriptorSetCount += 1;
+
+			const auto& cameraFrustum = Frustum(cam);
+			const VkMaterialVariant* prevVariant = nullptr;
+			// To do - Add sorting to minimize state change
+			for (auto& renderer : renderers)
+			{
+				glm::mat4 model = renderer.transform->localToWorld;
+				// To do - transform the AABB from local to world space, before doing frustum check
+				if (renderer.bounds != nullptr)
+				{
+					const auto b = renderer.bounds->getTransformed(model);
+
+					if (!cameraFrustum.isOnFrustum(b))
+						continue;
+				}
+
+				const auto& variant = *renderer.variant;
+				if (prevVariant != renderer.variant)
+				{
+					auto stateChange = variant.compare(prevVariant);
+
+					if (bitFlagPresent(stateChange, VariantStateChange::Pipeline))
+					{
+						vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, variant.getPipeline());
+						stats.pipelineCount += 1;
+					}
+
+					// if (bitFlagPresent(stateChange, VariantStateChange::DescriptorSet))
+					{
+						vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, variant.getPipelineLayout(), 2, 1, variant.getDescriptorSet(frameNumber), 0, nullptr);
+						stats.descriptorSetCount += 1;
+					}
+
+					prevVariant = &variant;
+				}
+
+				drawAt(commandBuffer, renderer, cam, model);
+				stats.drawCallCount += 1;
+			}
+		}
+	}
+
 	PresentationTarget::PresentationTarget(const HardwareDevice& presentationHardware, const Device& presentationDevice, Window const* wnd, bool depthAttachment, uint32_t swapchainCount)
 		: m_window(wnd), m_hasDepthAttachment(depthAttachment)
 	{
@@ -188,34 +285,30 @@ namespace Presentation
 		return createSwapChain(swapchainCount, presentationHardware, presentationDevice, m_hasDepthAttachment) &&
 			createSwapChainImageViews(vkdevice) &&
 			createRenderPass(vkdevice) &&
-			createFramebuffers(vkdevice);
+			createFramebuffers(vkdevice) &&
+			tryInitialize(m_globalPipelineState, vkdevice);
 	}
 
 	bool PresentationTarget::createGraphicsMaterial(UNQ<VkMaterial>& material, VkDevice device, VkDescriptorPool descPool, const VkShader* shader, const VkTexture2D* texture)
 	{
-		VkDescriptorSetLayout descriptorSetLayout;
-		if (globalDescriptorSetLayoutList.count(shader) == 0)
-		{
-			if (!vkinit::Descriptor::createDescriptorSetLayout(descriptorSetLayout, device))
-				return false;
-
-			globalDescriptorSetLayoutList[shader] = descriptorSetLayout;
-		}
-		else descriptorSetLayout = globalDescriptorSetLayoutList[shader];
-		
-		VkGraphicsPipeline graphicsPipeline;
-		if (globalPipelineList.count(shader) == 0)
-		{
-			if (!createGraphicsPipeline(graphicsPipeline.pipeline, graphicsPipeline.pipelineLayout, *shader, device, Mesh::defaultVertexBinding, descriptorSetLayout, VK_CULL_MODE_BACK_BIT, m_hasDepthAttachment))
-				return false;
-			globalPipelineList[shader] = graphicsPipeline;
-		}
-		else graphicsPipeline = globalPipelineList[shader];
+		VkDescriptorSetLayout descriptorSetLayout = m_globalPipelineState->getDescriptorSetLayout(PipelineDescriptor::BindingSlots::Textures);
 
 		std::array<VkDescriptorSet, SWAPCHAIN_IMAGE_COUNT> descriptorSets;
 		vkinit::Descriptor::createDescriptorSets(descriptorSets, device, descPool, descriptorSetLayout, *texture);
+		
+		VkGraphicsPipeline graphicsPipeline;
+		if (!m_globalPipelineState->tryGetGraphicsPipelineFor(shader, graphicsPipeline))
+		{
+			graphicsPipeline.pipelineLayout = m_globalPipelineState->getPipelineLayout();
+			if (!createGraphicsPipeline(graphicsPipeline.pipeline, graphicsPipeline.pipelineLayout, *shader, device, Mesh::defaultVertexBinding, VK_CULL_MODE_BACK_BIT, m_hasDepthAttachment))
+				return false;
 
-		material = MAKEUNQ<VkMaterial>(*shader, *texture, globalPipelineList[shader].pipeline, globalPipelineList[shader].pipelineLayout, globalDescriptorSetLayoutList[shader], descriptorSets);
+			m_globalPipelineState->insertGraphicsPipelineFor(shader, graphicsPipeline);
+		}
+		
+		material = MAKEUNQ<VkMaterial>(*shader, *texture,
+			graphicsPipeline.pipeline, graphicsPipeline.pipelineLayout,
+			descriptorSetLayout, descriptorSets);
 
 		return true;
 	}
@@ -420,18 +513,7 @@ namespace Presentation
 
 	void PresentationTarget::releaseAllResources(VkDevice device)
 	{
-		for (auto& descLayout : globalDescriptorSetLayoutList)
-		{
-			vkDestroyDescriptorSetLayout(device, descLayout.second, nullptr);
-		}
-
-		for (auto& graphicsPipeline : globalPipelineList)
-		{
-			vkDestroyPipelineLayout(device, graphicsPipeline.second.pipelineLayout, nullptr);
-			vkDestroyPipeline(device, graphicsPipeline.second.pipeline, nullptr);
-		}
-		globalPipelineList.clear();
-
+		m_globalPipelineState->release(device);
 		releaseSwapChain(device);
 	}
 }

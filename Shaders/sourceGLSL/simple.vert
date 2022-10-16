@@ -10,17 +10,32 @@ layout(location = 1) out vec2 fragTexCoord;
 layout(location = 2) out vec3 fragNormal;
 layout(location = 3) out vec3 viewDirection;
 
-//push constants block
+layout(set = 0, binding = 0) uniform ConstantsBlockUBO
+{
+	// ( t / 10, t, sin(t), dt )
+	vec4 timeParams;
+	vec4 screenParams;
+
+	vec4 normalizedLightDirection;
+} constUBO;
+
+layout(set = 1, binding = 0) uniform ViewBlockUBO
+{
+	mat4 view_matrix;
+	mat4 persp_matrix;
+	mat4 view_persp_matrix;
+
+	vec4 cameraPosition;
+} viewUBO;
+
 layout( push_constant ) uniform constants
 {
 	mat4 model_matrix;
-	mat4 view_matrix;
-	mat4 persp_matrix;
-} PushConstants;
+} pushConstants;
 
 void main()
 {
-    mat4 render_matrix = PushConstants.persp_matrix * PushConstants.view_matrix * PushConstants.model_matrix;
+    mat4 render_matrix = viewUBO.view_persp_matrix * pushConstants.model_matrix;
     gl_Position = render_matrix * vec4(inPosition.xyz, 1.0);
 
     viewDirection = normalize(vec3(0.0, -0.75, -0.25));
@@ -30,6 +45,6 @@ void main()
     fragTexCoord = uv;
     fragTexCoord.y = 1.0 - fragTexCoord.y;
 
-    mat3 normalMatrix = mat3(transpose(inverse(PushConstants.model_matrix)));
+    mat3 normalMatrix = mat3(transpose(inverse(pushConstants.model_matrix)));
     fragNormal = normalMatrix * inNormal;
 }

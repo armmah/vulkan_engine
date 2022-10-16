@@ -13,7 +13,10 @@ enum VariantStateChange : uint32_t
 
 	Pipeline = 1,
 
-	DescriptorSet = 6
+	DescriptorSet_GlobalUBO = 5,
+	DescriptorSet_CameraUBO = 6,
+
+	DescriptorSet = 7
 };
 
 struct VkMaterialVariant

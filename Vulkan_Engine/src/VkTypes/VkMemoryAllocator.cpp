@@ -2,6 +2,8 @@
 #include "VkMemoryAllocator.h"
 #include "VkTypes/InitializersUtility.h"
 
+bool VkMemoryAllocator::isInitialized() const { return m_isInitialized; }
+
 VkMemoryAllocator::VkMemoryAllocator(VkInstance instance, VkPhysicalDevice hardware, VkDevice device)
 {
 	m_isInitialized = vkinit::MemoryBuffer::createVmaAllocator(m_allocator, instance, hardware, device);
@@ -18,4 +20,13 @@ MemAllocationInfo VkMemoryAllocator::createAllocationDescriptor(VmaMemoryUsage u
 	maci.flags = flags;
 
 	return maci;
+}
+
+VmaAllocationCreateInfo MemAllocationInfo::getAllocationCreateInfo() const
+{
+	VmaAllocationCreateInfo aci = {};
+	aci.usage = usage;
+	aci.flags = flags;
+
+	return aci;
 }

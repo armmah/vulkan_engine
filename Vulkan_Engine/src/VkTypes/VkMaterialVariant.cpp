@@ -18,7 +18,12 @@ VariantStateChange VkMaterialVariant::compare(const VkMaterialVariant* other) co
 	VariantStateChange state = VariantStateChange::None;
 
 	if (other == nullptr)
-		return static_cast<VariantStateChange>(VariantStateChange::Pipeline | VariantStateChange::DescriptorSet);
+	{
+		return static_cast<VariantStateChange>(
+			VariantStateChange::Pipeline | VariantStateChange::DescriptorSet_GlobalUBO |
+			VariantStateChange::DescriptorSet_CameraUBO | VariantStateChange::DescriptorSet
+			);
+	}
 
 	state = bitFlagAppendIf(state, m_pipeline != other->m_pipeline, VariantStateChange::Pipeline);
 	state = bitFlagAppendIf(state, &m_descriptorSets != &other->m_descriptorSets, VariantStateChange::DescriptorSet);

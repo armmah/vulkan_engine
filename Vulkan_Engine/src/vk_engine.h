@@ -3,40 +3,6 @@
 #include "VkTypes/InitializersUtility.h"
 #include "Engine/RenderLoopStatistics.h"
 
-class DescriptorPoolManager : IRequireInitialization
-{
-public:
-
-	DescriptorPoolManager(VkDevice device) : m_device(device), m_poolCollection() { }
-
-	virtual bool isInitialized() const override { return true; }
-
-	VkDescriptorPool createNewPool(uint32_t size)
-	{
-		VkDescriptorPool pool{};
-		if (!vkinit::Descriptor::createDescriptorPool(pool, m_device, size))
-		{
-			printf("Was not able to allocate a new descriptor pool!\n");
-			return VK_NULL_HANDLE;
-		}
-
-		m_poolCollection.push_back(pool);
-		return m_poolCollection.back();
-	}
-
-	void release()
-	{
-		for (auto& pool : m_poolCollection)
-		{
-			vkDestroyDescriptorPool(m_device, pool, nullptr);
-		}
-	}
-
-private:
-	VkDevice m_device;
-	std::vector<VkDescriptorPool> m_poolCollection;
-};
-
 class ImGuiHandle;
 class Scene;
 class Camera;

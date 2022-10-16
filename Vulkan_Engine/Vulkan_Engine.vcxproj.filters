@@ -197,6 +197,15 @@
     <ClCompile Include="src\Loaders\Model\Loader_FBX.cpp">
       <Filter>Source Files\Loaders\Model</Filter>
     </ClCompile>
+    <ClCompile Include="src\EngineCore\PipelineBinding.cpp">
+      <Filter>Source Files\EngineCore</Filter>
+    </ClCompile>
+    <ClCompile Include="src\EngineCore\DescriptorPoolManager.cpp">
+      <Filter>Source Files\EngineCore</Filter>
+    </ClCompile>
+    <ClCompile Include="src\EngineCore\BuffersUBO.cpp">
+      <Filter>Source Files\EngineCore</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\vk_engine.h">
@@ -333,6 +342,15 @@
     </ClInclude>
     <ClInclude Include="src\Loaders\Model\Loader_ASSIMP.h">
       <Filter>Header Files\Loaders\Model</Filter>
+    </ClInclude>
+    <ClInclude Include="src\EngineCore\PipelineBinding.h">
+      <Filter>Header Files\EngineCore</Filter>
+    </ClInclude>
+    <ClInclude Include="src\EngineCore\DescriptorPoolManager.h">
+      <Filter>Header Files\EngineCore</Filter>
+    </ClInclude>
+    <ClInclude Include="src\EngineCore\BuffersUBO.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

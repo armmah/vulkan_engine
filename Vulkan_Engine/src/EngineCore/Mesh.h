@@ -83,8 +83,8 @@ public:
 	const MeshDescriptor& getMeshDescriptor() const { return metaData; }
 	const BoundsAABB* getBounds(uint32_t submeshIndex) const { return submeshIndex >= 0 && submeshIndex < m_submeshes.size() ? &m_submeshes[submeshIndex].m_bounds : nullptr; }
 
-	inline static MeshDescriptor defaultMeshDescriptor = MeshDescriptor();
-	inline static VertexBinding defaultVertexBinding = VertexBinding(defaultMeshDescriptor);
+	static MeshDescriptor defaultMeshDescriptor;
+	static VertexBinding defaultVertexBinding;
 
 	template<class Archive>
 	void serialize(Archive& ar, const unsigned int version)

@@ -9,6 +9,9 @@
 #include "Presentation/Device.h"
 #include "StagingBufferPool.h"
 
+MeshDescriptor Mesh::defaultMeshDescriptor = MeshDescriptor();
+VertexBinding Mesh::defaultVertexBinding = VertexBinding(Mesh::defaultMeshDescriptor);
+
 Mesh::Mesh(std::vector<glm::vec3>& positions, std::vector<glm::vec2>& uvs, std::vector<glm::vec3>& normals, std::vector<glm::vec3>& colors, std::vector<SubMesh>& submeshes)
 	: m_positions(std::move(positions)), m_uvs(std::move(uvs)), m_normals(std::move(normals)), m_colors(std::move(colors)), m_submeshes(std::move(submeshes))
 {

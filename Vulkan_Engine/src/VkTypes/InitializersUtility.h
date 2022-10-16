@@ -6,6 +6,7 @@
 class Window;
 struct VkTexture2D;
 class VulkanValidationLayers;
+struct BuffersUBO;
 
 namespace vkinit
 {
@@ -46,12 +47,55 @@ namespace vkinit
 			VkPresentModeKHR presentationMode, VkSurfaceFormatKHR surfaceFormat, VkSurfaceTransformFlagBitsKHR currentTransform);
 	};
 
+	struct ShaderBindingArgs
+	{
+		VkDescriptorType type;
+		VkShaderStageFlags shaderStages;
+
+		ShaderBindingArgs(VkDescriptorType type, VkShaderStageFlags shaderStages) : type(type), shaderStages(shaderStages) { }
+	};
+
+	struct ShaderBinding
+	{
+		VkDescriptorSetLayoutBinding getLayoutBinding() const
+		{
+			VkDescriptorSetLayoutBinding setLayoutBinding{};
+			setLayoutBinding.binding = 0;
+			setLayoutBinding.descriptorCount = m_descCount;
+			setLayoutBinding.descriptorType = m_type;
+			setLayoutBinding.pImmutableSamplers = nullptr;
+			setLayoutBinding.stageFlags = m_shaderStages;
+
+			return setLayoutBinding;
+		}
+
+		ShaderBinding(VkDescriptorType type, VkShaderStageFlags shaderStages) : m_type(type), m_shaderStages(shaderStages), m_descCount(1) { }
+	private:
+		VkDescriptorType m_type;
+		VkShaderStageFlags m_shaderStages;
+		uint32_t m_descCount;
+	};
+
+	struct BindedBuffer : ShaderBinding
+	{
+		BindedBuffer(VkShaderStageFlags stageFlags) : ShaderBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, stageFlags) { }
+	};
+
+	struct BindedTexture : ShaderBinding
+	{
+		BindedTexture(VkShaderStageFlags stageFlags) : ShaderBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, stageFlags) { }
+	};
+
 	struct Descriptor
 	{
 		static bool createDescriptorPool(VkDescriptorPool& descriptorPool, VkDevice device, uint32_t count);
-		static bool createDescriptorSetLayout(VkDescriptorSetLayout& descriptorSetLayout, VkDevice device);
+		static bool createDescriptorSetLayout(VkDescriptorSetLayout& descriptorSetLayout, VkDevice device, const ShaderBinding& binding);
 		static bool createDescriptorSets(std::array<VkDescriptorSet, SWAPCHAIN_IMAGE_COUNT>& descriptorSets,
 			VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout, const VkTexture2D& texture);
+
+		static bool createDescriptorSets(std::array<VkDescriptorSet, SWAPCHAIN_IMAGE_COUNT>& descriptorSets,
+			VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout);
+		static void updateDescriptorSets(std::array<VkDescriptorSet, SWAPCHAIN_IMAGE_COUNT>& descriptorSets, VkDevice device, const BuffersUBO& ubo);
 	};
 
 	struct MemoryBuffer

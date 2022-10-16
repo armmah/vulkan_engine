@@ -78,85 +78,8 @@ void CommandObjectsWrapper::HelloTriangleCommand(VkCommandBuffer buffer, VkPipel
 	}
 }
 
-void CommandObjectsWrapper::drawAt(VkCommandBuffer commandBuffer, const VkMeshRenderer& renderer, const Camera& cam, const glm::mat4& model)
+namespace vkinit
 {
-	if (renderer.submeshIndex >= renderer.mesh->iAttributes.size())
-		return;
-
-	TransformPushConstant pushConstant{};
-	pushConstant.model_matrix = model;
-	pushConstant.view_matrix = cam.getViewMatrix();
-	pushConstant.persp_matrix = cam.getPerspectiveMatrix();
-
-	renderer.mesh->vAttributes->bind(commandBuffer);
-
-	auto& indices = renderer.mesh->iAttributes[renderer.submeshIndex];
-	{
-		indices.bind(commandBuffer);
-		
-		vkCmdPushConstants(commandBuffer, renderer.variant->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(TransformPushConstant), &pushConstant);
-		vkCmdDrawIndexed(commandBuffer, indices.getIndexCount(), 1, 0, 0, 0);
-	}
-}
-
-FrameStats CommandObjectsWrapper::renderIndexedMeshes(const std::vector<VkMeshRenderer>& renderers, Camera& cam, 
-	VkCommandBuffer commandBuffer, VkRenderPass m_renderPass, VkFramebuffer frameBuffer, VkExtent2D extent, uint32_t frameNumber)
-{
-	FrameStats stats{};
-	auto cbs = CommandBufferScope(commandBuffer);
-	{
-		const auto injectionMarker = ProfileMarkerInjectResult(stats.renderLoop_ms);
-		cam.updateWindowExtent(extent);
-
-		vkCmdSetViewport(commandBuffer, 0, 1, &cam.getViewport());
-		vkCmdSetScissor(commandBuffer, 0, 1, &cam.getScissorRect());
-
-		auto rps = RenderPassScope(commandBuffer, m_renderPass, frameBuffer, extent, true);
-
-		const auto& cameraFrustum = Frustum(cam);
-		const VkMaterialVariant* prevVariant = nullptr;
-		// To do - Add sorting to minimize state change
-		for (auto& renderer : renderers)
-		{
-			glm::mat4 model = renderer.transform->localToWorld;
-			// To do - transform the AABB from local to world space, before doing frustum check
-			if (renderer.bounds != nullptr)
-			{
-				const auto b = renderer.bounds->getTransformed(model);
-
-				if(!cameraFrustum.isOnFrustum(b))
-					continue;
-			}
-
-			const auto& variant = *renderer.variant;
-			if (prevVariant != renderer.variant)
-			{
-				auto stateChange = variant.compare(prevVariant);
-
-				if (bitFlagPresent(stateChange, VariantStateChange::Pipeline))
-				{
-					vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, variant.getPipeline());
-					stats.pipelineCount += 1;
-				}
-
-				// if (bitFlagPresent(stateChange, VariantStateChange::DescriptorSet))
-				{
-					vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, variant.getPipelineLayout(), 0, 1, variant.getDescriptorSet(frameNumber), 0, nullptr);
-					stats.descriptorSetCount += 1;
-				}
-
-				prevVariant = &variant;
-			}
-
-			drawAt(commandBuffer, renderer, cam, model);
-			stats.drawCallCount += 1;
-		}
-
-		if (ImGui::GetDrawData())
-		{
-			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
-		}
-	}
-	stats.frameNumber = frameNumber;
-	return stats;
+	bool createDescriptorSets(std::array<VkDescriptorSet, SWAPCHAIN_IMAGE_COUNT>& descriptorSets, VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout);
+	void updateDescriptorSets(std::array<VkDescriptorSet, SWAPCHAIN_IMAGE_COUNT>& descriptorSets, VkDevice device, BuffersUBO ubo, uint32_t binding);
 }

@@ -174,6 +174,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\EngineCore\BuffersUBO.cpp" />
     <ClCompile Include="src\EngineCore\Camera.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
     </ClCompile>
@@ -181,6 +182,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="src\EngineCore\DescriptorPoolManager.cpp" />
     <ClCompile Include="src\EngineCore\ImGuiHandle.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
@@ -204,6 +206,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="src\EngineCore\PipelineBinding.cpp" />
     <ClCompile Include="src\EngineCore\Scene.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
@@ -311,15 +314,18 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\EngineCore\BuffersUBO.h" />
     <ClInclude Include="src\EngineCore\Camera.h" />
     <ClInclude Include="src\EngineCore\CollectionUtility.h" />
     <ClInclude Include="src\EngineCore\Color.h" />
     <ClInclude Include="src\EngineCore\Common.h" />
+    <ClInclude Include="src\EngineCore\DescriptorPoolManager.h" />
     <ClInclude Include="src\EngineCore\ImGuiHandle.h" />
     <ClInclude Include="src\EngineCore\IndexAttributes.h" />
     <ClInclude Include="src\EngineCore\Material.h" />
     <ClInclude Include="src\EngineCore\Mesh.h" />
     <ClInclude Include="src\EngineCore\pch.h" />
+    <ClInclude Include="src\EngineCore\PipelineBinding.h" />
     <ClInclude Include="src\EngineCore\Scene.h" />
     <ClInclude Include="src\EngineCore\ShaderSource.h" />
     <ClInclude Include="src\EngineCore\StagingBufferPool.h" />

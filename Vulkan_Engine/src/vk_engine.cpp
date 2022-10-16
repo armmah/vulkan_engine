@@ -3,6 +3,7 @@
 #include "Presentation/Device.h"
 #include "Presentation/FrameCollection.h"
 #include "Presentation/Frame.h"
+#include "DescriptorPoolManager.h"
 #include "Presentation/PresentationTarget.h"
 
 #include "vk_engine.h"
@@ -75,9 +76,9 @@ bool VulkanEngine::init_vulkan()
 	return tryInitialize<Presentation::HardwareDevice>(m_presentationHardware, m_instance, surface) &&
 		tryInitialize<Presentation::Device>(m_presentationDevice, m_presentationHardware->getActiveGPU(), surface, m_window.get(), m_validationLayers.get()) &&
 		tryInitialize<VkMemoryAllocator>(m_memoryAllocator, m_instance, m_presentationHardware->getActiveGPU(), m_presentationDevice->getDevice()) &&
+		tryInitialize<DescriptorPoolManager>(m_descriptorPoolManager, m_presentationDevice->getDevice()) &&
 		tryInitialize<Presentation::PresentationTarget>(m_presentationTarget, *m_presentationHardware, *m_presentationDevice, m_window.get(), true) &&
-		tryInitialize<Presentation::FrameCollection>(m_framePresentation, m_presentationDevice->getDevice(), m_presentationDevice->getCommandPool()) &&
-		tryInitialize<DescriptorPoolManager>(m_descriptorPoolManager, m_presentationDevice->getDevice());
+		tryInitialize<Presentation::FrameCollection>(m_framePresentation, m_presentationDevice->getDevice(), m_presentationDevice->getCommandPool());
 }
 
 void VulkanEngine::run()
@@ -172,9 +173,8 @@ void VulkanEngine::draw()
 	auto buffer = frame.getCommandBuffer();
 	vkResetCommandBuffer(buffer, 0);
 	
-	m_renderLoopStatistics = CommandObjectsWrapper::renderIndexedMeshes(m_openScene->getRenderers(), *m_cam, buffer,
-		m_presentationTarget->getRenderPass(), m_presentationTarget->getSwapchainFrameBuffers(imageIndex),
-		m_presentationTarget->getSwapchainExtent(), m_frameNumber);
+	const auto renderers = m_openScene->getRenderers();
+	m_renderLoopStatistics = m_presentationTarget->renderLoop(renderers, *m_cam, buffer, m_frameNumber);
 
 	frame.resetAcquireFence(m_presentationDevice->getDevice());
 	frame.submitToQueue(m_presentationDevice->getGraphicsQueue());

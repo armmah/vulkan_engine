@@ -2,6 +2,7 @@
 #include "Engine/Window.h"
 #include "InitializersUtility.h"
 #include "VkTexture.h"
+#include "BuffersUBO.h"
 
 bool vkinit::Surface::createSurface(VkSurfaceKHR& surface, VkInstance instance, const Window* window)
 {
@@ -23,21 +24,60 @@ bool vkinit::Descriptor::createDescriptorPool(VkDescriptorPool& descriptorPool, 
 	return vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) == VK_SUCCESS;
 }
 
-bool vkinit::Descriptor::createDescriptorSetLayout(VkDescriptorSetLayout& descriptorSetLayout, VkDevice device)
+bool vkinit::Descriptor::createDescriptorSetLayout(VkDescriptorSetLayout& descriptorSetLayout, VkDevice device, const ShaderBinding& binding)
 {
-	VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-	samplerLayoutBinding.binding = 0;
-	samplerLayoutBinding.descriptorCount = 1;
-	samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	samplerLayoutBinding.pImmutableSamplers = nullptr;
-	samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	auto layoutBinding = binding.getLayoutBinding();
 
-	VkDescriptorSetLayoutCreateInfo layoutInfo{};
-	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	layoutInfo.bindingCount = 1;
-	layoutInfo.pBindings = &samplerLayoutBinding;
+	VkDescriptorSetLayoutCreateInfo layoutCI{};
+	layoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layoutCI.bindingCount = 1;
+	layoutCI.pBindings = &layoutBinding;
 
-	return vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout) == VK_SUCCESS;
+	return vkCreateDescriptorSetLayout(device, &layoutCI, nullptr, &descriptorSetLayout) == VK_SUCCESS;
+}
+
+bool vkinit::Descriptor::createDescriptorSets(std::array<VkDescriptorSet, SWAPCHAIN_IMAGE_COUNT>& descriptorSets, VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout)
+{
+	std::array<VkDescriptorSetLayout, SWAPCHAIN_IMAGE_COUNT> layouts{};
+	for (auto& l : layouts)
+	{
+		l = descriptorSetLayout;
+	}
+
+	VkDescriptorSetAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	allocInfo.descriptorPool = descriptorPool;
+	allocInfo.descriptorSetCount = SWAPCHAIN_IMAGE_COUNT;
+	allocInfo.pSetLayouts = layouts.data();
+
+	if (vkAllocateDescriptorSets(device, &allocInfo, descriptorSets.data()) != VK_SUCCESS)
+	{
+		printf("Failed to allocate descriptor sets!\n");
+		return false;
+	}
+
+	return true;
+}
+
+void vkinit::Descriptor::updateDescriptorSets(std::array<VkDescriptorSet, SWAPCHAIN_IMAGE_COUNT>& descriptorSets, VkDevice device, const BuffersUBO& ubo)
+{
+	std::array<VkWriteDescriptorSet, SWAPCHAIN_IMAGE_COUNT> descriptorWrites{};
+	std::array<VkDescriptorBufferInfo, SWAPCHAIN_IMAGE_COUNT> bufferInfo{};
+	for (size_t i = 0; i < SWAPCHAIN_IMAGE_COUNT; i++)
+	{
+		bufferInfo[i].buffer = ubo.buffers[i];
+		bufferInfo[i].offset = 0;
+		bufferInfo[i].range = ubo.byteSize;
+
+		descriptorWrites[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrites[i].dstSet = descriptorSets[i];
+		descriptorWrites[i].dstBinding = 0;
+		descriptorWrites[i].dstArrayElement = 0;
+		descriptorWrites[i].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		descriptorWrites[i].descriptorCount = 1;
+		descriptorWrites[i].pBufferInfo = &bufferInfo[i];
+	}
+	vkUpdateDescriptorSets(device, SWAPCHAIN_IMAGE_COUNT, descriptorWrites.data(), 0, nullptr);
 }
 
 bool vkinit::Descriptor::createDescriptorSets(std::array<VkDescriptorSet, SWAPCHAIN_IMAGE_COUNT>& descriptorSets, VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout, const VkTexture2D& texture)
@@ -53,7 +93,7 @@ bool vkinit::Descriptor::createDescriptorSets(std::array<VkDescriptorSet, SWAPCH
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 	allocInfo.descriptorPool = descriptorPool;
 	allocInfo.descriptorSetCount = imageCount;
-	allocInfo.pSetLayouts = &layouts[0];
+	allocInfo.pSetLayouts = layouts.data();
 
 	if (vkAllocateDescriptorSets(device, &allocInfo, descriptorSets.data()) != VK_SUCCESS)
 	{

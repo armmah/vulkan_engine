@@ -242,7 +242,7 @@ void Scene::createGraphicsRepresentation(VkDescriptorPool descPool)
 
 				m_renderers.push_back(
 					VkMeshRenderer(
-						&m_graphicsMeshes.back(), submeshIndex,
+						&m_graphicsMeshes.back(), submeshIndex, &m_materials[materialIDs],
 						&m_graphicsMaterials[loadedTextures[texPath]]->getMaterialVariant(),
 						mesh.getBounds(submeshIndex), &m_transforms[ids.transformID]
 					)

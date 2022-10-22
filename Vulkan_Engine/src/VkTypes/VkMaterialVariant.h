@@ -108,6 +108,15 @@ struct VkMeshRenderer
 	const Transform* transform;
 	uint32_t submeshIndex;
 
-	VkMeshRenderer(const VkMesh* mesh, const VkMaterialVariant* variant, const BoundsAABB* bounds, Transform* transform) : mesh(mesh), submeshIndex(0), variant(variant), bounds(bounds), transform(transform) {}
-	VkMeshRenderer(const VkMesh* mesh, uint32_t submeshIndex, const VkMaterialVariant* variant, const BoundsAABB* bounds, Transform* transform) : mesh(mesh), submeshIndex(submeshIndex), variant(variant), bounds(bounds), transform(transform) {}
+	const Material* material;
+
+	VkMeshRenderer() = default;
+	VkMeshRenderer(const VkMeshRenderer& other) = default;
+	VkMeshRenderer& operator=(VkMeshRenderer const& other) = default;
+	VkMeshRenderer(VkMeshRenderer&& other) = default;
+
+	VkMeshRenderer(const VkMesh* mesh, const Material* material, const VkMaterialVariant* variant, const BoundsAABB* bounds, Transform* transform) 
+		: mesh(mesh), submeshIndex(0), material(material), variant(variant), bounds(bounds), transform(transform) {}
+	VkMeshRenderer(const VkMesh* mesh, uint32_t submeshIndex, const Material* material, const VkMaterialVariant* variant, const BoundsAABB* bounds, Transform* transform) 
+		: mesh(mesh), submeshIndex(submeshIndex), material(material), variant(variant), bounds(bounds), transform(transform) {}
 };

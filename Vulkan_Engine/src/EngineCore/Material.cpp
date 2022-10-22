@@ -42,6 +42,8 @@ void Material::serialize(boost::archive::binary_oarchive& ar, const unsigned int
 	ar& m_textureParameters.path.value;
 	ar& m_textureParameters.format;
 	ar& m_textureParameters.generateTheMips;
+
+	ar& m_hash;
 }
 
 // READ
@@ -55,4 +57,6 @@ void Material::serialize(boost::archive::binary_iarchive& ar, const unsigned int
 
 	ar& m_textureParameters.format;
 	ar& m_textureParameters.generateTheMips;
+
+	ar& m_hash;
 }

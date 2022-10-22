@@ -9,6 +9,7 @@
 
 #include "Camera.h"
 #include "Math/Frustum.h"
+#include "Material.h"
 
 #include "Profiling/ProfileMarker.h"
 
@@ -71,6 +72,7 @@ namespace Presentation
 			pipelineLayout, 0, 1, &handleConstantsUBO.descriptorSet, 0, nullptr);
 		stats.descriptorSetCount += 1;
 
+		std::vector<VkMeshRenderer> sortedList(renderers.begin(), renderers.end());
 		// For each camera
 		{
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -78,20 +80,27 @@ namespace Presentation
 			stats.descriptorSetCount += 1;
 
 			const auto& cameraFrustum = Frustum(cam);
-			const VkMaterialVariant* prevVariant = nullptr;
-			// To do - Add sorting to minimize state change
-			for (auto& renderer : renderers)
-			{
-				glm::mat4 model = renderer.transform->localToWorld;
-				// To do - transform the AABB from local to world space, before doing frustum check
-				if (renderer.bounds != nullptr)
+			// Move the objects that are out of frustum to the end of the vector.
+			auto partition = std::partition(sortedList.begin(), sortedList.end(), [&cameraFrustum](auto& renderer) 
 				{
-					const auto b = renderer.bounds->getTransformed(model);
-
-					if (!cameraFrustum.isOnFrustum(b))
-						continue;
+					const auto& model = renderer.transform->localToWorld;
+					return renderer.bounds != nullptr && cameraFrustum.isOnFrustum(renderer.bounds->getTransformed(model));
 				}
+			);
+			// Cut the end of the vector, preserving only the objects that are in frustum.
+			sortedList.resize(sortedList.size() - static_cast<size_t>(std::distance(partition, sortedList.end())));
 
+			auto cameraPosition = cam.getPosition();
+			// Sort the objects in frustum to minimize texture state change.
+			std::sort(sortedList.begin(), sortedList.end(), [cameraPosition](const VkMeshRenderer& a, const VkMeshRenderer& b)
+				{
+					return a.material->getHash() < b.material->getHash();
+				}
+			);
+
+			const VkMaterialVariant* prevVariant = nullptr;
+			for (auto& renderer : sortedList)
+			{
 				const auto& variant = *renderer.variant;
 				if (prevVariant != renderer.variant)
 				{
@@ -112,7 +121,7 @@ namespace Presentation
 					prevVariant = &variant;
 				}
 
-				drawAt(commandBuffer, renderer, cam, model);
+				drawAt(commandBuffer, renderer, cam, renderer.transform->localToWorld);
 				stats.drawCallCount += 1;
 			}
 		}

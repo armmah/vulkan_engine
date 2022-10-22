@@ -75,12 +75,13 @@ class Material
 {
 public:
 	Material(uint32_t shaderIdentifier, const TextureSource& source) : 
-		m_shaderIdentifier(shaderIdentifier), m_textureParameters(source) { }
+		m_shaderIdentifier(shaderIdentifier), m_textureParameters(source) { calculateHash(); }
 	Material(uint32_t shaderIdentifier, TextureSource&& source) :
-		m_shaderIdentifier(shaderIdentifier), m_textureParameters(source) { }
+		m_shaderIdentifier(shaderIdentifier), m_textureParameters(source) { calculateHash(); }
 
 	const TextureSource& getTextureSource() const { return m_textureParameters; }
 	uint32_t getShaderIdentifier() const { return m_shaderIdentifier; }
+	size_t getHash() const { return m_hash; }
 	
 	void serialize(boost::archive::binary_oarchive& ar, const unsigned int version); // WRITE
 	void serialize(boost::archive::binary_iarchive& ar, const unsigned int version); // READ
@@ -93,10 +94,13 @@ public:
 
 private:
 	friend class boost::serialization::access;
-	Material() : m_shaderIdentifier(), m_textureParameters() { }
+	Material() : m_shaderIdentifier(), m_textureParameters() { calculateHash(); }
 
 	uint32_t m_shaderIdentifier;
 	TextureSource m_textureParameters;
+
+	void calculateHash() { m_hash = std::hash<std::string>()(m_textureParameters.path); }
+	size_t m_hash;
 };
 
 struct VkMaterial

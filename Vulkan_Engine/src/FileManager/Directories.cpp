@@ -20,16 +20,17 @@ Path Directories::getApplicationPath()
 
 Path Directories::getWorkingDirectory() { return getAbsolutePath(workingSceneDir_relative); }
 
-Path Directories::getWorkingScene() { return getAbsolutePath(workingSceneDir_relative).combine(workingSceneName); }
-
-Path Directories::getWorkingModel() { return getAbsolutePath(workingModel_relative); }
-
-std::vector<Path> Directories::getWorkingModels()
-{
-	return {
-		getAbsolutePath(workingModel_relative),
-		getAbsolutePath(additiveModel_relative)
-	};
-}
-
 Path Directories::getShaderLibraryPath() { return getAbsolutePath(libraryShaderPath_relative); }
+
+std::vector<Path> Directories::getModels_IntelSponza()
+{
+	return { getAbsolutePath(workingModel_relative), getAbsolutePath(additiveModel_relative) };
+}
+std::vector<Path> Directories::getModels_DebrovicSponza()
+{
+	return { getAbsolutePath(DEBROVIC_SPONZA_OBJ) };
+}
+std::vector<Path> Directories::getModels_CrytekSponza()
+{
+	return { getAbsolutePath(CRYTEK_SPONZA_OBJ) };
+}

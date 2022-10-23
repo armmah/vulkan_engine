@@ -132,8 +132,8 @@ TEST(Texturesource, Path)
 TEST(Serialization, SceneBinary)
 {
 	Scene scene(nullptr, nullptr);
-	const auto modelPaths = Directories::getWorkingModels();
-	const auto fullPath = Directories::getWorkingScene();
+	const auto modelPaths = Directories::getModels_IntelSponza();
+	const auto fullPath = Directories::getBinaryTargetPath(modelPaths.front());
 	
 	for (auto& model : modelPaths)
 	{

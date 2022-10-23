@@ -33,6 +33,11 @@ struct Path
 	Path combine(const std::string&& str) const;
 	void remove(const std::string& str);
 	void removeDirectory(const std::string& str);
+	bool matchesExtension(const std::string& ext) const
+	{
+		return std::equal(ext.rbegin(), ext.rend(), value.rbegin());
+	}
+	bool fileExists() const { return std::filesystem::exists(value); }
 
 	bool operator ==(const Path& other) const;
 	const char* c_str() const;

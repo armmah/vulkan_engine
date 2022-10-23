@@ -23,16 +23,17 @@ Scene::Scene(const Presentation::Device* device, Presentation::PresentationTarge
 
 Scene::~Scene() { }
 
-constexpr bool serialize_from_origin = false;
+constexpr bool force_serialize_from_origin = false;
 bool Scene::load(VkDescriptorPool descPool)
 {
+	const auto modelPaths = Directories::getModels_CrytekSponza();
+
+	Path fullPath;
 	/*****************************				IMPORT					****************************************/
-	if (serialize_from_origin)
+	if (!Directories::tryGetBinaryIfExists(fullPath, modelPaths.front()) || force_serialize_from_origin)
 	{
 		ProfileMarker _("Scene::import & serialize");
 		Scene scene(nullptr, nullptr);
-		const auto modelPaths = Directories::getWorkingModels();
-		const auto fullPath = Directories::getWorkingScene();
 
 		for (auto& model : modelPaths)
 		{
@@ -56,11 +57,10 @@ bool Scene::load(VkDescriptorPool descPool)
 
 	/*****************************				LOAD BINARY					****************************************/
 	ProfileMarker _("Scene::load");
-	auto path = Directories::getWorkingScene();
 
-	if (!tryInitializeFromFile(path))
+	if (!tryInitializeFromFile(fullPath))
 	{
-		printf("Could not load scene file '%s', it did not match any of the supported formats.\n", path.c_str());
+		printf("Could not load scene file '%s', it did not match any of the supported formats.\n", fullPath.c_str());
 		return false;
 	}
 	printf("Initialized the scene with (renderers = %zi), (transforms = %zi), (meshes = %zi), (textures = %zi), (materials = %zi).\n", m_renderers.size(), m_transforms.size(), m_meshes.size(), m_textures.size(), m_materials.size());
@@ -128,7 +128,7 @@ bool Scene::tryInitializeFromFile(const Path& path)
 	auto name = path.getFileName(false);
 
 	/* ================ READ SERIALIZED BINARY =============== */
-	if (fileExists(path, ".binary"))
+	if (Directories::isBinary(path) && path.fileExists())
 	{
 		ProfileMarker _("Loader::Binary");
 

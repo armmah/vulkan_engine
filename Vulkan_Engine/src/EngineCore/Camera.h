@@ -16,6 +16,8 @@ public:
 	// const glm::quat& getRotation() const;
 	float getYaw() const;
 	float getPitch() const;
+	float getSpeedMultiplier() const { return movementSpeed / SPEED; }
+	void setSpeedMultiplier(float multiplier) { movementSpeed = SPEED * multiplier; }
 	
 	void setPosition(const glm::vec3& position);
 	void setRotation(float yaw, float pitch);

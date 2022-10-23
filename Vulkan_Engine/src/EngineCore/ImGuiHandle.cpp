@@ -66,7 +66,7 @@ ImGuiHandle::ImGuiHandle(VkInstance instance, VkPhysicalDevice activeGPU, const 
 	ImGui_ImplVulkan_DestroyFontUploadObjects();
 }
 
-void ImGuiHandle::draw(FrameStats stats, const Camera* cam)
+void ImGuiHandle::draw(FrameStats stats, Camera* cam)
 {
 	// imgui new frame
 	ImGui_ImplVulkan_NewFrame();
@@ -84,6 +84,11 @@ void ImGuiHandle::draw(FrameStats stats, const Camera* cam)
 	ImGui::End();
 
 	ImGui::Begin("Camera controls");
+	auto speedMul = cam->getSpeedMultiplier();
+	ImGui::SliderFloat("Speed", &speedMul, 0.01f, 500.0f);
+	if (speedMul != cam->getSpeedMultiplier())
+		cam->setSpeedMultiplier(speedMul);
+
 	auto pos = glm::vec3(cam->getPosition());
 	ImGui::InputFloat3("Position", &pos[0]);
 

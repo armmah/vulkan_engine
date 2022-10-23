@@ -15,7 +15,7 @@ class ImGuiHandle
 public:
 	ImGuiHandle(VkInstance instance, VkPhysicalDevice activeGPU, const Presentation::Device* presentationDevice, VkRenderPass renderPass, uint32_t imageCount, Window* window);
 
-	void draw(FrameStats stats, const Camera* cam);
+	void draw(FrameStats stats, Camera* cam);
 
 	void release(VkDevice device);
 

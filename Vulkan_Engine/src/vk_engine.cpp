@@ -18,7 +18,11 @@
 
 #include "EngineCore/Material.h"
 
-VulkanEngine::VulkanEngine() {}
+VulkanEngine::VulkanEngine(std::string appDir) 
+{
+	Directories::applicationPath = Path(std::move(appDir));
+}
+
 VulkanEngine::~VulkanEngine() { }
 
 void VulkanEngine::init(bool requestValidationLayers)

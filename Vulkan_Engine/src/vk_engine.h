@@ -20,7 +20,7 @@ namespace Presentation
 class VulkanEngine
 {
 public:
-	VulkanEngine();
+	VulkanEngine(std::string resourcesPath);
 	~VulkanEngine();
 
 	std::string m_applicationName = "Basic VK Engine";

@@ -2,11 +2,10 @@
 #include "pch.h"
 #include "Path.h"
 
-#define EDITOR
-
 class Directories
 {
 public:
+	inline static Path applicationPath;
 	static Path getApplicationPath();
 	static Path getAbsolutePath(const std::string& path);
 	
@@ -31,6 +30,8 @@ public:
 		binaryPath = getBinaryTargetPath(modelPath);
 		return binaryPath.fileExists();
 	}
+
+	static Path syscall_GetApplicationPath();
 
 private:
 	inline static std::string sceneFileExtension = ".binary";

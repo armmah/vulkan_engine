@@ -5,17 +5,7 @@ Path Directories::getAbsolutePath(const std::string& path) { return getApplicati
 
 Path Directories::getApplicationPath()
 {
-	std::string pathString;
-#ifndef EDITOR
-	char buffer[MAX_PATH] = {};
-	::GetSystemDirectoryA(buffer, _countof(buffer));
-	strcat(buffer, "\\version.dll");
-	pathString = std::string(buffer);
-#else
-	pathString = "C:/Git/Vulkan_Engine/";
-#endif
-
-	return Path(std::move(pathString));
+	return applicationPath;
 }
 
 Path Directories::getWorkingDirectory() { return getAbsolutePath(workingSceneDir_relative); }
@@ -33,4 +23,16 @@ std::vector<Path> Directories::getModels_DebrovicSponza()
 std::vector<Path> Directories::getModels_CrytekSponza()
 {
 	return { getAbsolutePath(CRYTEK_SPONZA_OBJ) };
+}
+
+#include <Windows.h>
+#include <minwindef.h>
+#include <sysinfoapi.h>
+
+Path Directories::syscall_GetApplicationPath()
+{
+	char pBuf[MAX_PATH];
+	size_t len = sizeof(pBuf);
+	int bytes = GetModuleFileName(NULL, pBuf, len);
+	return bytes ? Path(pBuf) : Path();
 }

@@ -17,8 +17,9 @@ struct ProfileMarkerBase
 struct ProfileMarkerInjectResult : ProfileMarkerBase
 {
 	int64_t* resultToInject;
+	bool isHighPrecision;
 
-	ProfileMarkerInjectResult(int64_t& toBeInjected);
+	ProfileMarkerInjectResult(int64_t& toBeInjected, bool isHighPrecision = false);
 	~ProfileMarkerInjectResult();
 };
 

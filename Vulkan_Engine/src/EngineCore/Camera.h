@@ -3,7 +3,7 @@
 
 static constexpr float YAW = 90.0f;
 static constexpr float PITCH = 0.0f;
-static constexpr float SPEED = 0.000125f;
+static constexpr float SPEED = 0.125f;
 static constexpr float SENSITIVITY = 150.0f;
 static constexpr float ZOOM = 45.0f;
 
@@ -11,6 +11,7 @@ class Camera
 {
 public:
 	Camera(float fov_degrees, VkExtent2D windowSize, float nearZ = 1.0f, float farZ = 10000.0f);
+	Camera(VkExtent2D windowSize, float nearZ = 1.0f, float farZ = 10000.0f);
 
 	const glm::vec3& getPosition() const;
 	// const glm::quat& getRotation() const;
@@ -21,9 +22,7 @@ public:
 	
 	void setPosition(const glm::vec3& position);
 	void setRotation(float yaw, float pitch);
-
-	const VkViewport& getViewport() const;
-	const VkRect2D& getScissorRect() const;
+	void lookAt(glm::vec3 point);
 
 	void setNearFarZ(float near, float far);
 	void setFieldOfView(float fov_degrees);
@@ -61,8 +60,6 @@ private:
 	float zoom;
 
 	VkExtent2D windowExtent;
-	VkViewport viewport;
-	VkRect2D scissor;
 
 	glm::mat4 cachedViewMatrix;
 	glm::mat4 cachedProjectionMatrix;

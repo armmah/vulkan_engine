@@ -15,7 +15,8 @@
 bool Loader::loadFBX_Implementation(std::vector<Mesh>& meshes, std::vector<Material>& materials, std::vector<Renderer>& rendererIDs, std::vector<Transform>& transforms, const std::string& path, const std::string& name)
 {
 	auto fbxPath = Path(path + name + ".fbx");
-	auto charCollection = FileIO::readFile(fbxPath);
+	std::vector<char> charCollection;
+	FileIO::readFile(charCollection, fbxPath);
 
 	const ofbx::u8* ptr = reinterpret_cast<ofbx::u8*>(charCollection.data());
 	const auto* scene = ofbx::load(ptr, static_cast<int>(charCollection.size()), static_cast<ofbx::u64>(ofbx::LoadFlags::IGNORE_BLEND_SHAPES));

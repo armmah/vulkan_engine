@@ -7,10 +7,10 @@ auto ProfileMarkerBase::getMicroseconds(Timestamp startTime, Timestamp endTime) 
 
 ProfileMarkerBase::ProfileMarkerBase() : startTime(getNow()) { }
 
-ProfileMarkerInjectResult::ProfileMarkerInjectResult(int64_t& toBeInjected) : ProfileMarkerBase(), resultToInject(&toBeInjected) { }
+ProfileMarkerInjectResult::ProfileMarkerInjectResult(int64_t& toBeInjected, bool isHighPrecision) : ProfileMarkerBase(), resultToInject(&toBeInjected), isHighPrecision(isHighPrecision) { }
 ProfileMarkerInjectResult::~ProfileMarkerInjectResult()
 {
-	*resultToInject = getMiliseconds(startTime, getNow());
+	*resultToInject = isHighPrecision ? getMicroseconds(startTime, getNow()) : getMiliseconds(startTime, getNow());
 }
 
 ProfileMarker::ProfileMarker(std::string markerName) : ProfileMarkerBase(), markerName(markerName) { }

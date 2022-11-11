@@ -15,6 +15,7 @@
 #include "EngineCore/Scene.h"
 #include "Camera.h"
 #include "VkTypes/VkShader.h"
+#include "Profiling/ProfileMarker.h"
 
 #include "EngineCore/Material.h"
 
@@ -48,8 +49,6 @@ void VulkanEngine::init(bool requestValidationLayers)
 
 	// Descriptor pools
 	auto descPool = m_descriptorPoolManager->createNewPool(SWAPCHAIN_IMAGE_COUNT * 1000);
-
-	VkShader::ensureDefaultShader(m_presentationDevice->getDevice());
 	
 	// Scene
 	m_openScene = MAKEUNQ<Scene>(m_presentationDevice.get(), m_presentationTarget.get());
@@ -59,12 +58,21 @@ void VulkanEngine::init(bool requestValidationLayers)
 	}
 
 	// Camera
-	m_cam = MAKEUNQ<Camera>(60.f, m_presentationTarget->getSwapchainExtent());
+	m_cam = MAKEUNQ<Camera>(65.f, m_startingWindowSize);
+	m_cam->setPosition({ -0.115, 35.8f, -13.2f });
+	m_cam->setRotation(90.f, -67.5f);
+
+	// Hardcoded for crytek sponza
 	// m_cam->setPosition({ -150.f, 100.f, -10.f });
 	// m_cam->setRotation(0.f, 15.f);
 
-	m_cam->setPosition({ 6.035f, 2.5f, -2.2f });
-	m_cam->setRotation(-200.f, 10.f);
+	// Hardcoded for intel sponza
+	// m_cam->setPosition({ 6.035f, 2.5f, -2.2f });
+	// m_cam->setRotation(-200.f, 10.f);
+	
+	// Harcoded for debrovic sponza
+	//m_cam->setPosition({ -12.234, 3.0f, -0.014f });
+	//m_cam->setRotation(-0.f, 4.25f);
 }
 
 bool VulkanEngine::init_vulkan()
@@ -98,66 +106,79 @@ void VulkanEngine::run()
 
 	int prevMsX = -1, prevMsY = -1;
 	int deltaMsX = 0, deltaMsY = 0;
-
-	//const auto endTime = std::chrono::steady_clock::now();
-	//const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
 	
 	// Main loop
 	while (!quit)
 	{
-		// Handle events on queue
-		while (SDL_PollEvent(&e) != 0)
+		curFrameTime = static_cast<float>(SDL_GetTicks());
+		deltaTime = curFrameTime - prevFrameTime;
+		prevFrameTime = curFrameTime;
+
+		int64_t frameTime;
 		{
-			auto& eType = e.type;
-			auto& keyCode = e.key.keysym.sym;
-			if (eType == SDL_QUIT || (eType == SDL_KEYDOWN && keyCode == SDLK_ESCAPE))
-				quit = true;
+			ProfileMarkerInjectResult _(frameTime, true);
 
-			if (eType == SDL_KEYDOWN)
+			// Handle events on queue
+			while (SDL_PollEvent(&e) != 0)
 			{
-				if (keyCode == SDLK_w)
-					m_cam->enqueueMovement(glm::vec3(0.f, 0.f, -1.f));
-				if (keyCode == SDLK_s)
-					m_cam->enqueueMovement(glm::vec3(0.f, 0.f, 1.f));
-				if (keyCode == SDLK_a)
-					m_cam->enqueueMovement(glm::vec3(-1.f, 0.f, 0.f));
-				if (keyCode == SDLK_d)
-					m_cam->enqueueMovement(glm::vec3(1.f, 0.f, 0.f));
-			}
+				auto& eType = e.type;
+				auto& keyCode = e.key.keysym.sym;
+				if (eType == SDL_QUIT || (eType == SDL_KEYDOWN && keyCode == SDLK_ESCAPE))
+					quit = true;
 
-			if (eType == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT)
-			{
-				mouseHeld = true;
-				SDL_GetMouseState(&prevMsX, &prevMsY);
-			}
-			if (eType == SDL_MOUSEBUTTONUP && e.button.button == SDL_BUTTON_LEFT)
-			{
-				mouseHeld = false;
+				if (eType == SDL_KEYDOWN)
+				{
+					if (keyCode == SDLK_w)
+						m_cam->enqueueMovement(glm::vec3(0.f, 0.f, -1.f));
+					if (keyCode == SDLK_s)
+						m_cam->enqueueMovement(glm::vec3(0.f, 0.f, 1.f));
+					if (keyCode == SDLK_a)
+						m_cam->enqueueMovement(glm::vec3(-1.f, 0.f, 0.f));
+					if (keyCode == SDLK_d)
+						m_cam->enqueueMovement(glm::vec3(1.f, 0.f, 0.f));
+				}
+
+				if (eType == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT)
+				{
+					mouseHeld = true;
+					SDL_GetMouseState(&prevMsX, &prevMsY);
+				}
+				if (eType == SDL_MOUSEBUTTONUP && e.button.button == SDL_BUTTON_LEFT)
+				{
+					mouseHeld = false;
+				}
+
+				if (mouseHeld)
+				{
+					int x, y;
+					SDL_GetMouseState(&x, &y);
+
+					deltaMsX = x - prevMsX;
+					deltaMsY = y - prevMsY;
+					prevMsX = x;
+					prevMsY = y;
+				}
 			}
 
 			if (mouseHeld)
 			{
-				int x, y;
-				SDL_GetMouseState(&x, &y);
-
-				deltaMsX = x - prevMsX;
-				deltaMsY = y - prevMsY;
-				prevMsX = x;
-				prevMsY = y;
+				m_cam->enqueueMouseMovement(-deltaMsX, deltaMsY);
+				deltaMsX = 0;
+				deltaMsY = 0;
 			}
+			m_cam->processFrameEvents(deltaTime);
+
+			m_imgui->draw(m_renderLoopStatistics, m_cam.get());
+
+			draw();
 		}
 
-		if (mouseHeld)
+		constexpr int64_t target = static_cast<int64_t>( 15.6f * (std::micro::den / std::milli::den) );
+		if (target > frameTime)
 		{
-			m_cam->enqueueMouseMovement(-deltaMsX, deltaMsY);
-			deltaMsX = 0;
-			deltaMsY = 0;
+			const auto waitFor_us = std::chrono::microseconds(target - frameTime);
+			std::this_thread::sleep_for(waitFor_us);
 		}
-		m_cam->processFrameEvents(deltaTime);
-
-		m_imgui->draw(m_renderLoopStatistics, m_cam.get());
-
-		draw();
 	}
 
 	// Wait until all scheduled operations are completed before releasing resources.

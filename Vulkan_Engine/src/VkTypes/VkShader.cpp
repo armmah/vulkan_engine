@@ -4,13 +4,15 @@
 #include "ShaderSource.h"
 
 VkShader::VkShader(VkDevice device, const ShaderSource& source)
+	: vertShader(VK_NULL_HANDLE), fragShader(VK_NULL_HANDLE)
 {
-	if (!createShaderModule(vertShader, source.getVertexSource(), device))
+	std::vector<char> sourcecode;
+	if (!source.getVertexSource(sourcecode) || !createShaderModule(vertShader, sourcecode, device))
 	{
 		printf("Failed to compile the shader '%s'.", source.fragmentPath.c_str());
 	}
 
-	if (!createShaderModule(fragShader, source.getFragmentSource(), device))
+	if (!source.getFragmentSource(sourcecode) || !createShaderModule(fragShader, sourcecode, device))
 	{
 		printf("Failed to compile the shader '%s'.", source.fragmentPath.c_str());
 	}
@@ -36,8 +38,9 @@ void VkShader::ensureDefaultShader(VkDevice device)
 {
 	if (globalShaderList.size() == 0)
 	{
-		auto defaultShader = VkShader(device, ShaderSource::getDefaultShader());
-		globalShaderList.push_back(MAKEUNQ<VkShader>(defaultShader));
+		VkShader::createGlobalShader(device, ShaderSource::getDefaultShader());
+
+		VkShader::createGlobalShader(device, ShaderSource::getDepthOnlyShader());
 	}
 }
 

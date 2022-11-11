@@ -7,12 +7,27 @@
 #include "VkTypes/VkTexture.h"
 #include "PipelineBinding.h"
 
+#include "ShaderSource.h"
+#include "VkTypes/VkShader.h"
+
 namespace Presentation
 {
 	PresentationTarget::PresentationTarget(const HardwareDevice& presentationHardware, const Device& presentationDevice, Window const* wnd, bool depthAttachment, uint32_t swapchainCount)
 		: m_window(wnd), m_hasDepthAttachment(depthAttachment)
 	{
 		m_isInitialized = createPresentationTarget(presentationHardware, presentationDevice, swapchainCount);
+		
+		VkShader::ensureDefaultShader(presentationDevice.getDevice());
+
+		m_shadowMapModule = MAKEUNQ<ShadowMap>(presentationDevice.getDevice(), true, 1024u);
+
+		const auto* shader = VkShader::findShader(1u);
+		m_shadowMapModule->m_replacementShader = shader;
+		if (!createPipelineIfNotExist(m_shadowMapModule->m_replacementMaterial, m_globalPipelineState->getDepthOnlyPipelineLayout(), 
+			presentationDevice.getDevice(), shader, m_shadowMapModule->getRenderPass(), m_shadowMapModule->getExtent()))
+		{
+			printf("Could not create pipeline for the depth only shadowmap shader.");
+		}
 	}
 
 	bool PresentationTarget::createPresentationTarget(const HardwareDevice& presentationHardware, const Device& presentationDevice, uint32_t swapchainCount)
@@ -88,7 +103,7 @@ namespace Presentation
 
 	bool PresentationTarget::createRenderPass(VkDevice device)
 	{
-		return vkinit::Surface::createRenderPass(m_renderPass, device, m_swapChainImageFormat, hasDepthAttachement());
+		return vkinit::Surface::createRenderPass(m_renderPass, device, m_swapChainImageFormat, true, hasDepthAttachement());
 	}
 
 	bool PresentationTarget::createSwapChainImageViews(VkDevice device)
@@ -98,7 +113,7 @@ namespace Presentation
 
 		for (int i = 0; i < imageCount; i++)
 		{
-			if (!vkinit::Texture::createTextureImageView(m_swapChainImageViews[i], device, m_swapChainImages[i],VK_FORMAT_B8G8R8A8_SRGB, 1u))
+			if (!vkinit::Texture::createTextureImageView(m_swapChainImageViews[i], device, m_swapChainImages[i], VK_FORMAT_B8G8R8A8_SRGB, 1u))
 				return false;
 		}
 
@@ -162,6 +177,11 @@ namespace Presentation
 	{
 		m_globalPipelineState->release(device);
 		releaseSwapChain(device);
+
+		if (m_shadowMapModule)
+		{
+			m_shadowMapModule->release(device);
+		}
 	}
 
 	PresentationTarget::~PresentationTarget() {}

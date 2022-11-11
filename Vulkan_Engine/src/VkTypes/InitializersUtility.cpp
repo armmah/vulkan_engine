@@ -9,60 +9,115 @@ bool vkinit::Surface::createSurface(VkSurfaceKHR& surface, VkInstance instance, 
 	return SDL_Vulkan_CreateSurface(window->get(), instance, &surface);
 }
 
-bool vkinit::Surface::createRenderPass(VkRenderPass& renderPass, VkDevice device, VkFormat swapchainImageFormat, bool enableDepthAttachment)
+struct RenderPassAttachement
 {
-	auto attachementCount = 1;
+	enum LoadTransitionState
+	{
+		Preserve	= VK_ATTACHMENT_LOAD_OP_LOAD,
+		Clear		= VK_ATTACHMENT_LOAD_OP_CLEAR,
+		Undefined	= VK_ATTACHMENT_LOAD_OP_DONT_CARE
+	};
+	enum StoreTransitionState
+	{
+		Store		= VK_ATTACHMENT_STORE_OP_STORE,
+		Discard		= VK_ATTACHMENT_STORE_OP_DONT_CARE
+	};
 
-	VkPipelineStageFlags srcStageBit = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	VkPipelineStageFlags dstStageBit = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	VkAccessFlags dstAccessBit = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	RenderPassAttachement(VkFormat format, LoadTransitionState loadState, StoreTransitionState storeState,
+		VkImageLayout initialLayout, VkImageLayout finalLayout,
+		VkSampleCountFlagBits sameplCount = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT)
+	{
+		m_attachement = {};
+		m_attachement.format = format;
+		m_attachement.samples = sameplCount;
+
+		m_attachement.loadOp = getLoadTransitionState(loadState);
+		m_attachement.storeOp = getStoreTransitionState(storeState);
+
+		m_attachement.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		m_attachement.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+
+		m_attachement.initialLayout = initialLayout;
+		m_attachement.finalLayout = finalLayout;
+	}
+
+	const VkAttachmentDescription getAttachement() const { return m_attachement; }
+
+private:
+	VkAttachmentDescription m_attachement;
+
+	static constexpr VkAttachmentLoadOp getLoadTransitionState(LoadTransitionState state) { return static_cast<VkAttachmentLoadOp>(state); }
+	static constexpr VkAttachmentStoreOp getStoreTransitionState(StoreTransitionState state) { return static_cast<VkAttachmentStoreOp>(state); }
+};
+
+struct ColorAttachement : RenderPassAttachement
+{
+	ColorAttachement(VkFormat format, LoadTransitionState loadState = LoadTransitionState::Clear, StoreTransitionState storeState = StoreTransitionState::Store,
+		VkImageLayout initialLayout = VK_IMAGE_LAYOUT_UNDEFINED, VkImageLayout finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+		VkSampleCountFlagBits sameplCount = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT)
+		: RenderPassAttachement(format, loadState, storeState, initialLayout, finalLayout, sameplCount)
+	{ }
+};
+
+struct DepthAttachment : RenderPassAttachement
+{
+	static constexpr VkFormat FORMAT = VK_FORMAT_D32_SFLOAT;
+
+	DepthAttachment(VkFormat format = FORMAT, LoadTransitionState loadState = LoadTransitionState::Clear, StoreTransitionState storeState = StoreTransitionState::Store,
+		VkImageLayout initialLayout = VK_IMAGE_LAYOUT_UNDEFINED, VkImageLayout finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+		VkSampleCountFlagBits sameplCount = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT)
+		: RenderPassAttachement(format, loadState, storeState, initialLayout, finalLayout, sameplCount)
+	{ }
+};
+
+bool vkinit::Surface::createRenderPass(VkRenderPass& renderPass, VkDevice device, VkFormat swapchainImageFormat, bool enableColorAttachment, bool enableDepthAttachment)
+{
+	assert(enableColorAttachment || enableDepthAttachment);
+
+	auto attachementCount = 0;
+
+	VkPipelineStageFlags srcStageBit = 0;
+	VkPipelineStageFlags dstStageBit = 0;
+	VkAccessFlags dstAccessBit = 0;
+
+	std::array<VkAttachmentDescription, 2> attachments = { };
 
 	VkSubpassDescription subpass{};
 	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-	subpass.colorAttachmentCount = attachementCount;
-
-	VkAttachmentDescription colorAttachment{};
-	colorAttachment.format = swapchainImageFormat;
-	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-	colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
 	VkAttachmentReference colorAttachmentRef{};
-	colorAttachmentRef.attachment = 0;
-	colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	if (enableColorAttachment)
+	{
+		colorAttachmentRef.attachment = attachementCount;
+		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-	subpass.pColorAttachments = &colorAttachmentRef;
+		subpass.colorAttachmentCount = 1;
+		subpass.pColorAttachments = &colorAttachmentRef;
 
-	VkAttachmentDescription depthAttachment{};
+		srcStageBit |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dstStageBit |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dstAccessBit |= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+		attachments[attachementCount] = ColorAttachement(swapchainImageFormat).getAttachement();
+		attachementCount += 1;
+	}
+
+	VkAttachmentReference depthAttachment{};
 	if (enableDepthAttachment)
 	{
-		depthAttachment.format = VK_FORMAT_D32_SFLOAT;
-		depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		depthAttachment.attachment = attachementCount;
+		depthAttachment.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-		VkAttachmentReference depthAttachmentRef{};
-		depthAttachmentRef.attachment = 1;
-		depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-		subpass.pDepthStencilAttachment = &depthAttachmentRef;
+		subpass.pDepthStencilAttachment = &depthAttachment;
 
 		srcStageBit |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 		dstStageBit |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 		dstAccessBit |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
+		attachments[attachementCount] = DepthAttachment().getAttachement();
 		attachementCount += 1;
 	}
 
-	std::array<VkAttachmentDescription, 2> attachments = { colorAttachment, depthAttachment };
 	VkRenderPassCreateInfo renderPassInfo{};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 	renderPassInfo.attachmentCount = attachementCount;

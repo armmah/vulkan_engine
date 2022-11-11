@@ -19,5 +19,8 @@
     <None Include="sourceGLSL\simple.frag">
       <Filter>Source Files</Filter>
     </None>
+    <None Include="sourceGLSL\depthonly.vert">
+      <Filter>Source Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

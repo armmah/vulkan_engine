@@ -201,11 +201,13 @@ void VkTexture2D::release(VkDevice device)
 
 VkTexture::VkTexture() : image(VK_NULL_HANDLE), memoryRange(VK_NULL_HANDLE), imageView(VK_NULL_HANDLE) { }
 VkTexture::VkTexture(VkImage image, VmaAllocation memoryRange, VkImageView imageView) : image(image), memoryRange(memoryRange), imageView(imageView) { }
-VkTexture::VkTexture(VkDevice device, MemAllocationInfo maci, VkFormat imageFormat, VkImageUsageFlags imageUsage, VkImageAspectFlags imageViewFormat, VkExtent2D extent, uint32_t mipCount)
+VkTexture::VkTexture(VkDevice device, MemAllocationInfo maci, VkFormat imageFormat, VkImageUsageFlags imageUsage, VkImageAspectFlags imageViewAspectFlags, VkExtent2D extent, uint32_t mipCount)
 {
 	vkinit::Texture::createImage(image, memoryRange, maci, imageFormat, imageUsage, extent.width, extent.height, mipCount);
-	vkinit::Texture::createTextureImageView(imageView, device, image, imageFormat, mipCount, imageViewFormat);
+	vkinit::Texture::createTextureImageView(imageView, device, image, imageFormat, mipCount, imageViewAspectFlags);
 }
+
+bool VkTexture::isValid() const { return image != VK_NULL_HANDLE && imageView != VK_NULL_HANDLE && memoryRange != VK_NULL_HANDLE; }
 
 void VkTexture::release(VkDevice device)
 {

@@ -23,7 +23,22 @@ namespace vkinit
 	struct Surface
 	{
 		static bool createSurface(VkSurfaceKHR& surface, VkInstance instance, const Window* window);
-		static bool createRenderPass(VkRenderPass& renderPass, VkDevice device, VkFormat swapchainImageFormat, bool enableDepthAttachment);
+		static bool createRenderPass(VkRenderPass& renderPass, VkDevice device, VkFormat swapchainImageFormat, bool enableColorAttachment, bool enableDepthAttachment);
+
+		template<size_t _Size>
+		static bool createFrameBuffer(VkFramebuffer& frameBuffer, VkDevice device, VkRenderPass renderPass, VkExtent2D extent, std::array<VkImageView, _Size> imageViews, uint32_t count = std::numeric_limits<uint32_t>::max())
+		{
+			VkFramebufferCreateInfo framebufferInfo{};
+			framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+			framebufferInfo.renderPass = renderPass;
+			framebufferInfo.attachmentCount = std::min(as_uint32(imageViews.size()), count);
+			framebufferInfo.pAttachments = imageViews.data();
+			framebufferInfo.width = extent.width;
+			framebufferInfo.height = extent.height;
+			framebufferInfo.layers = 1;
+
+			return vkCreateFramebuffer(device, &framebufferInfo, nullptr, &frameBuffer) == VK_SUCCESS;
+		}
 	};
 
 	struct Commands

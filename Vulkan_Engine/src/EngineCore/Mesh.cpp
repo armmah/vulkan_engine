@@ -10,7 +10,6 @@
 #include "StagingBufferPool.h"
 
 MeshDescriptor Mesh::defaultMeshDescriptor = MeshDescriptor();
-VertexBinding Mesh::defaultVertexBinding = VertexBinding(Mesh::defaultMeshDescriptor);
 
 Mesh::Mesh(std::vector<glm::vec3>& positions, std::vector<glm::vec2>& uvs, std::vector<glm::vec3>& normals, std::vector<glm::vec3>& colors, std::vector<SubMesh>& submeshes)
 	: m_positions(std::move(positions)), m_uvs(std::move(uvs)), m_normals(std::move(normals)), m_colors(std::move(colors)), m_submeshes(std::move(submeshes))
@@ -242,22 +241,6 @@ bool Mesh::allocateIndexAttributes(VkMesh& graphicsMesh, const SubMesh& submesh,
 	return true;
 }
 
-VkFormat Mesh::pickDataFormat(size_t size)
-{
-	static const VkFormat formats[4]{
-		VkFormat::VK_FORMAT_R32_SFLOAT,
-		VkFormat::VK_FORMAT_R32G32_SFLOAT,
-		VkFormat::VK_FORMAT_R32G32B32_SFLOAT,
-		VkFormat::VK_FORMAT_R32G32B32A32_SFLOAT,
-	};
-
-	auto index = size / sizeof(float) - 1;
-
-	assert((size % sizeof(float) == 0) && index >= 0 && index < 4 && "The vertex attribute data type is not supported.");
-
-	return formats[index];
-}
-
 void Mesh::copyInterleavedNoCheck(std::vector<float>& interleavedVertexData, const void* src, size_t elementByteSize, size_t iterStride, size_t offset)
 {
 	int i = 0;
@@ -274,36 +257,6 @@ void Mesh::copyInterleavedNoCheck(std::vector<float>& interleavedVertexData, con
 		std::advance(it, iterStride);
 		++i;
 	}
-}
-
-VertexBinding Mesh::initializeBindings(const MeshDescriptor& meshDescriptor)
-{
-	VkVertexInputBindingDescription bindingDescription;
-	std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
-
-	auto descriptorCount = meshDescriptor.descriptorCount;
-	// Vertex Attribute Descriptions
-	attributeDescriptions.resize(descriptorCount);
-
-	size_t offset = 0;
-	for (uint32_t i = 0; i < descriptorCount; i++)
-	{
-		auto size = meshDescriptor.elementByteSizes[i];
-
-		attributeDescriptions[i].binding = 0;
-		attributeDescriptions[i].location = i;
-		attributeDescriptions[i].format = pickDataFormat(size);
-		attributeDescriptions[i].offset = as_uint32(offset);
-
-		offset += size * std::clamp(meshDescriptor.lengths[i], 0_z, 1_z);
-	}
-
-	bindingDescription = {};
-	bindingDescription.binding = 0;
-	bindingDescription.stride = as_uint32(offset);
-	bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-	return VertexBinding(bindingDescription, attributeDescriptions);
 }
 
 bool Mesh::allocateGraphicsMesh(VkMesh& graphicsMesh, const VmaAllocator& vmaAllocator, const Presentation::Device* presentationDevice, StagingBufferPool& stagingPool)

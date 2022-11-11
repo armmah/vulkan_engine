@@ -8,22 +8,22 @@ ShaderSource::ShaderSource(std::string&& path_vertexShaderSource, std::string&& 
 ShaderSource::ShaderSource(Path&& path_vertexShaderSource, Path&& path_fragmentShaderSource)
 	: vertexPath(path_vertexShaderSource), fragmentPath(path_fragmentShaderSource) { }
 
-std::vector<char> ShaderSource::getVertexSource() const { return FileIO::readFile(vertexPath); }
+bool ShaderSource::getVertexSource(std::vector<char>& sourcecode) const { return FileIO::readFile(sourcecode, vertexPath); }
 
-std::vector<char> ShaderSource::getFragmentSource() const { return FileIO::readFile(fragmentPath); }
-
-ShaderSource ShaderSource::getHardcodedTriangle()
-{
-	return ShaderSource(
-		Directories::getShaderLibraryPath().combine("triangle.vert.spv"),
-		Directories::getShaderLibraryPath().combine("triangle.frag.spv")
-	);
-}
+bool ShaderSource::getFragmentSource(std::vector<char>& sourcecode) const { return FileIO::readFile(sourcecode, fragmentPath); }
 
 ShaderSource ShaderSource::getDefaultShader()
 {
 	return ShaderSource(
 		Directories::getShaderLibraryPath().combine("simple.vert.spv"),
 		Directories::getShaderLibraryPath().combine("simple.frag.spv")
+	);
+}
+
+ShaderSource ShaderSource::getDepthOnlyShader()
+{
+	return ShaderSource(
+		Directories::getShaderLibraryPath().combine("depthonly.vert.spv"),
+		Path()
 	);
 }

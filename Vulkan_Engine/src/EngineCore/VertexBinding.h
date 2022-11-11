@@ -37,21 +37,6 @@ struct MeshDescriptor
 };
 
 struct VertexBinding
-{
-	VertexBinding() = delete;
-
-	VertexBinding(const MeshDescriptor& meshDescriptor);
-
-	VertexBinding(const VkVertexInputBindingDescription& bindingDescription, std::vector<VkVertexInputAttributeDescription>& attributeDescriptions);
-
-	bool runValidations() const;
-	VkPipelineVertexInputStateCreateInfo getVertexInputCreateInfo() const { return getTriangleMeshVertexBuffer(bindingDescription, attributeDescriptions); }
-	
-	static VkPipelineVertexInputStateCreateInfo getHardcodedTriangle();
-	static VkPipelineVertexInputStateCreateInfo getTriangleMeshVertexBuffer(const VkVertexInputBindingDescription& bindingDescription, const std::vector<VkVertexInputAttributeDescription>& attributeDescriptions);
+{	
 	static bool validateAttributeAndBindingDescriptions(const std::vector<VkVertexInputBindingDescription>& bindingDescriptions, const std::vector<VkVertexInputAttributeDescription>& attributeDescriptions);
-
-private:
-	VkVertexInputBindingDescription bindingDescription;
-	std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
 };

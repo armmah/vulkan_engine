@@ -13,23 +13,36 @@
 #include "Math/Frustum.h"
 #include "Profiling/ProfileMarker.h"
 
-CommandObjectsWrapper::RenderPassScope::RenderPassScope(VkCommandBuffer commandBuffer, VkRenderPass m_renderPass, VkFramebuffer swapChainFramebuffer, VkExtent2D extent, bool hasDepthAttachment)
+CommandObjectsWrapper::RenderPassScope::RenderPassScope(VkCommandBuffer commandBuffer, VkRenderPass renderPass, 
+	VkFramebuffer swapChainFramebuffer, VkExtent2D extent, bool hasColorAttachment, bool hasDepthAttachment)
 {
+	assert(hasColorAttachment || hasDepthAttachment);
 	this->commandBuffer = commandBuffer;
 
 	VkRenderPassBeginInfo renderPassInfo{};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	renderPassInfo.renderPass = m_renderPass;
+	renderPassInfo.renderPass = renderPass;
 	renderPassInfo.framebuffer = swapChainFramebuffer;
 
 	renderPassInfo.renderArea.offset = { 0, 0 };
 	renderPassInfo.renderArea.extent = extent;
 
-	std::array<VkClearValue, 2> clearValues{};
-	clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
-	clearValues[1].depthStencil = { 1.0f, 0 };
+	std::array<VkClearValue, 2> clearValues{ };
+	auto attachmentCount = 0;
 
-	renderPassInfo.clearValueCount = hasDepthAttachment ? 2u : 1u;
+	if (hasColorAttachment)
+	{
+		clearValues[attachmentCount] = { {0.0f, 0.0f, 0.0f, 1.0f} };
+		attachmentCount += 1;
+	}
+
+	if (hasDepthAttachment)
+	{
+		clearValues[attachmentCount] = { 1.0f, 0 };
+		attachmentCount += 1;
+	}
+
+	renderPassInfo.clearValueCount = attachmentCount;
 	renderPassInfo.pClearValues = clearValues.data();
 
 	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
@@ -63,7 +76,7 @@ void CommandObjectsWrapper::HelloTriangleCommand(VkCommandBuffer buffer, VkPipel
 {
 	auto cbs = CommandBufferScope(buffer);
 	{
-		auto rps = RenderPassScope(buffer, m_renderPass, frameBuffer, extent, false);
+		auto rps = RenderPassScope(buffer, m_renderPass, frameBuffer, extent, true, false);
 
 		vkCmdBindPipeline(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
 

@@ -10,9 +10,9 @@ struct ShaderSource
 	ShaderSource(std::string&& path_vertexShaderSource, std::string&& path_fragmentShaderSource);
 	ShaderSource(Path&& path_vertexShaderSource, Path&& path_fragmentShaderSource);
 
-	std::vector<char> getVertexSource() const;
-	std::vector<char> getFragmentSource() const;
+	bool getVertexSource(std::vector<char>&) const;
+	bool getFragmentSource(std::vector<char>&) const;
 
-	static ShaderSource getHardcodedTriangle();
 	static ShaderSource getDefaultShader();
+	static ShaderSource getDepthOnlyShader();
 };

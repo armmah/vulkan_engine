@@ -10,11 +10,11 @@
 
 VkDescriptorSetLayout PipelineDescriptor::getDescriptorSetLayout(BindingSlots slot) { return m_appendedDescSetLayouts[static_cast<int>(slot)]; }
 
-BufferHandle PipelineDescriptor::fillGlobalConstantsUBO(uint32_t frameNumber)
+BufferHandle PipelineDescriptor::fillGlobalConstantsUBO()
 {
 	auto constantsData = ConstantsUBO{};
 
-	const auto handle = m_globalConstantsUBO->getHandle(frameNumber);
+	const auto handle = m_globalConstantsUBO->getHandle(m_currentFrameNumber);
 	handle.CopyData(&constantsData, sizeof(ConstantsUBO));
 
 	return handle;
@@ -29,12 +29,12 @@ bool PipelineDescriptor::tryCreateDescriptorSetLayouts(VkDevice device)
 		vkinit::Descriptor::createDescriptorSetLayout(m_appendedDescSetLayouts[BindingSlots::Textures], device, vkinit::BindedTexture(bindingStages[BindingSlots::Textures]));
 }
 
-bool PipelineDescriptor::tryCreatePipelineLayout(VkDevice device)
+bool PipelineDescriptor::tryCreatePipelineLayout(VkPipelineLayout& pipelineLayout, const VkDevice device, uint32_t maxCount)
 {
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 
-	pipelineLayoutInfo.setLayoutCount = getSetLayoutsCount();
+	pipelineLayoutInfo.setLayoutCount = std::min(getSetLayoutsCount(), maxCount);
 	pipelineLayoutInfo.pSetLayouts = getAllSetLayouts();
 
 	VkPushConstantRange pushConstantRange{};
@@ -44,30 +44,39 @@ bool PipelineDescriptor::tryCreatePipelineLayout(VkDevice device)
 	pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 	pipelineLayoutInfo.pushConstantRangeCount = 1;
 
-	return vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &m_standardPipelineLayout) == VK_SUCCESS;
+	return vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) == VK_SUCCESS;
+}
+
+bool PipelineDescriptor::allocateConstantsUBO(VkDevice device, VkDescriptorPool pool)
+{
+	const auto constantsUBOLayout = getDescriptorSetLayout(PipelineDescriptor::BindingSlots::Constants);
+	m_globalConstantsUBO = MAKEUNQ<BuffersUBO>(constantsUBOLayout, as_uint32(sizeof(ConstantsUBO)));
+	return m_globalConstantsUBO->allocate(device, pool, constantsUBOLayout);
+}
+
+bool PipelineDescriptor::allocateViewUBO(VkDevice device, VkDescriptorPool pool)
+{
+	const auto viewUBOLayout = getDescriptorSetLayout(PipelineDescriptor::BindingSlots::View);
+	m_globalViewUBOCollection = BufferUBOPool(UBOAllocatorDelegate(device, pool, viewUBOLayout));
+	return true;
 }
 
 bool PipelineDescriptor::tryCreateUBOs(VkDevice device)
 {
-	const auto constantsUBOLayout = getDescriptorSetLayout(PipelineDescriptor::BindingSlots::Constants);
-	m_globalConstantsUBO = MAKEUNQ<BuffersUBO>(constantsUBOLayout, as_uint32(sizeof(ConstantsUBO)));
+	auto pool = DescriptorPoolManager::getInstance()->createNewPool(SWAPCHAIN_IMAGE_COUNT * 10);
 
-	const auto viewUBOLayout = getDescriptorSetLayout(PipelineDescriptor::BindingSlots::View);
-	m_globalViewUBO = MAKEUNQ<BuffersUBO>(viewUBOLayout, as_uint32(sizeof(ViewUBO)));
-
-	auto pool = DescriptorPoolManager::getInstance()->createNewPool(SWAPCHAIN_IMAGE_COUNT * 2);
-	return m_globalConstantsUBO->allocate(device, pool, constantsUBOLayout) &&
-		m_globalViewUBO->allocate(device, pool, viewUBOLayout);
+	return allocateConstantsUBO(device, pool) &&
+		allocateViewUBO(device, pool);
 }
 
-BufferHandle PipelineDescriptor::fillCameraUBO(uint32_t frameNumber, const Camera& cam)
+BufferHandle PipelineDescriptor::fillCameraUBO(const Camera& cam)
 {
 	auto viewData = ViewUBO{};
 	viewData.view_matrix = cam.getViewMatrix();
 	viewData.persp_matrix = cam.getPerspectiveMatrix();
 	viewData.view_persp_matrix = cam.getViewProjectionMatrix();
-
-	const auto handle = m_globalViewUBO->getHandle(frameNumber);
+	
+	const auto handle = m_globalViewUBOCollection.claim()->getHandle(m_currentFrameNumber);
 	handle.CopyData(&viewData, sizeof(ViewUBO));
 
 	return handle;
@@ -91,16 +100,16 @@ uint32_t PipelineDescriptor::getSetLayoutsCount() const { return as_uint32(m_app
 void PipelineDescriptor::release(VkDevice device)
 {
 	m_globalConstantsUBO->release();
-	m_globalViewUBO->release();
+	m_globalViewUBOCollection.releaseAllResources();
 
 	for (auto& graphicsPipeline : globalPipelineList)
 	{
 		// vkDestroyPipelineLayout(device, graphicsPipeline.second.pipelineLayout, nullptr);
-		graphicsPipeline.second.pipelineLayout = VK_NULL_HANDLE;
-		vkDestroyPipeline(device, graphicsPipeline.second.pipeline, nullptr);
+		graphicsPipeline.second.m_pipelineLayout = VK_NULL_HANDLE;
+		vkDestroyPipeline(device, graphicsPipeline.second.m_pipeline, nullptr);
 	}
 
-	vkDestroyPipelineLayout(device, m_standardPipelineLayout, nullptr);
+	vkDestroyPipelineLayout(device, m_forwardPipelineLayout, nullptr);
 
 	for (auto& setLayout : PipelineDescriptor::m_appendedDescSetLayouts)
 	{

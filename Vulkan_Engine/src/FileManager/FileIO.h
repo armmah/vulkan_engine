@@ -5,5 +5,5 @@ struct Path;
 
 struct FileIO
 {
-	static std::vector<char> readFile(const Path& filename);
+	static bool readFile(std::vector<char>& buffer, const Path& filename);
 };

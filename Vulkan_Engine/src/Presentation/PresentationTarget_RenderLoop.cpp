@@ -15,7 +15,7 @@
 
 namespace Presentation
 {
-	void drawAt(VkCommandBuffer commandBuffer, const VkMeshRenderer& renderer, const Camera& cam, const glm::mat4& model)
+	void drawAt(VkCommandBuffer commandBuffer, const VkMeshRenderer& renderer, const glm::mat4& model)
 	{
 		if (renderer.submeshIndex >= renderer.mesh->iAttributes.size())
 			return;
@@ -41,40 +41,73 @@ namespace Presentation
 
 		auto cbs = CommandObjectsWrapper::CommandBufferScope(commandBuffer);
 		{
-			const auto extent = getSwapchainExtent();
-			cam.updateWindowExtent(extent);
+			m_globalPipelineState->StartFrame(frameNumber);
 
-			vkCmdSetViewport(commandBuffer, 0, 1, &cam.getViewport());
-			vkCmdSetScissor(commandBuffer, 0, 1, &cam.getScissorRect());
+			const auto handleConstantsUBO = m_globalPipelineState->fillGlobalConstantsUBO();
+			const auto pipelineLayout = m_globalPipelineState->getForwardPipelineLayout();
 
-			auto rps = CommandObjectsWrapper::RenderPassScope(commandBuffer, m_renderPass, getSwapchainFrameBuffers(frameNumber), extent, true);
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+				pipelineLayout, 0, 1, &handleConstantsUBO.descriptorSet, 0, nullptr);
+			stats.descriptorSetCount += 1;
 
 			renderIndexedMeshes(stats, renderers, cam, commandBuffer, frameNumber);
-
-			if (ImGui::GetDrawData())
-			{
-				ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
-			}
 		}
 
 		stats.frameNumber = frameNumber;
 		return stats;
 	}
 
-	void PresentationTarget::renderIndexedMeshes(FrameStats& stats, const std::vector<VkMeshRenderer>& renderers, const Camera& cam, VkCommandBuffer commandBuffer, uint32_t frameNumber)
+	void PresentationTarget::renderIndexedMeshes(FrameStats& stats, const std::vector<VkMeshRenderer>& renderers, Camera& cam, VkCommandBuffer commandBuffer, uint32_t frameNumber)
 	{
-		const auto handleConstantsUBO = m_globalPipelineState->fillGlobalConstantsUBO(frameNumber);
-		const auto handleViewUBO = m_globalPipelineState->fillCameraUBO(frameNumber, cam);
-
-		auto pipelineLayout = m_globalPipelineState->getPipelineLayout();
-
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-			pipelineLayout, 0, 1, &handleConstantsUBO.descriptorSet, 0, nullptr);
-		stats.descriptorSetCount += 1;
+		const auto pipelineLayout = m_globalPipelineState->getForwardPipelineLayout();
 
 		std::vector<VkMeshRenderer> sortedList(renderers.begin(), renderers.end());
-		// For each camera
+		// ShadowMap - pass
 		{
+			VkExtent2D extent{};
+			extent.width = 35u;
+			extent.height = 35u;
+
+			auto scopeShadowMapRenderPass = CommandObjectsWrapper::RenderPassScope(commandBuffer, m_shadowMapModule->getRenderPass(), 
+				m_shadowMapModule->getFrameBuffer(frameNumber), m_shadowMapModule->getExtent(), false, true);
+
+			auto cam = Camera(extent);
+			cam.setPosition({ -0.115, -35.8f, -13.2f });
+			cam.lookAt(glm::vec3(0.f));
+
+			vkCmdSetViewport(commandBuffer, 0, 1, &m_shadowMapModule->getViewport());
+			vkCmdSetScissor(commandBuffer, 0, 1, &m_shadowMapModule->getScissorRect());
+
+			const auto handleViewUBO = m_globalPipelineState->fillCameraUBO(cam);
+
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+				pipelineLayout, 1, 1, &handleViewUBO.descriptorSet, 0, nullptr);
+			stats.descriptorSetCount += 1;
+
+			const VkGraphicsPipeline depthOnly = m_shadowMapModule->m_replacementMaterial;
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, depthOnly.m_pipeline);
+			stats.pipelineCount += 1;
+
+			for (auto& renderer : sortedList)
+			{
+				drawAt(commandBuffer, renderer, renderer.transform->localToWorld);
+				stats.drawCallCount += 1;
+			}
+		}
+
+		auto scopeForwardRenderPass = CommandObjectsWrapper::RenderPassScope(commandBuffer, m_renderPass, getSwapchainFrameBuffers(frameNumber), getSwapchainExtent(), true, hasDepthAttachement());
+		// For each camera - Forward pass
+		{
+			auto extent = getSwapchainExtent();
+			cam.updateWindowExtent(extent);
+
+			extent.height = extent.width = 1024;
+			vkinit::Commands::initViewportAndScissor(m_viewport, m_scissorRect, extent);
+			vkCmdSetViewport(commandBuffer, 0, 1, &m_viewport);
+			vkCmdSetScissor(commandBuffer, 0, 1, &m_scissorRect);
+
+			const auto handleViewUBO = m_globalPipelineState->fillCameraUBO(cam);
+
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
 				pipelineLayout, 1, 1, &handleViewUBO.descriptorSet, 0, nullptr);
 			stats.descriptorSetCount += 1;
@@ -84,7 +117,7 @@ namespace Presentation
 			auto partition = std::partition(sortedList.begin(), sortedList.end(), [&cameraFrustum](auto& renderer) 
 				{
 					const auto& model = renderer.transform->localToWorld;
-					return renderer.bounds != nullptr && cameraFrustum.isOnFrustum(renderer.bounds->getTransformed(model));
+					return true;// renderer.bounds != nullptr && cameraFrustum.isOnFrustum(renderer.bounds->getTransformed(model));
 				}
 			);
 			// Cut the end of the vector, preserving only the objects that are in frustum.
@@ -121,9 +154,14 @@ namespace Presentation
 					prevVariant = &variant;
 				}
 
-				drawAt(commandBuffer, renderer, cam, renderer.transform->localToWorld);
+				drawAt(commandBuffer, renderer, renderer.transform->localToWorld);
 				stats.drawCallCount += 1;
 			}
+		}
+
+		if (ImGui::GetDrawData())
+		{
+			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 		}
 	}
 }

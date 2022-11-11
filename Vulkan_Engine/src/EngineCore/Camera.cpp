@@ -3,6 +3,16 @@
 #include "Camera.h"
 #include "Mesh.h"
 
+Camera::Camera(VkExtent2D windowSize, float nearZ, float farZ) :
+	fov_radians(glm::radians(0.f)),
+	nearZ(nearZ), farZ(farZ),
+	pos(0.f),
+	yaw(YAW), pitch(PITCH), movement(), zoom(ZOOM), movementSpeed(SPEED), mouseSensitivity(SENSITIVITY)
+{
+	updateWindowExtent(windowSize);
+	processFrameEvents(0.f);
+}
+
 Camera::Camera(float fov_degrees, VkExtent2D windowSize, float nearZ, float farZ) :
 	fov_radians(glm::radians(fov_degrees)),
 	nearZ(nearZ), farZ(farZ),
@@ -22,8 +32,16 @@ void Camera::setPosition(const glm::vec3& position) { pos = position; }
 //void Camera::setRotation(const glm::quat& rotation) { rot = rotation; calculateViewMatrix(); }
 void Camera::setRotation(float y, float p) { yaw = y; pitch = p; }
 
-const VkViewport& Camera::getViewport() const { return viewport; }
-const VkRect2D& Camera::getScissorRect() const { return scissor; }
+void Camera::lookAt(glm::vec3 point)
+{
+	auto front = point - pos;
+	auto right = glm::vec3(1.f, 0.f, 0.f);
+
+	auto up = glm::normalize(glm::cross(right, front));
+	cachedViewMatrix = glm::lookAt(pos, point, up);
+
+	calculateViewProjectionMatrix();
+}
 
 void Camera::setNearFarZ(float near, float far)
 {
@@ -51,8 +69,6 @@ void Camera::updateWindowExtent(VkExtent2D newExtent)
 
 	aspectRatio = windowExtent.width / static_cast<float>(windowExtent.height);
 	calculateProjectionMatrix();
-
-	vkinit::Commands::initViewportAndScissor(viewport, scissor, newExtent);
 }
 
 const glm::mat4& Camera::getViewProjectionMatrix() const { return cachedViewProjectionMatrix; }
@@ -113,7 +129,16 @@ glm::mat4 Camera::calculateViewMatrix()
 */
 glm::mat4 Camera::calculateProjectionMatrix()
 {
-	cachedProjectionMatrix = glm::perspective(fov_radians, aspectRatio, nearZ, farZ);
+	if (fov_radians == 0.f)
+	{
+		auto w = static_cast<float>(windowExtent.width);
+		auto h = static_cast<float>(windowExtent.height);
+		cachedProjectionMatrix = glm::ortho(w * -0.5f, w * 0.5f, h * -0.5f, h * 0.5f, nearZ, farZ);
+	}
+	else
+	{
+		cachedProjectionMatrix = glm::perspective(fov_radians, aspectRatio, nearZ, farZ);
+	}
 	cachedProjectionMatrix[1][1] *= -1;
 
 	cachedViewProjectionMatrix = calculateViewProjectionMatrix();

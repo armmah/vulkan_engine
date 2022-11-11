@@ -26,7 +26,7 @@ Scene::~Scene() { }
 constexpr bool force_serialize_from_origin = false;
 bool Scene::load(VkDescriptorPool descPool)
 {
-	const auto modelPaths = Directories::getModels_CrytekSponza();
+	const auto modelPaths = Directories::getModels_DebrovicSponza();
 
 	Path fullPath;
 	/*****************************				IMPORT					****************************************/

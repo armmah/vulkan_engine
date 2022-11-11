@@ -2,21 +2,23 @@
 #include "FileIO.h"
 #include "Path.h"
 
-std::vector<char> FileIO::readFile(const Path& filename)
+bool FileIO::readFile(std::vector<char>& buffer, const Path& filename)
 {
 	std::ifstream file(filename.c_str(), std::ios::ate | std::ios::binary);
 
 	if (!file.good() || file.fail() || !file.is_open())
 	{
-		throw std::runtime_error("FileIO: Failed to open file " + filename.value);
+		return false;
 	}
 
+	buffer.clear();
 	size_t fileSize = (size_t)file.tellg();
-	std::vector<char> buffer(fileSize);
+	buffer.resize(fileSize);
+
 	file.seekg(0);
 	file.read(buffer.data(), fileSize);
 
 	file.close();
 
-	return buffer;
+	return true;
 }

@@ -28,7 +28,7 @@ struct CommandObjectsWrapper
 		VkCommandBuffer commandBuffer;
 
 	public:
-		RenderPassScope(VkCommandBuffer commandBuffer, VkRenderPass m_renderPass, VkFramebuffer swapChainFramebuffer, VkExtent2D extent, bool hasDepthAttachment);
+		RenderPassScope(VkCommandBuffer commandBuffer, VkRenderPass m_renderPass, VkFramebuffer swapChainFramebuffer, VkExtent2D extent, bool hasColorAttachment, bool hasDepthAttachment);
 		~RenderPassScope();
 
 		RenderPassScope(const RenderPassScope&) = delete;

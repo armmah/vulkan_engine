@@ -66,10 +66,8 @@ public:
 	template<typename T>
 	void mapAndCopyBuffer(const VmaAllocator& vmaAllocator, VmaAllocation& memRange, const T* source, size_t elementCount, size_t totalByteSize, const char* message);
 
-	static VkFormat pickDataFormat(size_t size);
 	static bool validateOptionalBufferSize(size_t vectorSize, size_t vertexCount, char const* name);
 	static void copyInterleavedNoCheck(std::vector<float>& interleavedVertexData, const void* src, size_t elementByteSize, size_t iterStride, size_t offset);
-	static VertexBinding initializeBindings(const MeshDescriptor& meshDescriptor);
 
 	bool allocateGraphicsMesh(VkMesh& graphicsMesh, const VmaAllocator& vmaAllocator, const Presentation::Device* presentationDevice, StagingBufferPool& stagingPool);
 	bool allocateIndexAttributes(VkMesh& graphicsMesh, const SubMesh& submesh, const VmaAllocator& vmaAllocator, const Presentation::Device* presentationDevice, StagingBufferPool& stagingPool);
@@ -84,7 +82,6 @@ public:
 	const BoundsAABB* getBounds(uint32_t submeshIndex) const { return submeshIndex >= 0 && submeshIndex < m_submeshes.size() ? &m_submeshes[submeshIndex].m_bounds : nullptr; }
 
 	static MeshDescriptor defaultMeshDescriptor;
-	static VertexBinding defaultVertexBinding;
 
 	template<class Archive>
 	void serialize(Archive& ar, const unsigned int version)

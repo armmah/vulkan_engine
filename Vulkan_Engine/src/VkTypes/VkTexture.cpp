@@ -191,6 +191,14 @@ bool VkTexture2D::tryCreateTexture(UNQ<VkTexture2D>& tex, const TextureSource& t
 	return true;
 }
 
+VkTexture2D VkTexture2D::createTexture(VkDevice device, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlagBits usage, VkImageAspectFlagBits aspectFlags, bool isReadable, uint32_t mipCount)
+{
+	auto tex = VkTexture::createTexture(device, width, height, format, usage, aspectFlags, isReadable, mipCount);
+	VkSampler sampler;
+	vkinit::Texture::createTextureSampler(sampler, device, 1u);
+	return VkTexture2D(tex.image, tex.memoryRange, tex.imageView, sampler, mipCount);
+}
+
 void VkTexture2D::release(VkDevice device)
 {
 	VkTexture::release(device);
@@ -205,6 +213,19 @@ VkTexture::VkTexture(VkDevice device, MemAllocationInfo maci, VkFormat imageForm
 {
 	vkinit::Texture::createImage(image, memoryRange, maci, imageFormat, imageUsage, extent.width, extent.height, mipCount);
 	vkinit::Texture::createTextureImageView(imageView, device, image, imageFormat, mipCount, imageViewAspectFlags);
+}
+
+VkTexture VkTexture::createTexture(VkDevice device, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlagBits usage, VkImageAspectFlagBits aspectFlags, bool isReadable, uint32_t mipCount)
+{
+	const VmaMemoryUsage maciUsage = isReadable ? VMA_MEMORY_USAGE_CPU_TO_GPU : VMA_MEMORY_USAGE_GPU_ONLY;
+	const VkMemoryPropertyFlagBits maciFlags = isReadable ? (VkMemoryPropertyFlagBits)(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD) : (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+	const auto maci = VkMemoryAllocator::getInstance()->createAllocationDescriptor(maciUsage, maciFlags);
+	auto extent = VkExtent2D{};
+	extent.width = width;
+	extent.height = height;
+
+	return VkTexture(device, maci, format, usage, aspectFlags, extent);
 }
 
 bool VkTexture::isValid() const { return image != VK_NULL_HANDLE && imageView != VK_NULL_HANDLE && memoryRange != VK_NULL_HANDLE; }

@@ -9,6 +9,9 @@
 
 #include "ShaderSource.h"
 #include "VkTypes/VkShader.h"
+#include "VkTypes/PipelineConstructor.h"
+#include "Mesh.h"
+#include "DescriptorPoolManager.h"
 
 namespace Presentation
 {
@@ -21,13 +24,26 @@ namespace Presentation
 
 		m_shadowMapModule = MAKEUNQ<ShadowMap>(presentationDevice.getDevice(), true, 1024u);
 
-		const auto* shader = VkShader::findShader(1u);
-		m_shadowMapModule->m_replacementShader = shader;
-		if (!createPipelineIfNotExist(m_shadowMapModule->m_replacementMaterial, m_globalPipelineState->getDepthOnlyPipelineLayout(), 
-			presentationDevice.getDevice(), shader, m_shadowMapModule->getRenderPass(), m_shadowMapModule->getExtent()))
+		const auto* depthOnlyShader = VkShader::findShader(1u);
+		m_shadowMapModule->m_replacementShader = depthOnlyShader;
+		if (PipelineConstruction::createPipeline(m_shadowMapModule->m_replacementMaterial.m_pipeline, m_globalPipelineState->getDepthOnlyPipelineLayout(),
+			presentationDevice.getDevice(), m_shadowMapModule->getRenderPass(), m_shadowMapModule->getExtent(), *depthOnlyShader,
+			&Mesh::defaultMeshDescriptor, PipelineConstruction::FaceCulling::Back, true))
 		{
-			printf("Could not create pipeline for the depth only shadowmap shader.");
+			m_globalPipelineState->insertGraphicsPipelineFor(depthOnlyShader, m_shadowMapModule->m_replacementMaterial);
 		}
+		else printf("Could not create pipeline for the depth only shadowmap shader.\n");
+
+		const auto* debugQuadShader = VkShader::findShader(2u);
+		m_debugQuad.m_pipelineLayout = m_globalPipelineState->getForwardPipelineLayout();
+		if (PipelineConstruction::createPipeline(m_debugQuad.m_pipeline, m_debugQuad.m_pipelineLayout, presentationDevice.getDevice(),
+			getRenderPass(), getSwapchainExtent(), *debugQuadShader, nullptr, PipelineConstruction::FaceCulling::None, true))
+		{
+			m_globalPipelineState->insertGraphicsPipelineFor(debugQuadShader, m_debugQuad);
+			auto pool = DescriptorPoolManager::getInstance()->createNewPool(3u);
+			createGraphicsMaterial(m_debugMaterial, presentationDevice.getDevice(), pool, debugQuadShader, &m_shadowMapModule->getTexture2D());
+		}
+		else printf("Could not create pipeline for the debug quad shader.\n");
 	}
 
 	bool PresentationTarget::createPresentationTarget(const HardwareDevice& presentationHardware, const Device& presentationDevice, uint32_t swapchainCount)
@@ -103,7 +119,7 @@ namespace Presentation
 
 	bool PresentationTarget::createRenderPass(VkDevice device)
 	{
-		return vkinit::Surface::createRenderPass(m_renderPass, device, m_swapChainImageFormat, true, hasDepthAttachement());
+		return vkinit::Surface::createRenderPass(m_renderPass, device, m_swapChainImageFormat, hasDepthAttachement());
 	}
 
 	bool PresentationTarget::createSwapChainImageViews(VkDevice device)
@@ -178,9 +194,16 @@ namespace Presentation
 		m_globalPipelineState->release(device);
 		releaseSwapChain(device);
 
+		if (m_debugMaterial)
+		{
+			m_debugMaterial->release(device);
+			m_debugMaterial = nullptr;
+		}
+
 		if (m_shadowMapModule)
 		{
 			m_shadowMapModule->release(device);
+			m_shadowMapModule = nullptr;
 		}
 	}
 

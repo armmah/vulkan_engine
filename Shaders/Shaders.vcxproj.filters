@@ -22,5 +22,11 @@
     <None Include="sourceGLSL\depthonly.vert">
       <Filter>Source Files</Filter>
     </None>
+    <None Include="sourceGLSL\quad.frag">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="sourceGLSL\quad.vert">
+      <Filter>Source Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

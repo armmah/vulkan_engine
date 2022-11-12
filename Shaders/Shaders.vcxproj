@@ -86,6 +86,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="sourceGLSL\depthonly.vert" />
+    <None Include="sourceGLSL\quad.frag" />
+    <None Include="sourceGLSL\quad.vert" />
     <None Include="sourceGLSL\simple.frag" />
     <None Include="sourceGLSL\simple.vert" />
     <None Include="sourceGLSL\triangle.frag" />

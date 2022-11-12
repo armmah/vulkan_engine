@@ -12,6 +12,7 @@
 #include "Material.h"
 
 #include "Profiling/ProfileMarker.h"
+#include "Texture.h"
 
 namespace Presentation
 {
@@ -62,6 +63,7 @@ namespace Presentation
 		const auto pipelineLayout = m_globalPipelineState->getForwardPipelineLayout();
 
 		std::vector<VkMeshRenderer> sortedList(renderers.begin(), renderers.end());
+
 		// ShadowMap - pass
 		{
 			VkExtent2D extent{};
@@ -101,7 +103,6 @@ namespace Presentation
 			auto extent = getSwapchainExtent();
 			cam.updateWindowExtent(extent);
 
-			extent.height = extent.width = 1024;
 			vkinit::Commands::initViewportAndScissor(m_viewport, m_scissorRect, extent);
 			vkCmdSetViewport(commandBuffer, 0, 1, &m_viewport);
 			vkCmdSetScissor(commandBuffer, 0, 1, &m_scissorRect);
@@ -157,6 +158,27 @@ namespace Presentation
 				drawAt(commandBuffer, renderer, renderer.transform->localToWorld);
 				stats.drawCallCount += 1;
 			}
+		}
+
+		{
+			auto swExtent = getSwapchainExtent();
+			auto extent = swExtent;
+			extent.width *= 0.25f;
+			extent.height *= 0.25f;
+
+			vkinit::Commands::initViewportAndScissor(m_viewport, m_scissorRect, extent, 
+				static_cast<int32_t>( swExtent.width * 0.75f ), static_cast<int32_t>(swExtent.height * 0.0f));
+			vkCmdSetViewport(commandBuffer, 0, 1, &m_viewport);
+			vkCmdSetScissor(commandBuffer, 0, 1, &m_scissorRect);
+
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_debugQuad.m_pipeline);
+			stats.pipelineCount += 1;
+
+			const auto variant = m_debugMaterial->getMaterialVariant();
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, variant.getPipelineLayout(), 2, 1, variant.getDescriptorSet(frameNumber), 0, nullptr);
+			stats.descriptorSetCount += 1;
+
+			vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 		}
 
 		if (ImGui::GetDrawData())

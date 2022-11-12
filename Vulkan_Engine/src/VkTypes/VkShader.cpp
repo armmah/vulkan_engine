@@ -41,6 +41,8 @@ void VkShader::ensureDefaultShader(VkDevice device)
 		VkShader::createGlobalShader(device, ShaderSource::getDefaultShader());
 
 		VkShader::createGlobalShader(device, ShaderSource::getDepthOnlyShader());
+
+		VkShader::createGlobalShader(device, ShaderSource::getDebugQuadShader());
 	}
 }
 

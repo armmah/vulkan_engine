@@ -361,5 +361,8 @@
     <ClInclude Include="src\EngineCore\BuffersUBO.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\VkTypes\PipelineConstructor.h">
+      <Filter>Header Files\VkTypes</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

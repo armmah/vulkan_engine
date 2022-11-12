@@ -6,6 +6,7 @@
 #include "Engine/RenderLoopStatistics.h"
 #include "VkTypes/InitializersUtility.h"
 #include "PipelineBinding.h"
+#include "Material.h"
 
 class Window;
 struct VkTexture;
@@ -47,9 +48,8 @@ namespace Presentation
 	public:
 		ShadowMap(VkDevice device, bool isEnabled, uint32_t dimensionsXY) : Pass(isEnabled),
 			m_dimensionsXY(std::clamp(dimensionsXY, MIN_SHADOWMAP_DIMENSION, MAX_SHADOWMAP_DIMENSION)),
-			m_shadowMap(VkTexture::createTexture(device, m_dimensionsXY, m_dimensionsXY, FORMAT, USAGE_FLAGS, VIEW_IMAGE_ASPECT_FLAGS)),
 			m_renderPass(), m_frameBuffer(), m_isInitialized(false),
-			
+			m_shadowMap(VkTexture2D::createTexture(device, m_dimensionsXY, m_dimensionsXY, FORMAT, USAGE_FLAGS, VIEW_IMAGE_ASPECT_FLAGS)),
 			m_replacementShader(), m_replacementMaterial()
 		{
 			m_extent = {};
@@ -64,7 +64,7 @@ namespace Presentation
 
 			m_isInitialized =
 				m_shadowMap.isValid() &&
-				vkinit::Surface::createRenderPass(m_renderPass, device, (VkFormat)0, false, true);
+				vkinit::Surface::createRenderPass(m_renderPass, device, (VkFormat)0, true);
 
 			for (auto& fb : m_frameBuffer)
 			{
@@ -78,6 +78,8 @@ namespace Presentation
 		const VkExtent2D getExtent() const { return m_extent; }
 		const VkRenderPass getRenderPass() const { return m_renderPass; }
 		const VkFramebuffer getFrameBuffer(uint32_t frameNumber) const { return m_frameBuffer[frameNumber % SWAPCHAIN_IMAGE_COUNT]; }
+		const VkTexture2D& getTexture2D() const { return m_shadowMap; }
+		VkFormat getFormat() const { return FORMAT; }
 
 		virtual void release(VkDevice device) override
 		{
@@ -95,7 +97,7 @@ namespace Presentation
 
 	private:
 		uint32_t m_dimensionsXY;
-		VkTexture m_shadowMap;
+		VkTexture2D m_shadowMap;
 
 		VkRenderPass m_renderPass;
 		std::array<VkFramebuffer, SWAPCHAIN_IMAGE_COUNT> m_frameBuffer;
@@ -154,6 +156,8 @@ namespace Presentation
 
 		VkRenderPass m_renderPass;
 		UNQ<ShadowMap> m_shadowMapModule;
+		VkGraphicsPipeline m_debugQuad;
+		UNQ<VkMaterial> m_debugMaterial;
 
 		std::vector<VkImage> m_swapChainImages;
 		std::vector<VkImageView> m_swapChainImageViews;

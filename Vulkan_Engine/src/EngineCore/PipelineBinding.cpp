@@ -24,9 +24,9 @@ bool PipelineDescriptor::tryCreateDescriptorSetLayouts(VkDevice device)
 {
 	static_assert( bindingStages.size() == BindingSlots::MAX );
 
-	return vkinit::Descriptor::createDescriptorSetLayout(m_appendedDescSetLayouts[BindingSlots::Constants], device, vkinit::BindedBuffer(bindingStages[BindingSlots::Constants])) &&
-		vkinit::Descriptor::createDescriptorSetLayout(m_appendedDescSetLayouts[BindingSlots::View], device, vkinit::BindedBuffer(bindingStages[BindingSlots::View])) &&
-		vkinit::Descriptor::createDescriptorSetLayout(m_appendedDescSetLayouts[BindingSlots::Textures], device, vkinit::BindedTexture(bindingStages[BindingSlots::Textures]));
+	return vkinit::Descriptor::createDescriptorSetLayout(m_appendedDescSetLayouts[BindingSlots::Constants], device, vkinit::BoundBuffer(bindingStages[BindingSlots::Constants])) &&
+		vkinit::Descriptor::createDescriptorSetLayout(m_appendedDescSetLayouts[BindingSlots::View], device, vkinit::BoundBuffer(bindingStages[BindingSlots::View])) &&
+		vkinit::Descriptor::createDescriptorSetLayout(m_appendedDescSetLayouts[BindingSlots::Textures], device, vkinit::BoundTexture(bindingStages[BindingSlots::Textures]));
 }
 
 bool PipelineDescriptor::tryCreatePipelineLayout(VkPipelineLayout& pipelineLayout, const VkDevice device, uint32_t maxCount)
@@ -104,12 +104,13 @@ void PipelineDescriptor::release(VkDevice device)
 
 	for (auto& graphicsPipeline : globalPipelineList)
 	{
-		// vkDestroyPipelineLayout(device, graphicsPipeline.second.pipelineLayout, nullptr);
 		graphicsPipeline.second.m_pipelineLayout = VK_NULL_HANDLE;
 		vkDestroyPipeline(device, graphicsPipeline.second.m_pipeline, nullptr);
 	}
 
 	vkDestroyPipelineLayout(device, m_forwardPipelineLayout, nullptr);
+
+	vkDestroyPipelineLayout(device, m_depthOnlyPipelineLayout, nullptr);
 
 	for (auto& setLayout : PipelineDescriptor::m_appendedDescSetLayouts)
 	{

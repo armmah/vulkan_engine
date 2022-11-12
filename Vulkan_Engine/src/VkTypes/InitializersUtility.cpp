@@ -70,8 +70,9 @@ struct DepthAttachment : RenderPassAttachement
 	{ }
 };
 
-bool vkinit::Surface::createRenderPass(VkRenderPass& renderPass, VkDevice device, VkFormat swapchainImageFormat, bool enableColorAttachment, bool enableDepthAttachment)
+bool vkinit::Surface::createRenderPass(VkRenderPass& renderPass, VkDevice device, VkFormat swapchainImageFormat, bool enableDepthAttachment)
 {
+	auto enableColorAttachment = swapchainImageFormat != VK_FORMAT_UNDEFINED;
 	assert(enableColorAttachment || enableDepthAttachment);
 
 	auto attachementCount = 0;
@@ -114,7 +115,11 @@ bool vkinit::Surface::createRenderPass(VkRenderPass& renderPass, VkDevice device
 		dstStageBit |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 		dstAccessBit |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
-		attachments[attachementCount] = DepthAttachment().getAttachement();
+		auto depthAttachmentCtor = enableColorAttachment ? DepthAttachment() : 
+			DepthAttachment(DepthAttachment::FORMAT, RenderPassAttachement::LoadTransitionState::Clear, RenderPassAttachement::StoreTransitionState::Store, 
+				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+		attachments[attachementCount] = depthAttachmentCtor.getAttachement();
 		attachementCount += 1;
 	}
 
@@ -125,15 +130,16 @@ bool vkinit::Surface::createRenderPass(VkRenderPass& renderPass, VkDevice device
 	renderPassInfo.subpassCount = 1;
 	renderPassInfo.pSubpasses = &subpass;
 
-	VkSubpassDependency dependency{};
+	VkSubpassDependency dependency;
 	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
 	dependency.dstSubpass = 0;
 	dependency.srcStageMask = srcStageBit;
 	dependency.srcAccessMask = 0;
 	dependency.dstStageMask = dstStageBit;
 	dependency.dstAccessMask = dstAccessBit;
+	dependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
-	renderPassInfo.dependencyCount = 1;
+	renderPassInfo.dependencyCount = 1u;
 	renderPassInfo.pDependencies = &dependency;
 
 	return vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass) == VK_SUCCESS;
@@ -277,16 +283,16 @@ bool vkinit::Commands::createCommandBuffers(std::vector<VkCommandBuffer>& comman
 	return vkAllocateCommandBuffers(device, &allocInfo, commandBufferCollection.data()) == VK_SUCCESS;
 }
 
-void vkinit::Commands::initViewportAndScissor(VkViewport& viewport, VkRect2D& scissor, VkExtent2D extent)
+void vkinit::Commands::initViewportAndScissor(VkViewport& viewport, VkRect2D& scissor, VkExtent2D extent, int32_t offsetX, int32_t offsetY)
 {
-	viewport.x = 0.0f;
-	viewport.y = 0.0f;
-	viewport.width = static_cast<float>(extent.width);
-	viewport.height = static_cast<float>(extent.height);
+	viewport.x = static_cast<float>( offsetX );
+	viewport.y = static_cast<float>( offsetY );
+	viewport.width = static_cast<float>( extent.width );
+	viewport.height = static_cast<float>( extent.height );
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 
-	scissor.offset = { 0, 0 };
+	scissor.offset = { offsetX, offsetY };
 	scissor.extent = extent;
 }
 

@@ -27,3 +27,11 @@ ShaderSource ShaderSource::getDepthOnlyShader()
 		Path()
 	);
 }
+
+ShaderSource ShaderSource::getDebugQuadShader()
+{
+	return ShaderSource(
+		Directories::getShaderLibraryPath().combine("quad.vert.spv"),
+		Directories::getShaderLibraryPath().combine("quad.frag.spv")
+	);
+}

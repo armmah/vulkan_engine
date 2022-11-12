@@ -101,6 +101,7 @@ struct Texture
 
 	static void copyBufferToImage(const Presentation::Device* presentationDevice, VkBuffer buffer, VkImage image, const std::vector<MipDesc>& dimensions);
 	static void transitionImageLayout(const Presentation::Device* presentationDevice, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipCount);
+	static void transitionImageLayout(const VkCommandBuffer cmd, const VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipCount = 1u, VkImageAspectFlagBits subResImageAspect = VK_IMAGE_ASPECT_COLOR_BIT);
 
 private:
 	static bool stbiLoad(Texture& texture, const std::string& path);

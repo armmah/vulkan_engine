@@ -23,7 +23,7 @@ namespace vkinit
 	struct Surface
 	{
 		static bool createSurface(VkSurfaceKHR& surface, VkInstance instance, const Window* window);
-		static bool createRenderPass(VkRenderPass& renderPass, VkDevice device, VkFormat swapchainImageFormat, bool enableColorAttachment, bool enableDepthAttachment);
+		static bool createRenderPass(VkRenderPass& renderPass, VkDevice device, VkFormat swapchainImageFormat, bool enableDepthAttachment);
 
 		template<size_t _Size>
 		static bool createFrameBuffer(VkFramebuffer& frameBuffer, VkDevice device, VkRenderPass renderPass, VkExtent2D extent, std::array<VkImageView, _Size> imageViews, uint32_t count = std::numeric_limits<uint32_t>::max())
@@ -45,7 +45,7 @@ namespace vkinit
 	{
 		static bool createSingleCommandBuffer(VkCommandBuffer& commandBuffer, VkCommandPool pool, VkDevice device);
 		static bool createCommandBuffers(std::vector<VkCommandBuffer>& commandBufferCollection, uint32_t count, VkCommandPool pool, VkDevice device);
-		static void initViewportAndScissor(VkViewport& viewport, VkRect2D& scissor, VkExtent2D extent);
+		static void initViewportAndScissor(VkViewport& viewport, VkRect2D& scissor, VkExtent2D extent, int32_t offsetX = 0, int32_t offsetY = 0);
 	};
 
 	struct Synchronization
@@ -92,14 +92,14 @@ namespace vkinit
 		uint32_t m_descCount;
 	};
 
-	struct BindedBuffer : ShaderBinding
+	struct BoundBuffer : ShaderBinding
 	{
-		BindedBuffer(VkShaderStageFlags stageFlags) : ShaderBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, stageFlags) { }
+		BoundBuffer(VkShaderStageFlags stageFlags) : ShaderBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, stageFlags) { }
 	};
 
-	struct BindedTexture : ShaderBinding
+	struct BoundTexture : ShaderBinding
 	{
-		BindedTexture(VkShaderStageFlags stageFlags) : ShaderBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, stageFlags) { }
+		BoundTexture(VkShaderStageFlags stageFlags) : ShaderBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, stageFlags) { }
 	};
 
 	struct Descriptor

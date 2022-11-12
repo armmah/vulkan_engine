@@ -355,6 +355,7 @@
     <ClInclude Include="src\Presentation\PresentationTarget.h" />
     <ClInclude Include="src\Profiling\ProfileMarker.h" />
     <ClInclude Include="src\VkTypes\InitializersUtility.h" />
+    <ClInclude Include="src\VkTypes\PipelineConstructor.h" />
     <ClInclude Include="src\VkTypes\PushConstantTypes.h" />
     <ClInclude Include="src\VkTypes\vkInitQueueFamily.h" />
     <ClInclude Include="src\VkTypes\VkMaterialVariant.h" />

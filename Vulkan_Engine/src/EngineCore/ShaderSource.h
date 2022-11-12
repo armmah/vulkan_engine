@@ -15,4 +15,5 @@ struct ShaderSource
 
 	static ShaderSource getDefaultShader();
 	static ShaderSource getDepthOnlyShader();
+	static ShaderSource getDebugQuadShader();
 };

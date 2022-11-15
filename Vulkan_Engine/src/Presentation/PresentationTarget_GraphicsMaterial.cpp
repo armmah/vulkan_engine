@@ -2,6 +2,8 @@
 #include "PresentationTarget.h"
 #include "Mesh.h"
 #include "Material.h"
+#include "VkGraphicsPipeline.h"
+#include "PipelineBinding.h"
 #include "VkTypes/VkShader.h"
 #include "VkTypes/PipelineConstructor.h"
 

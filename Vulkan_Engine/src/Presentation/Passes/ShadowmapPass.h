@@ -3,7 +3,7 @@
 #include "Presentation/Passes/Pass.h"
 #include "Interfaces/IRequireInitialization.h"
 #include "VkTypes/VkTexture.h"
-#include "PipelineBinding.h"
+#include "VkGraphicsPipeline.h"
 
 struct VkShader;
 

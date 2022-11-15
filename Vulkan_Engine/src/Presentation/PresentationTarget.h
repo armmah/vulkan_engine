@@ -4,9 +4,6 @@
 #include "Interfaces/IRequireInitialization.h"
 
 #include "Engine/RenderLoopStatistics.h"
-// #include "VkTypes/InitializersUtility.h"
-// #include "PipelineBinding.h"
-// #include "Material.h"
 
 #include "Passes/ShadowmapPass.h"
 #include "Passes/DebugPass.h"

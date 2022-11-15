@@ -1,7 +1,7 @@
 #pragma once
 #include "pch.h"
 #include "Interfaces/IRequireInitialization.h"
-#include "VkTypes/VkMemoryAllocator.h"
+// #include "VkTypes/VkMemoryAllocator.h"
 
 struct BufferHandle
 {

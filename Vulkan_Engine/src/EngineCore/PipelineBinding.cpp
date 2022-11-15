@@ -2,11 +2,11 @@
 #include "PipelineBinding.h"
 
 #include "Common.h"
-#include "VkTypes/InitializersUtility.h"
 
 #include "Camera.h"
 #include "DescriptorPoolManager.h"
-#include "VkTypes/PushConstantTypes.h"
+#include "VkGraphicsPipeline.h"
+#include "UboAllocatorDelegate.h"
 
 VkDescriptorSetLayout PipelineDescriptor::getDescriptorSetLayout(BindingSlots slot) { return m_appendedDescSetLayouts[static_cast<int>(slot)]; }
 

@@ -3,17 +3,17 @@
 #include "vk_types.h"
 #include "VkTypes/InitializersUtility.h"
 #include "VkTypes/PushConstantTypes.h"
-#include "Mesh.h"
 #include "VkMesh.h"
 #include "VertexAttributes.h"
 #include "PipelineBinding.h"
 
+#include "Mesh.h"
 #include "Camera.h"
-#include "Math/Frustum.h"
+#include "Texture.h"
 #include "Material.h"
+#include "Math/Frustum.h"
 
 #include "Profiling/ProfileMarker.h"
-#include "Texture.h"
 
 namespace Presentation
 {

@@ -230,6 +230,15 @@
     <ClCompile Include="src\Presentation\Passes\ShadowmapPass.cpp">
       <Filter>Source Files\Presentation\Passes</Filter>
     </ClCompile>
+    <ClCompile Include="src\EngineCore\VkGraphicsPipeline.cpp">
+      <Filter>Source Files\EngineCore</Filter>
+    </ClCompile>
+    <ClCompile Include="src\EngineCore\BuffersUBOPool.cpp">
+      <Filter>Source Files\EngineCore</Filter>
+    </ClCompile>
+    <ClCompile Include="src\EngineCore\UboAllocatorDelegate.cpp">
+      <Filter>Source Files\EngineCore</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\vk_engine.h">
@@ -373,9 +382,6 @@
     <ClInclude Include="src\EngineCore\DescriptorPoolManager.h">
       <Filter>Header Files\EngineCore</Filter>
     </ClInclude>
-    <ClInclude Include="src\EngineCore\BuffersUBO.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\VkTypes\PipelineConstructor.h">
       <Filter>Header Files\VkTypes</Filter>
     </ClInclude>
@@ -387,6 +393,18 @@
     </ClInclude>
     <ClInclude Include="src\Presentation\Passes\ShadowmapPass.h">
       <Filter>Header Files\Presentation\Passes</Filter>
+    </ClInclude>
+    <ClInclude Include="VkGraphicsPipeline.h">
+      <Filter>Header Files\EngineCore</Filter>
+    </ClInclude>
+    <ClInclude Include="src\EngineCore\BuffersUBO.h">
+      <Filter>Header Files\EngineCore</Filter>
+    </ClInclude>
+    <ClInclude Include="src\EngineCore\BuffersUBOPool.h">
+      <Filter>Header Files\EngineCore</Filter>
+    </ClInclude>
+    <ClInclude Include="src\EngineCore\UboAllocatorDelegate.h">
+      <Filter>Header Files\EngineCore</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

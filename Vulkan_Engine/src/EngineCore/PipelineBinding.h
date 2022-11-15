@@ -2,81 +2,12 @@
 #include "pch.h"
 #include "Interfaces/IRequireInitialization.h"
 #include "BuffersUBO.h"
+#include "BuffersUBOPool.h"
 
 namespace vkinit { struct ShaderBinding; }
 struct VkShader;
 struct VkGraphicsPipeline;
 class Camera;
-
-struct VkGraphicsPipeline
-{
-	VkPipeline m_pipeline;
-	VkPipelineLayout m_pipelineLayout;
-
-	VkGraphicsPipeline& operator =(VkGraphicsPipeline other)
-	{
-		std::swap(m_pipeline, other.m_pipeline);
-		std::swap(m_pipelineLayout, other.m_pipelineLayout);
-		return *this;
-	}
-};
-
-#include "VkTypes/PushConstantTypes.h"
-struct UBOAllocatorDelegate
-{
-	UBOAllocatorDelegate(VkDevice device, VkDescriptorPool pool, VkDescriptorSetLayout layout) : m_device(device), m_descPool(pool), m_descriptorSetLayout(layout) { }
-
-	bool invoke(BuffersUBO& buffer) const
-	{
-		buffer = BuffersUBO(m_descriptorSetLayout, as_uint32(sizeof(ViewUBO)));
-		return buffer.allocate(m_device, m_descPool, m_descriptorSetLayout);
-	}
-
-private:
-	VkDevice m_device;
-	VkDescriptorPool m_descPool;
-	VkDescriptorSetLayout m_descriptorSetLayout;
-};
-
-struct BufferUBOPool
-{
-	BufferUBOPool() : m_poolUsed(0) { }
-	BufferUBOPool(UBOAllocatorDelegate allocDelegate) :
-		poolUBO(), m_poolUsed(0), m_allocDelegate(MAKEUNQ<UBOAllocatorDelegate>(allocDelegate)) { }
-
-	BuffersUBO* claim()
-	{
-		if (poolUBO.size() <= m_poolUsed)
-		{
-			const auto aDel = *m_allocDelegate;
-			BuffersUBO buffer;
-			if (m_allocDelegate && m_allocDelegate->invoke(buffer))
-			{
-				poolUBO.push_back(std::move(buffer));
-			}
-			else printf("Failed to allocate new UBO from the pool.");
-		}
-
-		return &poolUBO[m_poolUsed ++];
-	}
-
-	void freeAllClaimed()
-	{
-		m_poolUsed = 0;
-	}
-
-	void releaseAllResources()
-	{
-		for (auto& ubo : poolUBO)
-			ubo.release();
-	}
-
-private:
-	std::vector<BuffersUBO> poolUBO;
-	int m_poolUsed;
-
-	UNQ<UBOAllocatorDelegate> m_allocDelegate;
-};
 
 struct PipelineDescriptor : IRequireInitialization
 {

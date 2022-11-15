@@ -3,9 +3,7 @@
 #include "CollectionUtility.h"
 #include "VkMesh.h"
 #include "Mesh.h"
-#include "VkTypes/InitializersUtility.h"
 #include "VertexAttributes.h"
-#include "IndexAttributes.h"
 #include "Presentation/Device.h"
 #include "StagingBufferPool.h"
 
@@ -76,7 +74,6 @@ bool Mesh::isValid()
 		return false;
 	}
 
-	// We won't support more than 65535 verts for now due to 16bit indexing
 	if (n >= std::numeric_limits<MeshDescriptor::TVertexIndices>::max())
 	{
 		printf("The vertex array size '%zu' exceeds the allowed capacity '%i'.\n", n, std::numeric_limits<MeshDescriptor::TVertexIndices>::max());

@@ -40,6 +40,8 @@ public:
 
 	UNQ<Scene> m_openScene;
 	UNQ<Camera> m_cam;
+	UNQ<DirectionalLightParams> m_lightTransform;
+	UNQ<FrameSettings> m_frameSettings;
 
 	UNQ<DescriptorPoolManager> m_descriptorPoolManager;
 

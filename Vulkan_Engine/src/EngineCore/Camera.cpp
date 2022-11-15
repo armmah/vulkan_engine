@@ -1,7 +1,5 @@
 #include "pch.h"
-#include "VkTypes/InitializersUtility.h"
 #include "Camera.h"
-#include "Mesh.h"
 
 Camera::Camera(VkExtent2D windowSize, float nearZ, float farZ) :
 	fov_radians(glm::radians(0.f)),
@@ -40,7 +38,7 @@ void Camera::lookAt(glm::vec3 point)
 	auto up = glm::normalize(glm::cross(right, front));
 	cachedViewMatrix = glm::lookAt(pos, point, up);
 
-	calculateViewProjectionMatrix();
+	cachedViewProjectionMatrix = calculateViewProjectionMatrix();
 }
 
 void Camera::setNearFarZ(float near, float far)
@@ -88,14 +86,34 @@ void Camera::enqueueMovement(glm::vec3 direction)
 	movement += direction;
 }
 
+glm::vec3 getFrontVector(float pitchRad, float yawRad)
+{
+	return glm::normalize(
+		glm::vec3(
+			cos(yawRad) * cos(pitchRad),
+			sin(pitchRad),
+			sin(yawRad) * cos(pitchRad)
+		)
+	);
+}
+
+glm::mat4 _centerAround(glm::vec3 center, float pitch, float yaw, float distance)
+{
+	auto front = getFrontVector(glm::radians(pitch), glm::radians(yaw));
+	auto pos = center + front * distance;
+	return glm::lookAt(pos, center, glm::vec3(0.f, 1.f, 0.f));
+}
+
+void Camera::centerAround(float pitch, float yaw, float distance)
+{
+	cachedViewMatrix = _centerAround(glm::vec3(0.f), pitch, yaw, distance);
+	cachedViewProjectionMatrix = calculateViewProjectionMatrix();
+}
+
 void Camera::processFrameEvents(float dt)
 {
 	// calculate the new Front vector
-	glm::vec3 front;
-	front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-	front.y = sin(glm::radians(pitch));
-	front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-	front = glm::normalize(front);
+	auto front = getFrontVector(glm::radians(pitch), glm::radians(yaw));
 
 	// also re-calculate the Right and Up vector
 	// normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.

@@ -1,4 +1,5 @@
 #version 450
+#extension GL_KHR_vulkan_glsl : enable
 
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec2 uv;
@@ -8,7 +9,8 @@ layout(location = 3) in vec3 inColor;
 layout(location = 0) out vec3 fragColor;
 layout(location = 1) out vec2 fragTexCoord;
 layout(location = 2) out vec3 fragNormal;
-layout(location = 3) out vec3 viewDirection;
+layout(location = 3) out vec4 fragLightSpacePos;
+layout(location = 4) out vec4 bias_ambient;
 
 layout(set = 0, binding = 0) uniform ConstantsBlockUBO
 {
@@ -16,7 +18,10 @@ layout(set = 0, binding = 0) uniform ConstantsBlockUBO
 	vec4 timeParams;
 	vec4 screenParams;
 
-	vec4 normalizedLightDirection;
+	vec4 bias_ambient;
+
+	mat4 world_to_light;
+	mat4 light_to_world;
 } constUBO;
 
 layout(set = 1, binding = 0) uniform ViewBlockUBO
@@ -35,10 +40,11 @@ layout( push_constant ) uniform constants
 
 void main()
 {
-    mat4 render_matrix = viewUBO.view_persp_matrix * pushConstants.model_matrix;
-    gl_Position = render_matrix * vec4(inPosition.xyz, 1.0);
+	vec3 worldSpacePos = (pushConstants.model_matrix * vec4(inPosition.xyz, 1.0)).xyz;
+    gl_Position = viewUBO.view_persp_matrix * vec4(worldSpacePos, 1.0);
 
-    viewDirection = normalize(vec3(0.0, -0.75, -0.25));
+	fragLightSpacePos = constUBO.world_to_light * vec4(worldSpacePos, 1.0);
+	bias_ambient = constUBO.bias_ambient;
 
     fragColor = inColor;
 

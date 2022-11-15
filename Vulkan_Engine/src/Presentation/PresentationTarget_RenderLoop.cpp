@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "PresentationTarget.h"
 #include "vk_types.h"
+#include "VkTypes/InitializersUtility.h"
 #include "VkTypes/PushConstantTypes.h"
 #include "Mesh.h"
 #include "VkMesh.h"
@@ -35,7 +36,7 @@ namespace Presentation
 		}
 	}
 
-	FrameStats PresentationTarget::renderLoop(const std::vector<VkMeshRenderer>& renderers, Camera& cam, VkCommandBuffer commandBuffer, uint32_t frameNumber)
+	FrameStats PresentationTarget::renderLoop(const std::vector<VkMeshRenderer>& renderers, Camera& cam, DirectionalLightParams& lightTr, VkCommandBuffer commandBuffer, uint32_t frameNumber)
 	{
 		FrameStats stats{};
 		const auto injectionMarker = ProfileMarkerInjectResult(stats.renderLoop_ms);
@@ -44,49 +45,48 @@ namespace Presentation
 		{
 			m_globalPipelineState->StartFrame(frameNumber);
 
-			const auto handleConstantsUBO = m_globalPipelineState->fillGlobalConstantsUBO();
 			const auto pipelineLayout = m_globalPipelineState->getForwardPipelineLayout();
 
+			VkExtent2D extent{};
+			extent.width = 45u;
+			extent.height = 45u;
+			auto lightCam = Camera(extent);
+			lightCam.centerAround(lightTr.pitch, lightTr.yaw, lightTr.distance);
+			const auto lightViewUBO = m_globalPipelineState->fillCameraUBO(lightCam);
+
+			const auto handleConstantsUBO = m_globalPipelineState->fillGlobalConstantsUBO(lightCam.getViewProjectionMatrix(), lightTr.getBiasAmbient());
+
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-				pipelineLayout, 0, 1, &handleConstantsUBO.descriptorSet, 0, nullptr);
+				pipelineLayout, PipelineDescriptor::BindingSlots::Constants, 1, &handleConstantsUBO.descriptorSet, 0, nullptr);
 			stats.descriptorSetCount += 1;
 
-			renderIndexedMeshes(stats, renderers, cam, commandBuffer, frameNumber);
+			renderIndexedMeshes(stats, renderers, cam, lightViewUBO, commandBuffer, frameNumber);
 		}
 
 		stats.frameNumber = frameNumber;
 		return stats;
 	}
 
-	void PresentationTarget::renderIndexedMeshes(FrameStats& stats, const std::vector<VkMeshRenderer>& renderers, Camera& cam, VkCommandBuffer commandBuffer, uint32_t frameNumber)
+	void PresentationTarget::renderIndexedMeshes(FrameStats& stats, const std::vector<VkMeshRenderer>& renderers, Camera& cam, const BufferHandle& lightViewUBO, VkCommandBuffer commandBuffer, uint32_t frameNumber)
 	{
 		const auto pipelineLayout = m_globalPipelineState->getForwardPipelineLayout();
 
 		std::vector<VkMeshRenderer> sortedList(renderers.begin(), renderers.end());
 
 		// ShadowMap - pass
+		if(m_shadowMapModule && m_shadowMapModule->getActive())
 		{
-			VkExtent2D extent{};
-			extent.width = 35u;
-			extent.height = 35u;
-
 			auto scopeShadowMapRenderPass = CommandObjectsWrapper::RenderPassScope(commandBuffer, m_shadowMapModule->getRenderPass(), 
 				m_shadowMapModule->getFrameBuffer(frameNumber), m_shadowMapModule->getExtent(), false, true);
-
-			auto cam = Camera(extent);
-			cam.setPosition({ -0.115, -35.8f, -13.2f });
-			cam.lookAt(glm::vec3(0.f));
 
 			vkCmdSetViewport(commandBuffer, 0, 1, &m_shadowMapModule->getViewport());
 			vkCmdSetScissor(commandBuffer, 0, 1, &m_shadowMapModule->getScissorRect());
 
-			const auto handleViewUBO = m_globalPipelineState->fillCameraUBO(cam);
-
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-				pipelineLayout, 1, 1, &handleViewUBO.descriptorSet, 0, nullptr);
+				pipelineLayout, PipelineDescriptor::BindingSlots::View, 1, &lightViewUBO.descriptorSet, 0, nullptr);
 			stats.descriptorSetCount += 1;
 
-			const VkGraphicsPipeline depthOnly = m_shadowMapModule->m_replacementMaterial;
+			const auto depthOnly = m_shadowMapModule->m_replacementMaterial;
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, depthOnly.m_pipeline);
 			stats.pipelineCount += 1;
 
@@ -97,7 +97,13 @@ namespace Presentation
 			}
 		}
 
+		const auto& variant = m_debugModule->getMaterialVariant();
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, variant.getPipelineLayout(), 
+			PipelineDescriptor::BindingSlots::Shadowmap, 1, variant.getDescriptorSet(frameNumber), 0, nullptr);
+		stats.descriptorSetCount += 1;
+
 		auto scopeForwardRenderPass = CommandObjectsWrapper::RenderPassScope(commandBuffer, m_renderPass, getSwapchainFrameBuffers(frameNumber), getSwapchainExtent(), true, hasDepthAttachement());
+		
 		// For each camera - Forward pass
 		{
 			auto extent = getSwapchainExtent();
@@ -118,7 +124,7 @@ namespace Presentation
 			auto partition = std::partition(sortedList.begin(), sortedList.end(), [&cameraFrustum](auto& renderer) 
 				{
 					const auto& model = renderer.transform->localToWorld;
-					return true;// renderer.bounds != nullptr && cameraFrustum.isOnFrustum(renderer.bounds->getTransformed(model));
+					return renderer.bounds != nullptr && cameraFrustum.isOnFrustum(renderer.bounds->getTransformed(model));
 				}
 			);
 			// Cut the end of the vector, preserving only the objects that are in frustum.
@@ -148,7 +154,8 @@ namespace Presentation
 
 					// if (bitFlagPresent(stateChange, VariantStateChange::DescriptorSet))
 					{
-						vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, variant.getPipelineLayout(), 2, 1, variant.getDescriptorSet(frameNumber), 0, nullptr);
+						vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, variant.getPipelineLayout(),
+							PipelineDescriptor::BindingSlots::MaterialTextures, 1, variant.getDescriptorSet(frameNumber), 0, nullptr);
 						stats.descriptorSetCount += 1;
 					}
 
@@ -160,23 +167,20 @@ namespace Presentation
 			}
 		}
 
+		if(m_debugModule && m_debugModule->getActive())
 		{
 			auto swExtent = getSwapchainExtent();
 			auto extent = swExtent;
-			extent.width *= 0.25f;
-			extent.height *= 0.25f;
+			extent.width = static_cast<int32_t>( extent.width * 0.25f );
+			extent.height = static_cast<int32_t>( extent.height * 0.25f );
 
 			vkinit::Commands::initViewportAndScissor(m_viewport, m_scissorRect, extent, 
-				static_cast<int32_t>( swExtent.width * 0.75f ), static_cast<int32_t>(swExtent.height * 0.0f));
+				static_cast<int32_t>( swExtent.width * 0.75f ), static_cast<int32_t>( swExtent.height * 0.0f ));
 			vkCmdSetViewport(commandBuffer, 0, 1, &m_viewport);
 			vkCmdSetScissor(commandBuffer, 0, 1, &m_scissorRect);
 
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_debugQuad.m_pipeline);
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_debugModule->getPipeline());
 			stats.pipelineCount += 1;
-
-			const auto variant = m_debugMaterial->getMaterialVariant();
-			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, variant.getPipelineLayout(), 2, 1, variant.getDescriptorSet(frameNumber), 0, nullptr);
-			stats.descriptorSetCount += 1;
 
 			vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 		}

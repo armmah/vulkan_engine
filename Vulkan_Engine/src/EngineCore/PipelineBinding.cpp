@@ -10,9 +10,12 @@
 
 VkDescriptorSetLayout PipelineDescriptor::getDescriptorSetLayout(BindingSlots slot) { return m_appendedDescSetLayouts[static_cast<int>(slot)]; }
 
-BufferHandle PipelineDescriptor::fillGlobalConstantsUBO()
+BufferHandle PipelineDescriptor::fillGlobalConstantsUBO(const glm::mat4& worldToLight, const glm::vec4& bias_ambient)
 {
 	auto constantsData = ConstantsUBO{};
+	constantsData.world_to_light = worldToLight;
+	constantsData.light_to_world = glm::inverse(worldToLight);
+	constantsData.bias_ambient = bias_ambient;
 
 	const auto handle = m_globalConstantsUBO->getHandle(m_currentFrameNumber);
 	handle.CopyData(&constantsData, sizeof(ConstantsUBO));
@@ -24,9 +27,27 @@ bool PipelineDescriptor::tryCreateDescriptorSetLayouts(VkDevice device)
 {
 	static_assert( bindingStages.size() == BindingSlots::MAX );
 
-	return vkinit::Descriptor::createDescriptorSetLayout(m_appendedDescSetLayouts[BindingSlots::Constants], device, vkinit::BoundBuffer(bindingStages[BindingSlots::Constants])) &&
-		vkinit::Descriptor::createDescriptorSetLayout(m_appendedDescSetLayouts[BindingSlots::View], device, vkinit::BoundBuffer(bindingStages[BindingSlots::View])) &&
-		vkinit::Descriptor::createDescriptorSetLayout(m_appendedDescSetLayouts[BindingSlots::Textures], device, vkinit::BoundTexture(bindingStages[BindingSlots::Textures]));
+	return vkinit::Descriptor::createDescriptorSetLayout(
+
+		m_appendedDescSetLayouts[BindingSlots::Constants], device, 
+		vkinit::BoundBuffer(bindingStages[BindingSlots::Constants])
+
+	) && vkinit::Descriptor::createDescriptorSetLayout(
+
+		m_appendedDescSetLayouts[BindingSlots::View], device, 
+		vkinit::BoundBuffer(bindingStages[BindingSlots::View])
+
+	) && vkinit::Descriptor::createDescriptorSetLayout(
+
+		m_appendedDescSetLayouts[BindingSlots::Shadowmap], device, 
+		vkinit::BoundTexture(bindingStages[BindingSlots::Shadowmap])
+
+	) && vkinit::Descriptor::createDescriptorSetLayout(
+
+		m_appendedDescSetLayouts[BindingSlots::MaterialTextures], device, 
+		vkinit::BoundTexture(bindingStages[BindingSlots::MaterialTextures])
+
+	);
 }
 
 bool PipelineDescriptor::tryCreatePipelineLayout(VkPipelineLayout& pipelineLayout, const VkDevice device, uint32_t maxCount)

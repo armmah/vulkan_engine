@@ -57,10 +57,12 @@ void VulkanEngine::init(bool requestValidationLayers)
 		printf("Failed to load the scene!");
 	}
 
+	m_lightTransform = MAKEUNQ<DirectionalLightParams>();
+	m_frameSettings = MAKEUNQ<FrameSettings>();
 	// Camera
-	m_cam = MAKEUNQ<Camera>(65.f, m_startingWindowSize);
-	m_cam->setPosition({ -0.115, 35.8f, -13.2f });
-	m_cam->setRotation(90.f, -67.5f);
+	m_cam = MAKEUNQ<Camera>(60.f, m_startingWindowSize);
+	//m_cam->setPosition({ -0.115, 35.8f, -13.2f });
+	//m_cam->setRotation(90.f, -67.5f);
 
 	// Hardcoded for crytek sponza
 	// m_cam->setPosition({ -150.f, 100.f, -10.f });
@@ -71,8 +73,8 @@ void VulkanEngine::init(bool requestValidationLayers)
 	// m_cam->setRotation(-200.f, 10.f);
 	
 	// Harcoded for debrovic sponza
-	//m_cam->setPosition({ -12.234, 3.0f, -0.014f });
-	//m_cam->setRotation(-0.f, 4.25f);
+	m_cam->setPosition({ -12.234, 3.0f, -0.014f });
+	m_cam->setRotation(-0.f, 4.25f);
 }
 
 bool VulkanEngine::init_vulkan()
@@ -106,6 +108,9 @@ void VulkanEngine::run()
 
 	int prevMsX = -1, prevMsY = -1;
 	int deltaMsX = 0, deltaMsY = 0;
+
+	bool isDrawing = true;
+	bool drawOnce = false;
 	
 	// Main loop
 	while (!quit)
@@ -136,9 +141,16 @@ void VulkanEngine::run()
 						m_cam->enqueueMovement(glm::vec3(-1.f, 0.f, 0.f));
 					if (keyCode == SDLK_d)
 						m_cam->enqueueMovement(glm::vec3(1.f, 0.f, 0.f));
+					if (keyCode == SDLK_SPACE)
+						isDrawing = !isDrawing;
+					if (keyCode == SDLK_RIGHT)
+					{
+						drawOnce = true;
+						isDrawing = false;
+					}
 				}
 
-				if (eType == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT)
+				if (eType == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT && !ImGui::IsAnyItemHovered())
 				{
 					mouseHeld = true;
 					SDL_GetMouseState(&prevMsX, &prevMsY);
@@ -168,9 +180,11 @@ void VulkanEngine::run()
 			}
 			m_cam->processFrameEvents(deltaTime);
 
-			m_imgui->draw(m_renderLoopStatistics, m_cam.get());
+			m_imgui->draw(m_renderLoopStatistics, m_cam.get(), m_lightTransform.get(), m_frameSettings.get());
 
-			draw();
+			if(isDrawing || drawOnce)
+				draw();
+			drawOnce = false;
 		}
 
 		constexpr int64_t target = static_cast<int64_t>( 15.6f * (std::micro::den / std::milli::den) );
@@ -199,7 +213,8 @@ void VulkanEngine::draw()
 	vkResetCommandBuffer(buffer, 0);
 	
 	const auto renderers = m_openScene->getRenderers();
-	m_renderLoopStatistics = m_presentationTarget->renderLoop(renderers, *m_cam, buffer, m_frameNumber);
+	m_presentationTarget->applyFrameConfiguration(m_frameSettings.get());
+	m_renderLoopStatistics = m_presentationTarget->renderLoop(renderers, *m_cam, *m_lightTransform, buffer, m_frameNumber);
 
 	frame.resetAcquireFence(m_presentationDevice->getDevice());
 	frame.submitToQueue(m_presentationDevice->getGraphicsQueue());

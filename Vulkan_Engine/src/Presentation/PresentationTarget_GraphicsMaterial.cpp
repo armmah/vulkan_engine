@@ -26,7 +26,7 @@ namespace Presentation
 
 	bool PresentationTarget::createGraphicsMaterial(UNQ<VkMaterial>& material, const VkDevice device, const VkDescriptorPool descPool, const VkShader* shader, const VkTexture2D* texture)
 	{
-		VkDescriptorSetLayout descriptorSetLayout = m_globalPipelineState->getDescriptorSetLayout(PipelineDescriptor::BindingSlots::Textures);
+		VkDescriptorSetLayout descriptorSetLayout = m_globalPipelineState->getDescriptorSetLayout(PipelineDescriptor::BindingSlots::MaterialTextures);
 
 		std::array<VkDescriptorSet, SWAPCHAIN_IMAGE_COUNT> descriptorSets;
 		vkinit::Descriptor::createDescriptorSets(descriptorSets, device, descPool, descriptorSetLayout, *texture);

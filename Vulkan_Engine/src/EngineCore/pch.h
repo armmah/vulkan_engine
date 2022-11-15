@@ -53,4 +53,9 @@
 
 #include "stb_image.h"
 #include "tiny_obj_loader.h"
+
+// Platform specific
+#include <Windows.h>
+#undef far
+#undef near
 #pragma warning(pop)

@@ -80,12 +80,13 @@ private:
 
 struct PipelineDescriptor : IRequireInitialization
 {
-	static constexpr int DESCRIPTOR_SET_COUNT = 3;
-	enum BindingSlots { Constants = 0, View = 1, Textures = 2, MAX = 3 };
+	static constexpr int DESCRIPTOR_SET_COUNT = 4;
+	enum BindingSlots { Constants = 0, View = 1, Shadowmap = 2, MaterialTextures = 3, MAX = 4 };
 	static constexpr std::array<VkShaderStageFlags, DESCRIPTOR_SET_COUNT> bindingStages = 
 	{
 		VK_SHADER_STAGE_VERTEX_BIT,
 		VK_SHADER_STAGE_VERTEX_BIT,
+		VK_SHADER_STAGE_FRAGMENT_BIT,
 		VK_SHADER_STAGE_FRAGMENT_BIT
 	};
 
@@ -100,7 +101,7 @@ struct PipelineDescriptor : IRequireInitialization
 
 	VkDescriptorSetLayout getDescriptorSetLayout(BindingSlots slot);
 
-	BufferHandle fillGlobalConstantsUBO();
+	BufferHandle fillGlobalConstantsUBO(const glm::mat4& worldToLight, const glm::vec4& bias_ambient);
 	BufferHandle fillCameraUBO(const Camera& cam);
 
 	const VkPipelineLayout getForwardPipelineLayout() { return m_forwardPipelineLayout; }

@@ -18,32 +18,21 @@ namespace Presentation
 	PresentationTarget::PresentationTarget(const HardwareDevice& presentationHardware, const Device& presentationDevice, Window const* wnd, bool depthAttachment, uint32_t swapchainCount)
 		: m_window(wnd), m_hasDepthAttachment(depthAttachment)
 	{
-		m_isInitialized = createPresentationTarget(presentationHardware, presentationDevice, swapchainCount);
+		m_isInitialized = createPresentationTarget(presentationHardware, presentationDevice, swapchainCount) &&
+			tryInitialize(m_globalPipelineState, presentationDevice.getDevice());
 		
 		VkShader::ensureDefaultShader(presentationDevice.getDevice());
 
-		m_shadowMapModule = MAKEUNQ<ShadowMap>(presentationDevice.getDevice(), true, 1024u);
-
-		const auto* depthOnlyShader = VkShader::findShader(1u);
-		m_shadowMapModule->m_replacementShader = depthOnlyShader;
-		if (PipelineConstruction::createPipeline(m_shadowMapModule->m_replacementMaterial.m_pipeline, m_globalPipelineState->getDepthOnlyPipelineLayout(),
-			presentationDevice.getDevice(), m_shadowMapModule->getRenderPass(), m_shadowMapModule->getExtent(), *depthOnlyShader,
-			&Mesh::defaultMeshDescriptor, PipelineConstruction::FaceCulling::Back, true))
+		m_shadowMapModule = MAKEUNQ<ShadowMap>(presentationDevice.getDevice(), m_globalPipelineState->getDepthOnlyPipelineLayout(), true, 1024u);
+		if(m_shadowMapModule->isInitialized() && m_shadowMapModule->m_replacementMaterial.m_pipeline != VK_NULL_HANDLE)
 		{
-			m_globalPipelineState->insertGraphicsPipelineFor(depthOnlyShader, m_shadowMapModule->m_replacementMaterial);
+			m_globalPipelineState->insertGraphicsPipelineFor(m_shadowMapModule->m_replacementShader, m_shadowMapModule->m_replacementMaterial);
 		}
-		else printf("Could not create pipeline for the depth only shadowmap shader.\n");
 
 		const auto* debugQuadShader = VkShader::findShader(2u);
-		m_debugQuad.m_pipelineLayout = m_globalPipelineState->getForwardPipelineLayout();
-		if (PipelineConstruction::createPipeline(m_debugQuad.m_pipeline, m_debugQuad.m_pipelineLayout, presentationDevice.getDevice(),
-			getRenderPass(), getSwapchainExtent(), *debugQuadShader, nullptr, PipelineConstruction::FaceCulling::None, true))
-		{
-			m_globalPipelineState->insertGraphicsPipelineFor(debugQuadShader, m_debugQuad);
-			auto pool = DescriptorPoolManager::getInstance()->createNewPool(3u);
-			createGraphicsMaterial(m_debugMaterial, presentationDevice.getDevice(), pool, debugQuadShader, &m_shadowMapModule->getTexture2D());
-		}
-		else printf("Could not create pipeline for the debug quad shader.\n");
+		m_debugModule = MAKEUNQ<DebugPass>(*this, presentationDevice.getDevice(), debugQuadShader, m_globalPipelineState->getForwardPipelineLayout(), 
+			getRenderPass(), getSwapchainExtent(), m_shadowMapModule->getTexture2D());
+		m_globalPipelineState->insertGraphicsPipelineFor(debugQuadShader, m_debugModule->getGraphicsPipeline());
 	}
 
 	bool PresentationTarget::createPresentationTarget(const HardwareDevice& presentationHardware, const Device& presentationDevice, uint32_t swapchainCount)
@@ -56,8 +45,7 @@ namespace Presentation
 		return createSwapChain(swapchainCount, presentationHardware, presentationDevice, m_hasDepthAttachment) &&
 			createSwapChainImageViews(vkdevice) &&
 			createRenderPass(vkdevice) &&
-			createFramebuffers(vkdevice) &&
-			tryInitialize(m_globalPipelineState, vkdevice);
+			createFramebuffers(vkdevice);
 	}
 	bool PresentationTarget::hasDepthAttachement() { return m_depthImage ? true : false; }
 
@@ -143,24 +131,25 @@ namespace Presentation
 
 		std::array<VkImageView, 2> attachments;
 		auto attachmentCount = 1;
+
 		if (hasDepthAttachement())
 		{
 			attachments[1] = m_depthImage->imageView;
 			attachmentCount += 1;
 		}
 
+		VkFramebufferCreateInfo framebufferInfo{};
+		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		framebufferInfo.renderPass = m_renderPass;
+		framebufferInfo.attachmentCount = attachmentCount;
+		framebufferInfo.pAttachments = attachments.data();
+		framebufferInfo.width = m_swapChainExtent.width;
+		framebufferInfo.height = m_swapChainExtent.height;
+		framebufferInfo.layers = 1;
+
 		for (size_t i = 0; i < imageViewSize; i++)
 		{
 			attachments[0] = m_swapChainImageViews[i];
-
-			VkFramebufferCreateInfo framebufferInfo{};
-			framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-			framebufferInfo.renderPass = m_renderPass;
-			framebufferInfo.attachmentCount = attachmentCount;
-			framebufferInfo.pAttachments = attachments.data();
-			framebufferInfo.width = m_swapChainExtent.width;
-			framebufferInfo.height = m_swapChainExtent.height;
-			framebufferInfo.layers = 1;
 
 			if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &m_swapChainFrameBuffers[i]) != VK_SUCCESS)
 				return false;
@@ -187,6 +176,9 @@ namespace Presentation
 		}
 
 		vkDestroySwapchainKHR(device, m_swapchain, nullptr);
+
+		m_renderPass = VK_NULL_HANDLE;
+		m_swapchain = VK_NULL_HANDLE;
 	}
 
 	void PresentationTarget::releaseAllResources(VkDevice device)
@@ -194,10 +186,8 @@ namespace Presentation
 		m_globalPipelineState->release(device);
 		releaseSwapChain(device);
 
-		if (m_debugMaterial)
 		{
-			m_debugMaterial->release(device);
-			m_debugMaterial = nullptr;
+			m_debugModule->release(device);
 		}
 
 		if (m_shadowMapModule)
@@ -208,4 +198,11 @@ namespace Presentation
 	}
 
 	PresentationTarget::~PresentationTarget() {}
+	bool PresentationTarget::isInitialized() const { return m_isInitialized; }
+	VkSwapchainKHR PresentationTarget::getSwapchain() const { return m_swapchain; }
+	VkExtent2D PresentationTarget::getSwapchainExtent() const { return m_swapChainExtent; }
+	VkRenderPass PresentationTarget::getRenderPass() const { return m_renderPass; }
+	VkImage PresentationTarget::getSwapchainImage(uint32_t index) const { return m_swapChainImages[index % SWAPCHAIN_IMAGE_COUNT]; }
+	VkImageView PresentationTarget::getSwapchainImageView(uint32_t index) const { return m_swapChainImageViews[index % SWAPCHAIN_IMAGE_COUNT]; }
+	VkFramebuffer PresentationTarget::getSwapchainFrameBuffers(uint32_t index) const { return m_swapChainFrameBuffers[index % SWAPCHAIN_IMAGE_COUNT]; }
 }

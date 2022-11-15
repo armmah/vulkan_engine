@@ -25,14 +25,10 @@ std::vector<Path> Directories::getModels_CrytekSponza()
 	return { getAbsolutePath(CRYTEK_SPONZA_OBJ) };
 }
 
-#include <Windows.h>
-#include <minwindef.h>
-#include <sysinfoapi.h>
-
 Path Directories::syscall_GetApplicationPath()
 {
 	char pBuf[MAX_PATH];
-	size_t len = sizeof(pBuf);
-	int bytes = GetModuleFileName(NULL, pBuf, len);
+	DWORD len = sizeof(pBuf);
+	int bytes = GetModuleFileName(nullptr, pBuf, len);
 	return bytes ? Path(pBuf) : Path();
 }

@@ -8,9 +8,9 @@ layout (location = 0) out vec4 outFragColor;
 
 float LinearizeDepth(float depth)
 {
-  float n = 1.0f;//ubo.zNear;
-  float f = 10000.0f;//ubo.zFar;
-  float z = depth;
+  float n = 1.0f;
+  float f = 100.0f;
+  float z = 1.0 - depth;
   return (2.0 * n) / (f + n - z * (f - n));	
 }
 

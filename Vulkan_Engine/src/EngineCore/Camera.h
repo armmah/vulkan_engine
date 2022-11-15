@@ -10,8 +10,8 @@ static constexpr float ZOOM = 45.0f;
 class Camera
 {
 public:
-	Camera(float fov_degrees, VkExtent2D windowSize, float nearZ = 1.0f, float farZ = 10000.0f);
-	Camera(VkExtent2D windowSize, float nearZ = 1.0f, float farZ = 10000.0f);
+	Camera(float fov_degrees, VkExtent2D windowSize, float nearZ = 1.0f, float farZ = 100.0f);
+	Camera(VkExtent2D windowSize, float nearZ = 1.0f, float farZ = 100.0f);
 
 	const glm::vec3& getPosition() const;
 	// const glm::quat& getRotation() const;
@@ -23,6 +23,7 @@ public:
 	void setPosition(const glm::vec3& position);
 	void setRotation(float yaw, float pitch);
 	void lookAt(glm::vec3 point);
+	void centerAround(float pitch, float yaw, float distance);
 
 	void setNearFarZ(float near, float far);
 	void setFieldOfView(float fov_degrees);

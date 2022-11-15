@@ -27,6 +27,7 @@ constexpr bool force_serialize_from_origin = false;
 bool Scene::load(VkDescriptorPool descPool)
 {
 	const auto modelPaths = Directories::getModels_DebrovicSponza();
+	//const auto modelPaths = Directories::getModels_IntelSponza();
 
 	Path fullPath;
 	/*****************************				IMPORT					****************************************/

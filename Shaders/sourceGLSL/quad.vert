@@ -9,6 +9,9 @@ layout(set = 0, binding = 0) uniform ConstantsBlockUBO
 	vec4 screenParams;
 
 	vec4 normalizedLightDirection;
+
+	mat4 world_to_light;
+	mat4 light_to_world;
 } constUBO;
 
 layout(set = 1, binding = 0) uniform ViewBlockUBO

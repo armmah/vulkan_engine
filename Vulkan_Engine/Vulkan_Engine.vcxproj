@@ -273,6 +273,9 @@
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">pch.h</PrecompiledHeaderFile>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">pch.h</PrecompiledHeaderFile>
     </ClCompile>
+    <ClCompile Include="src\Presentation\Passes\DebugPass.cpp" />
+    <ClCompile Include="src\Presentation\Passes\Pass.cpp" />
+    <ClCompile Include="src\Presentation\Passes\ShadowmapPass.cpp" />
     <ClCompile Include="src\Presentation\PresentationTarget.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
@@ -352,6 +355,9 @@
     <ClInclude Include="src\Presentation\HardwareDevice.h" />
     <ClInclude Include="src\Presentation\Device.h" />
     <ClInclude Include="src\Presentation\FrameCollection.h" />
+    <ClInclude Include="src\Presentation\Passes\DebugPass.h" />
+    <ClInclude Include="src\Presentation\Passes\Pass.h" />
+    <ClInclude Include="src\Presentation\Passes\ShadowmapPass.h" />
     <ClInclude Include="src\Presentation\PresentationTarget.h" />
     <ClInclude Include="src\Profiling\ProfileMarker.h" />
     <ClInclude Include="src\VkTypes\InitializersUtility.h" />

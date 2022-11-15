@@ -1,7 +1,5 @@
 #pragma once
 #include "pch.h"
-#include "Common.h"
-#include "vk_mem_alloc.h"
 
 struct VertexAttributes
 {

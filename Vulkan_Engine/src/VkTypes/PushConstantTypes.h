@@ -6,7 +6,10 @@ struct ConstantsUBO
 	glm::vec4 timeParams;
 	glm::vec4 screenParams;
 
-	glm::vec4 normalizedLightDirection;
+	glm::vec4 bias_ambient;
+
+	glm::mat4 world_to_light;
+	glm::mat4 light_to_world;
 };
 
 struct ViewUBO

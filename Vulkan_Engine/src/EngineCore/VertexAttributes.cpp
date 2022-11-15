@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "VertexAttributes.h"
+#include "Common.h"
 
 VertexAttributes::VertexAttributes(std::vector<VkBuffer>& vertexBuffers, std::vector<VmaAllocation> vertexMemoryRanges, std::vector<VkDeviceSize>& vertexOffsets, uint32_t bindingOffset, uint32_t bindingCount) :
 	buffers(std::move(vertexBuffers)), memoryRanges(std::move(vertexMemoryRanges)), offsets(std::move(vertexOffsets)), firstBinding(bindingOffset), bindingCount(bindingCount)

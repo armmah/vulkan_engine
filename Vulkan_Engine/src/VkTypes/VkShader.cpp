@@ -7,14 +7,16 @@ VkShader::VkShader(VkDevice device, const ShaderSource& source)
 	: vertShader(VK_NULL_HANDLE), fragShader(VK_NULL_HANDLE)
 {
 	std::vector<char> sourcecode;
-	if (!source.getVertexSource(sourcecode) || !createShaderModule(vertShader, sourcecode, device))
+	if (source.getVertexSource(sourcecode))
 	{
-		printf("Failed to compile the shader '%s'.", source.fragmentPath.c_str());
+		if(!createShaderModule(vertShader, sourcecode, device))
+			printf("Failed to compile the shader '%s'.\n", source.fragmentPath.c_str());
 	}
 
-	if (!source.getFragmentSource(sourcecode) || !createShaderModule(fragShader, sourcecode, device))
+	if (source.getFragmentSource(sourcecode))
 	{
-		printf("Failed to compile the shader '%s'.", source.fragmentPath.c_str());
+		if(!createShaderModule(fragShader, sourcecode, device))
+			printf("Failed to compile the shader '%s'.\n", source.fragmentPath.c_str());
 	}
 }
 

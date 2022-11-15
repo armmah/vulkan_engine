@@ -66,36 +66,56 @@ ImGuiHandle::ImGuiHandle(VkInstance instance, VkPhysicalDevice activeGPU, const 
 	ImGui_ImplVulkan_DestroyFontUploadObjects();
 }
 
-void ImGuiHandle::draw(FrameStats stats, Camera* cam)
+void ImGuiHandle::draw(FrameStats stats, Camera* cam, DirectionalLightParams* light, FrameSettings* settings)
 {
-	// imgui new frame
 	ImGui_ImplVulkan_NewFrame();
 	ImGui_ImplSDL2_NewFrame(m_window->get());
 
 	ImGui::NewFrame();
 
-	ImGui::Begin("Stats");
-	std::string statsText = 
-		"Draw Calls: " + std::to_string(stats.drawCallCount) + 
-		"\nRenderLoop: " + std::to_string(stats.renderLoop_ms) + " ms"
-		+"\n\nPipeline count: " + std::to_string(stats.pipelineCount) +
-		+"\nDescriptor set count: " + std::to_string(stats.descriptorSetCount);
-	ImGui::Text(statsText.c_str());
+	ImGui::Begin("Menu");
+	{
+		std::string statsText =
+			"Draw Calls: " + std::to_string(stats.drawCallCount) +
+			"\nRenderLoop: " + std::to_string(stats.renderLoop_ms) + " ms"
+			+ "\n\nPipeline count: " + std::to_string(stats.pipelineCount) +
+			+"\nDescriptor set count: " + std::to_string(stats.descriptorSetCount);
+		ImGui::Text(statsText.c_str());
+	}
+
+	bool frameSettingsCollapsed = ImGui::CollapsingHeader("Settings");
+	if (frameSettingsCollapsed)
+	{
+		ImGui::Checkbox("Shadows", &settings->enableShadowPass);
+		// ImGui::Checkbox("Forward", &settings->enableForwardPass);
+		ImGui::Checkbox("Debug", &settings->enableDebugShadowMap);
+	}
+
+	bool cameraParamsCollapsed = ImGui::CollapsingHeader("Camera params");
+	if (cameraParamsCollapsed)
+	{
+		auto speedMul = cam->getSpeedMultiplier();
+		ImGui::SliderFloat("Speed", &speedMul, 0.01f, 500.0f);
+		if (speedMul != cam->getSpeedMultiplier())
+			cam->setSpeedMultiplier(speedMul);
+
+		auto pos = glm::vec3(cam->getPosition());
+		ImGui::InputFloat3("Position", &pos[0]);
+
+		auto yaw_pitch = glm::vec2(cam->getYaw(), cam->getPitch());
+		ImGui::InputFloat2("Yaw / Pitch", &yaw_pitch[0]);
+	}
+
+	bool isLightCollapsed = ImGui::CollapsingHeader("Light");
+	if (isLightCollapsed)
+	{
+		ImGui::DragFloat3("Light Pitch / Yaw / Distance", &light->pitch);
+		ImGui::DragFloat("Depth Bias", &light->depthBias, 0.00025f, -0.01f, 0.01f);
+		ImGui::DragFloat("Normal Bias", &light->normalBias, 0.00025f, -0.01f, 0.01f);
+		ImGui::DragFloat("Ambient light", &light->ambient, 0.02f, 0.0f, 0.5f);
+	}
 	ImGui::End();
-
-	ImGui::Begin("Camera controls");
-	auto speedMul = cam->getSpeedMultiplier();
-	ImGui::SliderFloat("Speed", &speedMul, 0.01f, 500.0f);
-	if (speedMul != cam->getSpeedMultiplier())
-		cam->setSpeedMultiplier(speedMul);
-
-	auto pos = glm::vec3(cam->getPosition());
-	ImGui::InputFloat3("Position", &pos[0]);
-
-	auto yaw_pitch = glm::vec2(cam->getYaw(), cam->getPitch());
-	ImGui::InputFloat2("Yaw / Pitch", &yaw_pitch[0]);
-
-	ImGui::End();
+	
 	ImGui::Render();
 }
 

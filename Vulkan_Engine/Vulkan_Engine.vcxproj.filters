@@ -72,6 +72,12 @@
     <Filter Include="Source Files\Presentation\Target">
       <UniqueIdentifier>{0753e8d6-7b2b-493e-996c-015daa905436}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Presentation\Passes">
+      <UniqueIdentifier>{77047662-4942-4eca-92cd-c8cb96b60a4e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Presentation\Passes">
+      <UniqueIdentifier>{0586f865-fa38-4ac2-af76-797dc78f8189}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\vk_engine.cpp">
@@ -214,6 +220,15 @@
     </ClCompile>
     <ClCompile Include="src\Presentation\PresentationTarget.cpp">
       <Filter>Source Files\Presentation\Target</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Presentation\Passes\DebugPass.cpp">
+      <Filter>Source Files\Presentation\Passes</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Presentation\Passes\Pass.cpp">
+      <Filter>Source Files\Presentation\Passes</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Presentation\Passes\ShadowmapPass.cpp">
+      <Filter>Source Files\Presentation\Passes</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -363,6 +378,15 @@
     </ClInclude>
     <ClInclude Include="src\VkTypes\PipelineConstructor.h">
       <Filter>Header Files\VkTypes</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Presentation\Passes\Pass.h">
+      <Filter>Header Files\Presentation\Passes</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Presentation\Passes\DebugPass.h">
+      <Filter>Header Files\Presentation\Passes</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Presentation\Passes\ShadowmapPass.h">
+      <Filter>Header Files\Presentation\Passes</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

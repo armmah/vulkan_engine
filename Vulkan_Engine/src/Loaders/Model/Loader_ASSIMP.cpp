@@ -55,10 +55,6 @@ void Loader::crawl(std::vector<Transform>& globalTransformCollection, std::unord
 
 bool getTexPath(std::string& fullPath, const std::string& modelDirectory, const aiMaterial* mat, aiTextureType texType)
 {
-	aiUVTransform tr;
-	//if(mat->Get(_AI_MATKEY_UVWSRC_BASE, texType, 0, tr))
-	//	glm::vec4(tr.mScaling.x, tr.mScaling.y, tr.mTranslation.x, tr.mTranslation.y);
-
 	aiString res;
 	if (mat->Get(_AI_MATKEY_TEXTURE_BASE, texType, 0, res) == AI_SUCCESS)
 	{
@@ -83,9 +79,6 @@ bool Loader::load_AssimpImplementation(std::vector<Mesh>& meshes, std::vector<Ma
 	// Create an instance of the Importer class
 	Assimp::Importer importer;
 
-	// And have it read the given file with some example postprocessing
-	// Usually - if speed is not the most important aspect for you - you'll
-	// probably to request more postprocessing than we do in this example.
 	const aiScene* scene = importer.ReadFile(fullPath.c_str(),
 		aiProcess_Triangulate |
 		aiProcess_GenBoundingBoxes |
@@ -104,7 +97,6 @@ bool Loader::load_AssimpImplementation(std::vector<Mesh>& meshes, std::vector<Ma
 	materials.reserve(materials.size() + scene->mNumMaterials);
 	transforms.reserve(transforms.size() + scene->mNumMeshes);
 
-	// Now we can access the file's contents.
 	std::unordered_map<int, size_t> meshToTransform;
 	{
 		ProfileMarker _("	Loader::Crawl_Nodes");
@@ -176,7 +168,7 @@ bool Loader::load_AssimpImplementation(std::vector<Mesh>& meshes, std::vector<Ma
 			{
 				Utility::assertIndex(face.mIndices[ii], vertN, mesh->mName.C_Str());
 
-				indices.push_back(static_cast<unsigned short>(face.mIndices[ii]));
+				indices.push_back(static_cast<MeshDescriptor::TVertexIndices>(face.mIndices[ii]));
 			}
 		}
 		auto matIndex = mesh->mMaterialIndex;

@@ -6,9 +6,13 @@
 #include "VkGraphicsPipeline.h"
 
 struct VkShader;
+struct VkMaterial;
+struct VkMaterialVariant;
 
 namespace Presentation
 {
+	class PresentationTarget;
+
 	class ShadowMap : public Pass, IRequireInitialization
 	{
 		static constexpr uint32_t MIN_SHADOWMAP_DIMENSION = 64u;
@@ -19,7 +23,8 @@ namespace Presentation
 		static constexpr VkImageAspectFlagBits VIEW_IMAGE_ASPECT_FLAGS = VK_IMAGE_ASPECT_DEPTH_BIT;
 
 	public:
-		ShadowMap(VkDevice device, VkPipelineLayout depthOnlyPipelineLayout, bool isEnabled, uint32_t dimensionsXY);
+		ShadowMap(PresentationTarget& target, VkDevice device, VkPipelineLayout depthOnlyPipelineLayout, bool isEnabled, uint32_t dimensionsXY);
+		~ShadowMap();
 
 		bool isInitialized() const override;
 		const VkViewport& getViewport() const;
@@ -28,6 +33,7 @@ namespace Presentation
 		const VkRenderPass getRenderPass() const;
 		const VkFramebuffer getFrameBuffer(uint32_t frameNumber) const;
 		const VkTexture2D& getTexture2D() const;
+		const VkMaterialVariant& getMaterialVariant() const;
 		VkFormat getFormat() const;
 
 		virtual void release(VkDevice device) override;
@@ -38,6 +44,7 @@ namespace Presentation
 	private:
 		uint32_t m_dimensionsXY;
 		VkTexture2D m_shadowMap;
+		UNQ<VkMaterial> m_shadowMapMaterial;
 
 		VkRenderPass m_renderPass;
 		std::array<VkFramebuffer, SWAPCHAIN_IMAGE_COUNT> m_frameBuffer;

@@ -216,7 +216,14 @@ void vkinit::Descriptor::updateDescriptorSets(std::array<VkDescriptorSet, SWAPCH
 	vkUpdateDescriptorSets(device, SWAPCHAIN_IMAGE_COUNT, descriptorWrites.data(), 0, nullptr);
 }
 
-bool vkinit::Descriptor::createDescriptorSets(std::array<VkDescriptorSet, SWAPCHAIN_IMAGE_COUNT>& descriptorSets, VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout, const VkTexture2D& texture)
+bool vkinit::Descriptor::createDescriptorSets(std::array<VkDescriptorSet, SWAPCHAIN_IMAGE_COUNT>& descriptorSets,
+	VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout, const VkTexture2D& texture)
+{
+	return vkinit::Descriptor::createDescriptorSets(descriptorSets, device, descriptorPool, descriptorSetLayout, texture.imageView, texture.sampler);
+}
+
+bool vkinit::Descriptor::createDescriptorSets(std::array<VkDescriptorSet, SWAPCHAIN_IMAGE_COUNT>& descriptorSets,
+	VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout, const VkImageView& imageView, const VkSampler& sampler)
 {
 	constexpr auto imageCount = SWAPCHAIN_IMAGE_COUNT;
 	std::array<VkDescriptorSetLayout, imageCount> layouts{};
@@ -239,8 +246,8 @@ bool vkinit::Descriptor::createDescriptorSets(std::array<VkDescriptorSet, SWAPCH
 
 	VkDescriptorImageInfo imageInfo{};
 	imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	imageInfo.imageView = texture.imageView;
-	imageInfo.sampler = texture.sampler;
+	imageInfo.imageView = imageView;
+	imageInfo.sampler = sampler;
 
 	std::array<VkWriteDescriptorSet, imageCount> descriptorWrites{};
 	for (size_t i = 0; i < imageCount; i++)

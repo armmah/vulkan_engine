@@ -29,22 +29,12 @@ namespace Presentation
 		VkShader::ensureDefaultShader(presentationDevice.getDevice());
 
 		// Creates the pipeline, but doesn't manage its lifetime
-		m_shadowMapModule = MAKEUNQ<ShadowMap>(presentationDevice.getDevice(), m_globalPipelineState->getDepthOnlyPipelineLayout(), true, 1024u);
-		if(m_shadowMapModule->m_replacementMaterial.m_pipeline != VK_NULL_HANDLE)
-		{
-			// Give the pipeline ownership to the global state manager
-			m_globalPipelineState->insertGraphicsPipelineFor(m_shadowMapModule->m_replacementShader, m_shadowMapModule->m_replacementMaterial);
-		}
+		m_shadowMapModule = MAKEUNQ<ShadowMap>(*this, presentationDevice.getDevice(), m_globalPipelineState->getDepthOnlyPipelineLayout(), true, 1024u);
 
 		const auto* debugQuadShader = VkShader::findShader(2u);
 		// Creates the pipeline, but doesn't manage its lifetime
 		m_debugModule = MAKEUNQ<DebugPass>(*this, presentationDevice.getDevice(), debugQuadShader, m_globalPipelineState->getForwardPipelineLayout(), 
 			getRenderPass(), getSwapchainExtent(), m_shadowMapModule->getTexture2D());
-		if (m_debugModule->getGraphicsPipeline().m_pipeline != VK_NULL_HANDLE)
-		{
-			// Give the pipeline ownership to the global state manager
-			m_globalPipelineState->insertGraphicsPipelineFor(debugQuadShader, m_debugModule->getGraphicsPipeline());
-		}
 	}
 
 	bool PresentationTarget::createPresentationTarget(const HardwareDevice& presentationHardware, const Device& presentationDevice, uint32_t swapchainCount)

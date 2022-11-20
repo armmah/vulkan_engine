@@ -105,9 +105,9 @@ namespace Presentation
 				stats.drawCallCount += 1;
 			}
 		}
-
-		const auto& variant = m_debugModule->getMaterialVariant();
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, variant.getPipelineLayout(), 
+		
+		const auto& variant = m_shadowMapModule->getMaterialVariant();
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, variant.getPipelineLayout(),
 			PipelineDescriptor::BindingSlots::Shadowmap, 1, variant.getDescriptorSet(frameNumber), 0, nullptr);
 		stats.descriptorSetCount += 1;
 
@@ -178,6 +178,10 @@ namespace Presentation
 
 		if(m_debugModule && m_debugModule->getActive())
 		{
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_debugModule->getPipelineLayout(),
+				PipelineDescriptor::BindingSlots::Shadowmap, 1, m_debugModule->getDescriptorSet(frameNumber), 0, nullptr);
+			stats.descriptorSetCount += 1;
+
 			auto swExtent = getSwapchainExtent();
 			auto extent = swExtent;
 			extent.width = static_cast<int32_t>( extent.width * 0.25f );

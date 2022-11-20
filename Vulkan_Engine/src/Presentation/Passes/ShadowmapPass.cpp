@@ -34,7 +34,7 @@ namespace Presentation
 
 		m_replacementShader = VkShader::findShader(1u);
 		m_isInitialized &= PipelineConstruction::createPipeline(m_replacementMaterial.m_pipeline, depthOnlyPipelineLayout, device,
-			getRenderPass(), getExtent(), *m_replacementShader, &Mesh::defaultMeshDescriptor, PipelineConstruction::FaceCulling::Back, true);
+			getRenderPass(), getExtent(), *m_replacementShader, &Mesh::defaultMeshDescriptor, PipelineConstruction::FaceCulling::Front, true);
 
 		if (!m_isInitialized)
 		{

@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "Directories.h"
+#include "Loaders/Model/ModelLoaderOptions.h"
 
 Path Directories::getAbsolutePath(const std::string& path) { return getApplicationPath().combine(path); }
 
@@ -12,17 +13,27 @@ Path Directories::getWorkingDirectory() { return getAbsolutePath(workingSceneDir
 
 Path Directories::getShaderLibraryPath() { return getAbsolutePath(libraryShaderPath_relative); }
 
-std::vector<Path> Directories::getModels_IntelSponza()
+std::vector<Loader::ModelLoaderOptions> Directories::getModels_IntelSponza()
 {
-	return { getAbsolutePath(workingModel_relative), getAbsolutePath(additiveModel_relative) };
+	return 
+	{ 
+		Loader::ModelLoaderOptions(getAbsolutePath(workingModel_relative), 1.0),
+		Loader::ModelLoaderOptions(getAbsolutePath(additiveModel_relative), 1.0)
+	};
 }
-std::vector<Path> Directories::getModels_DebrovicSponza()
+std::vector<Loader::ModelLoaderOptions> Directories::getModels_DebrovicSponza()
 {
-	return { getAbsolutePath(DEBROVIC_SPONZA_OBJ) };
+	return 
+	{ 
+		Loader::ModelLoaderOptions(getAbsolutePath(DEBROVIC_SPONZA_OBJ), 1.0)
+	};
 }
-std::vector<Path> Directories::getModels_CrytekSponza()
+std::vector<Loader::ModelLoaderOptions> Directories::getModels_CrytekSponza()
 {
-	return { getAbsolutePath(CRYTEK_SPONZA_OBJ) };
+	return 
+	{ 
+		Loader::ModelLoaderOptions(getAbsolutePath(CRYTEK_SPONZA_OBJ), 0.01)
+	};
 }
 
 Path Directories::syscall_GetApplicationPath()

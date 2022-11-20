@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "Loader_ASSIMP.h"
 #include "Loaders/Model/Common.h"
+#include "Loaders/Model/ModelLoaderOptions.h"
 
 #include "VkMesh.h"
 #include "Mesh.h"
@@ -74,8 +75,12 @@ bool getTexPath(std::string& fullPath, const std::string& modelDirectory, const 
 	return false;
 }
 
-bool Loader::load_AssimpImplementation(std::vector<Mesh>& meshes, std::vector<Material>& materials, std::vector<Renderer>& rendererIDs, std::vector<Transform>& transforms, const Path& fullPath)
+bool Loader::load_AssimpImplementation(std::vector<Mesh>& meshes, std::vector<Material>& materials, std::vector<Renderer>& rendererIDs, std::vector<Transform>& transforms, 
+	const Loader::ModelLoaderOptions& options)
 {
+	const auto& fullPath = options.filePath;
+	const auto modelScaler = options.sizeModifier;
+
 	// Create an instance of the Importer class
 	Assimp::Importer importer;
 
@@ -136,7 +141,7 @@ bool Loader::load_AssimpImplementation(std::vector<Mesh>& meshes, std::vector<Ma
 				static_cast<float>(mVerts[vi].x),
 				static_cast<float>(mVerts[vi].y),
 				static_cast<float>(mVerts[vi].z)
-			);
+			) * modelScaler;
 
 			uvs[vi] = glm::vec2(
 				static_cast<float>(mTexcoords[vi].x),
@@ -152,6 +157,14 @@ bool Loader::load_AssimpImplementation(std::vector<Mesh>& meshes, std::vector<Ma
 #else
 		Utility::reinterpretCopy(mVerts, vertN, vertices);
 		Utility::reinterpretCopy(mNorms, vertN, normals);
+
+		if (modelScaler != 1.0)
+		{
+			for (int vi = 0; vi < vertN; vi++)
+			{
+				vertices[vi] *= modelScaler;
+			}
+		}
 
 		for (unsigned int vi = 0; vi < vertN; vi++)
 		{
@@ -176,8 +189,8 @@ bool Loader::load_AssimpImplementation(std::vector<Mesh>& meshes, std::vector<Ma
 		std::vector<SubMesh> submeshes(1);
 		submeshes[0] = SubMesh(indices);
 
-		auto boundsMin = mesh->mAABB.mMin,
-			boundsMax = mesh->mAABB.mMax;
+		auto boundsMin = mesh->mAABB.mMin * modelScaler,
+			boundsMax = mesh->mAABB.mMax * modelScaler;
 		submeshes[0].m_bounds = BoundsAABB(
 			glm::vec3(boundsMin.x, boundsMin.y, boundsMin.z),
 			glm::vec3(boundsMax.x, boundsMax.y, boundsMax.z)

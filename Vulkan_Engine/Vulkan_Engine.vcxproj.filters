@@ -200,9 +200,6 @@
     <ClCompile Include="src\Loaders\Model\Loader_ASSIMP.cpp">
       <Filter>Source Files\Loaders\Model</Filter>
     </ClCompile>
-    <ClCompile Include="src\Loaders\Model\Loader_FBX.cpp">
-      <Filter>Source Files\Loaders\Model</Filter>
-    </ClCompile>
     <ClCompile Include="src\EngineCore\PipelineBinding.cpp">
       <Filter>Source Files\EngineCore</Filter>
     </ClCompile>
@@ -238,6 +235,9 @@
     </ClCompile>
     <ClCompile Include="src\EngineCore\UboAllocatorDelegate.cpp">
       <Filter>Source Files\EngineCore</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Loaders\Model\ModelLoaderOptions.h">
+      <Filter>Header Files\Loaders\Model</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -368,9 +368,6 @@
       <Filter>Header Files\Loaders\Model</Filter>
     </ClInclude>
     <ClInclude Include="src\Loaders\Model\Loader_OBJ.h">
-      <Filter>Header Files\Loaders\Model</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Loaders\Model\Loader_FBX.h">
       <Filter>Header Files\Loaders\Model</Filter>
     </ClInclude>
     <ClInclude Include="src\Loaders\Model\Loader_ASSIMP.h">

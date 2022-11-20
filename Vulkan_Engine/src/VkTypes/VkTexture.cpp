@@ -195,7 +195,7 @@ VkTexture2D VkTexture2D::createTexture(VkDevice device, uint32_t width, uint32_t
 {
 	auto tex = VkTexture::createTexture(device, width, height, format, usage, aspectFlags, isReadable, mipCount);
 	VkSampler sampler;
-	vkinit::Texture::createTextureSampler(sampler, device, 1u);
+	vkinit::Texture::createTextureSampler(sampler, device, 1u, true, VK_SAMPLER_ADDRESS_MODE_REPEAT, 0.0f, VK_COMPARE_OP_GREATER);
 	return VkTexture2D(tex.image, tex.memoryRange, tex.imageView, sampler, mipCount);
 }
 

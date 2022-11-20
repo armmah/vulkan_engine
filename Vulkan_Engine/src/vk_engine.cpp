@@ -65,16 +65,16 @@ void VulkanEngine::init(bool requestValidationLayers)
 	//m_cam->setRotation(90.f, -67.5f);
 
 	// Hardcoded for crytek sponza
-	// m_cam->setPosition({ -150.f, 100.f, -10.f });
-	// m_cam->setRotation(0.f, 15.f);
+	 m_cam->setPosition({ -150.f * 0.01, 100.f * 0.01, -10.f * 0.01 });
+	 m_cam->setRotation(0.f, 15.f);
 
 	// Hardcoded for intel sponza
 	// m_cam->setPosition({ 6.035f, 2.5f, -2.2f });
 	// m_cam->setRotation(-200.f, 10.f);
 	
 	// Harcoded for debrovic sponza
-	m_cam->setPosition({ -12.234, 3.0f, -0.014f });
-	m_cam->setRotation(-0.f, 4.25f);
+	//m_cam->setPosition({ -12.234, 3.0f, -0.014f });
+	//m_cam->setRotation(-0.f, 4.25f);
 }
 
 bool VulkanEngine::init_vulkan()

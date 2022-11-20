@@ -110,8 +110,8 @@ void ImGuiHandle::draw(FrameStats stats, Camera* cam, DirectionalLightParams* li
 	if (isLightCollapsed)
 	{
 		ImGui::DragFloat3("Light Pitch / Yaw / Distance", &light->pitch);
-		ImGui::DragFloat("Depth Bias", &light->depthBias, 0.00025f, -0.01f, 0.01f);
-		ImGui::DragFloat("Normal Bias", &light->normalBias, 0.00025f, -0.01f, 0.01f);
+		ImGui::DragFloat("Depth Bias", &light->depthBias, 0.025f, -3.f, 3.f);
+		ImGui::DragFloat("Normal Bias", &light->normalBias, 0.025f, -1.f, 1.f);
 		ImGui::DragFloat("Ambient light", &light->ambient, 0.02f, 0.0f, 0.5f);
 	}
 	ImGui::End();

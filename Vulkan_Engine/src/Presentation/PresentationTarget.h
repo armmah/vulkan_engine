@@ -1,12 +1,10 @@
 #pragma once
 #include "pch.h"
 #include "Common.h"
+#include "VkGraphicsPipeline.h"
 #include "Interfaces/IRequireInitialization.h"
 
 #include "Engine/RenderLoopStatistics.h"
-
-#include "Passes/ShadowmapPass.h"
-#include "Passes/DebugPass.h"
 
 class Window;
 struct VkTexture;
@@ -25,6 +23,9 @@ namespace Presentation
 {
 	class Device;
 	class HardwareDevice;
+
+	class ShadowMap;
+	class DebugPass;
 
 	class PresentationTarget : IRequireInitialization
 	{
@@ -47,11 +48,7 @@ namespace Presentation
 		bool createGraphicsMaterial(UNQ<VkMaterial>& material, VkDevice device, VkDescriptorPool descPool, const VkShader* shader, const VkTexture2D* texture);
 
 		FrameStats renderLoop(const std::vector<VkMeshRenderer>& renderers, Camera& cam, DirectionalLightParams& lightTr, VkCommandBuffer commandBuffer, uint32_t frameNumber);
-		void applyFrameConfiguration(const FrameSettings* settings)
-		{
-			m_shadowMapModule->setActive(settings->enableShadowPass);
-			m_debugModule->setActive(settings->enableDebugShadowMap);
-		}
+		void applyFrameConfiguration(const FrameSettings* settings);
 
 		void releaseAllResources(VkDevice device);
 		void releaseSwapChain(VkDevice device);

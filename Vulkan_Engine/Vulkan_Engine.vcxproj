@@ -243,12 +243,10 @@
     <ClCompile Include="src\Loaders\Model\Loader_ASSIMP.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="src\Loaders\Model\Loader_FBX.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
-    </ClCompile>
     <ClCompile Include="src\Loaders\Model\Loader_OBJ.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="src\Loaders\Model\ModelLoaderOptions.h" />
     <ClCompile Include="src\Math\BoundsAABB.cpp" />
     <ClCompile Include="src\Math\Frustum.cpp" />
     <ClCompile Include="src\Math\Plane.cpp" />
@@ -351,7 +349,6 @@
     <ClInclude Include="src\Interfaces\IRequireInitialization.h" />
     <ClInclude Include="src\Loaders\Model\Common.h" />
     <ClInclude Include="src\Loaders\Model\Loader_ASSIMP.h" />
-    <ClInclude Include="src\Loaders\Model\Loader_FBX.h" />
     <ClInclude Include="src\Loaders\Model\Loader_OBJ.h" />
     <ClInclude Include="src\Math\BoundsAABB.h" />
     <ClInclude Include="src\Math\Frustum.h" />

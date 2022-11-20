@@ -12,7 +12,8 @@ struct TextureSource;
 struct VkTexture2D;
 struct VkMaterial;
 struct VkMeshRenderer;
-struct Path;
+
+namespace Loader { struct ModelLoaderOptions; }
 
 namespace Presentation
 {
@@ -36,7 +37,7 @@ public:
 	bool load(VkDescriptorPool descPool);
 	void release(VkDevice device, const VmaAllocator& allocator);
 
-	bool tryInitializeFromFile(const Path& path);
+	bool tryInitializeFromFile(const Loader::ModelLoaderOptions& modelOptions);
 	void createGraphicsRepresentation(VkDescriptorPool descPool);
 
 	template<class Archive>

@@ -6,8 +6,8 @@ struct DirectionalLightParams
 	float pitch, yaw, distance;
 	float depthBias, normalBias, ambient, emptyPlaceholder;
 
-	DirectionalLightParams(float pitch = 76.0f, float yaw = 90.0f, float distance = 30.f,
-		float depthBias = 0.001f, float normalBias = -0.001f, float ambient = 0.01) : pitch(pitch), yaw(yaw), distance(distance), 
+	DirectionalLightParams(float pitch = 76.0f, float yaw = 97.0f, float distance = 30.f,
+		float depthBias = 0.650f, float normalBias = 0.1f, float ambient = 0.01) : pitch(pitch), yaw(yaw), distance(distance), 
 		depthBias(depthBias), normalBias(normalBias), ambient(ambient), emptyPlaceholder() { }
 
 	const glm::vec4 getBiasAmbient() { return glm::vec4(depthBias, normalBias, ambient, 0.0f); }

@@ -15,6 +15,7 @@
 #include "Profiling/ProfileMarker.h"
 
 #include "Loaders/Model/Common.h"
+#include "Loaders/Model/ModelLoaderOptions.h"
 #include "Loaders/Model/Loader_OBJ.h"
 #include "Loaders/Model/Loader_ASSIMP.h"
 
@@ -26,24 +27,25 @@ Scene::~Scene() { }
 constexpr bool force_serialize_from_origin = false;
 bool Scene::load(VkDescriptorPool descPool)
 {
-	const auto modelPaths = Directories::getModels_DebrovicSponza();
-	//const auto modelPaths = Directories::getModels_IntelSponza();
+	//const auto modelOptions = Directories::getModels_DebrovicSponza();
+	//const auto modelOptions = Directories::getModels_IntelSponza();
+	const auto modelOptions = Directories::getModels_CrytekSponza();
 
 	Path fullPath;
 	/*****************************				IMPORT					****************************************/
-	if (!Directories::tryGetBinaryIfExists(fullPath, modelPaths.front()) || force_serialize_from_origin)
+	if (!Directories::tryGetBinaryIfExists(fullPath, modelOptions.front().filePath) || force_serialize_from_origin)
 	{
 		ProfileMarker _("Scene::import & serialize");
 		Scene scene(nullptr, nullptr);
 
-		for (auto& model : modelPaths)
+		for (auto& model : modelOptions)
 		{
 			auto meshCount = scene.getMeshes().size();
 			scene.tryInitializeFromFile(model);
 			
 			if (scene.getMeshes().size() <= meshCount)
 			{
-				printf("No meshes loaded from %s.", model.c_str());
+				printf("No meshes loaded from %s.", model.filePath.c_str());
 			}
 		}
 
@@ -59,9 +61,10 @@ bool Scene::load(VkDescriptorPool descPool)
 	/*****************************				LOAD BINARY					****************************************/
 	ProfileMarker _("Scene::load");
 
-	if (!tryInitializeFromFile(fullPath))
+	const auto binaryLoaderOptions = Loader::ModelLoaderOptions(std::move(fullPath), 1.0);
+	if (!tryInitializeFromFile(binaryLoaderOptions))
 	{
-		printf("Could not load scene file '%s', it did not match any of the supported formats.\n", fullPath.c_str());
+		printf("Could not load scene file '%s', it did not match any of the supported formats.\n", binaryLoaderOptions.filePath.c_str());
 		return false;
 	}
 	printf("Initialized the scene with (renderers = %zi), (transforms = %zi), (meshes = %zi), (textures = %zi), (materials = %zi).\n", m_renderers.size(), m_transforms.size(), m_meshes.size(), m_textures.size(), m_materials.size());
@@ -123,10 +126,9 @@ void Scene::serialize(Archive& ar, const unsigned int version)
 		& m_transforms;
 }
 
-bool Scene::tryInitializeFromFile(const Path& path)
+bool Scene::tryInitializeFromFile(const Loader::ModelLoaderOptions& modelOptions)
 {
-	auto directory = path.getFileDirectory();
-	auto name = path.getFileName(false);
+	const auto& path = modelOptions.filePath;
 
 	/* ================ READ SERIALIZED BINARY =============== */
 	if (Directories::isBinary(path) && path.fileExists())
@@ -146,21 +148,21 @@ bool Scene::tryInitializeFromFile(const Path& path)
 	if (fileExists(path, ".gltf"))
 	{
 		ProfileMarker _("Loader::ASSIMP");
-		return Loader::load_AssimpImplementation(m_meshes, m_materials, m_rendererIDs, m_transforms, Path(path));
+		return Loader::load_AssimpImplementation(m_meshes, m_materials, m_rendererIDs, m_transforms, modelOptions);
 	}
 
 	/* ================ READ FROM OBJ =============== */
 	if (fileExists(path, ".obj"))
 	{
 		ProfileMarker _("Loader::Custom_OBJ");
-		return Loader::loadOBJ_Implementation(m_meshes, m_materials, m_rendererIDs, m_transforms, directory, name);
+		return Loader::loadOBJ_Implementation(m_meshes, m_materials, m_rendererIDs, m_transforms, modelOptions);
 	}
 
 	// Fallback
 	if (fileExists(path))
 	{
 		ProfileMarker _("Loader::ASSIMP");
-		return Loader::load_AssimpImplementation(m_meshes, m_materials, m_rendererIDs, m_transforms, Path(path));
+		return Loader::load_AssimpImplementation(m_meshes, m_materials, m_rendererIDs, m_transforms, modelOptions);
 	}
 
 	return false;

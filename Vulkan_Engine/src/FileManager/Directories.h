@@ -2,6 +2,11 @@
 #include "pch.h"
 #include "Path.h"
 
+namespace Loader
+{
+	struct ModelLoaderOptions;
+}
+
 class Directories
 {
 public:
@@ -11,9 +16,9 @@ public:
 	
 	static Path getWorkingDirectory();
 
-	static std::vector<Path> getModels_IntelSponza();
-	static std::vector<Path> getModels_DebrovicSponza();
-	static std::vector<Path> getModels_CrytekSponza();
+	static std::vector<Loader::ModelLoaderOptions> getModels_IntelSponza();
+	static std::vector<Loader::ModelLoaderOptions> getModels_DebrovicSponza();
+	static std::vector<Loader::ModelLoaderOptions> getModels_CrytekSponza();
 
 	static Path getShaderLibraryPath();
 

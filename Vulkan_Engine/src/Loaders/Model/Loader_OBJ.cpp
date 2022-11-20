@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "Loader_OBJ.h"
 #include "Loaders/Model/Common.h"
+#include "Loaders/Model/ModelLoaderOptions.h"
 
 #include "VkMesh.h"
 #include "Mesh.h"
@@ -10,8 +11,13 @@
 
 #include "Profiling/ProfileMarker.h"
 
-bool Loader::loadOBJ_Implementation(std::vector<Mesh>& meshes, std::vector<Material>& materials, std::vector<Renderer>& rendererIDs, std::vector<Transform>& transforms, const std::string& path, const std::string& name)
+bool Loader::loadOBJ_Implementation(std::vector<Mesh>& meshes, std::vector<Material>& materials, std::vector<Renderer>& rendererIDs, std::vector<Transform>& transforms, 
+	const Loader::ModelLoaderOptions& options)
 {
+	const auto& path = options.filePath.getFileDirectory();
+	const auto& name = options.filePath.getFileName(false);
+	const auto modelScaler = options.sizeModifier;
+
 	//attrib will contain the vertex arrays of the file
 	tinyobj::attrib_t objAttribs;
 	//shapes contains the info for each separate object in the file
@@ -148,7 +154,7 @@ bool Loader::loadOBJ_Implementation(std::vector<Mesh>& meshes, std::vector<Mater
 			auto submeshIndex = uniqueMaterialIDs[mesh.material_ids[k / 3]].mappedIndex;
 
 			// Store min and max vertex components to initialize AABB.
-			auto vert = Utility::reinterpretAt<float, MeshDescriptor::TVertexPosition>(objAttribs.vertices, indices.vertex_index);
+			auto vert = Utility::reinterpretAt<float, MeshDescriptor::TVertexPosition>(objAttribs.vertices, indices.vertex_index) * modelScaler;
 			Utility::minVector(boundsMinMax[submeshIndex * 2], vert);
 			Utility::maxVector(boundsMinMax[submeshIndex * 2 + 1], vert);
 
@@ -178,7 +184,7 @@ bool Loader::loadOBJ_Implementation(std::vector<Mesh>& meshes, std::vector<Mater
 			auto ni = kv.first.normal_index;
 			auto uvi = kv.first.texcoord_index;
 
-			vertices[kv.second] = Utility::reinterpretAt<float, MeshDescriptor::TVertexPosition>(objAttribs.vertices, vi);
+			vertices[kv.second] = Utility::reinterpretAt<float, MeshDescriptor::TVertexPosition>(objAttribs.vertices, vi) * modelScaler;
 
 			normals[kv.second] = Utility::reinterpretAt_orFallback<float, MeshDescriptor::TVertexNormal>(objAttribs.normals, ni);
 			uvs[kv.second] = Utility::reinterpretAt_orFallback<float, MeshDescriptor::TVertexUV>(objAttribs.texcoords, uvi);

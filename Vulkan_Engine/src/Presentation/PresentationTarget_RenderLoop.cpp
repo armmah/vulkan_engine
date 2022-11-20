@@ -13,6 +13,9 @@
 #include "Material.h"
 #include "Math/Frustum.h"
 
+#include "Passes/ShadowmapPass.h"
+#include "Passes/DebugPass.h"
+
 #include "Profiling/ProfileMarker.h"
 
 namespace Presentation
@@ -67,6 +70,12 @@ namespace Presentation
 		return stats;
 	}
 
+	void PresentationTarget::applyFrameConfiguration(const FrameSettings* settings)
+	{
+		m_shadowMapModule->setActive(settings->enableShadowPass);
+		m_debugModule->setActive(settings->enableDebugShadowMap);
+	}
+
 	void PresentationTarget::renderIndexedMeshes(FrameStats& stats, const std::vector<VkMeshRenderer>& renderers, Camera& cam, const BufferHandle& lightViewUBO, VkCommandBuffer commandBuffer, uint32_t frameNumber)
 	{
 		const auto pipelineLayout = m_globalPipelineState->getForwardPipelineLayout();
@@ -86,7 +95,7 @@ namespace Presentation
 				pipelineLayout, PipelineDescriptor::BindingSlots::View, 1, &lightViewUBO.descriptorSet, 0, nullptr);
 			stats.descriptorSetCount += 1;
 
-			const auto depthOnly = m_shadowMapModule->m_replacementMaterial;
+			const auto& depthOnly = m_shadowMapModule->m_replacementMaterial;
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, depthOnly.m_pipeline);
 			stats.pipelineCount += 1;
 

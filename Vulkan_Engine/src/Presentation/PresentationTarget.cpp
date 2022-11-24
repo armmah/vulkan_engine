@@ -9,7 +9,7 @@
 
 #include "ShaderSource.h"
 #include "VkTypes/VkShader.h"
-#include "VkGraphicsPipeline.h"
+#include "VkTypes/VkGraphicsPipeline.h"
 #include "VkTypes/PipelineConstructor.h"
 #include "Mesh.h"
 #include "DescriptorPoolManager.h"

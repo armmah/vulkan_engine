@@ -17,23 +17,37 @@ std::vector<Loader::ModelLoaderOptions> Directories::getModels_IntelSponza()
 {
 	return 
 	{ 
-		Loader::ModelLoaderOptions(getAbsolutePath(workingModel_relative), 1.0),
-		Loader::ModelLoaderOptions(getAbsolutePath(additiveModel_relative), 1.0)
+		Loader::ModelLoaderOptions(getAbsolutePath(workingModel_relative), 1.0f),
+		Loader::ModelLoaderOptions(getAbsolutePath(additiveModel_relative), 1.0f)
 	};
 }
 std::vector<Loader::ModelLoaderOptions> Directories::getModels_DebrovicSponza()
 {
 	return 
 	{ 
-		Loader::ModelLoaderOptions(getAbsolutePath(DEBROVIC_SPONZA_OBJ), 1.0)
+		Loader::ModelLoaderOptions(getAbsolutePath(DEBROVIC_SPONZA_OBJ), 1.0f)
 	};
 }
 std::vector<Loader::ModelLoaderOptions> Directories::getModels_CrytekSponza()
 {
 	return 
 	{ 
-		Loader::ModelLoaderOptions(getAbsolutePath(CRYTEK_SPONZA_OBJ), 0.01)
+		Loader::ModelLoaderOptions(getAbsolutePath(CRYTEK_SPONZA_OBJ), 0.01f)
 	};
+}
+
+bool Directories::isBinary(const Path& scenePath) { return scenePath.matchesExtension(sceneFileExtension); }
+
+Path Directories::getBinaryTargetPath(const Path& modelPath)
+{
+	auto fileName = modelPath.getFileName(false) + sceneFileExtension;
+	return getAbsolutePath(workingSceneDir_relative).combine(fileName);
+}
+
+bool Directories::tryGetBinaryIfExists(Path& binaryPath, const Path& modelPath)
+{
+	binaryPath = getBinaryTargetPath(modelPath);
+	return binaryPath.fileExists();
 }
 
 Path Directories::syscall_GetApplicationPath()

@@ -387,7 +387,7 @@ bool vkinit::Texture::createTextureImageView(VkImageView& imageView, VkDevice de
 }
 
 bool vkinit::Texture::createTextureSampler(VkSampler& sampler, VkDevice device, uint32_t mipCount, bool linearFiltering, VkSamplerAddressMode sampleMode, 
-	float anisotropySamples, std::optional<VkCompareOp> compareOp)
+	float anisotropySamples, VkCompareOp compareOp)
 {
 	VkSamplerCreateInfo samplerInfo{};
 	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -405,8 +405,9 @@ bool vkinit::Texture::createTextureSampler(VkSampler& sampler, VkDevice device, 
 
 	samplerInfo.unnormalizedCoordinates = VK_FALSE;
 
-	samplerInfo.compareEnable = compareOp.has_value() ? VK_TRUE : VK_FALSE;
-	samplerInfo.compareOp = compareOp.has_value() ? compareOp.value() : VK_COMPARE_OP_ALWAYS;
+	auto hasCompareOp = compareOp < VkCompareOp::VK_COMPARE_OP_MAX_ENUM;
+	samplerInfo.compareEnable = hasCompareOp ? VK_TRUE : VK_FALSE;
+	samplerInfo.compareOp = hasCompareOp ? compareOp : VK_COMPARE_OP_ALWAYS;
 
 	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 	samplerInfo.mipLodBias = 0.0f;

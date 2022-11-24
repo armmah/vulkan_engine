@@ -3,7 +3,7 @@
 #include "vk_types.h"
 #include "VkTypes/InitializersUtility.h"
 #include "VkTypes/PushConstantTypes.h"
-#include "VkMesh.h"
+#include "VkTypes/VkMesh.h"
 #include "VertexAttributes.h"
 #include "PipelineBinding.h"
 
@@ -15,8 +15,12 @@
 
 #include "Passes/ShadowmapPass.h"
 #include "Passes/DebugPass.h"
+#include "EngineCore/Renderer.h"
+#include "EngineCore/Transform.h"
+#include "VkTypes/VkMeshRenderer.h"
 
 #include "Profiling/ProfileMarker.h"
+#include "Engine/Bitmask.h"
 
 namespace Presentation
 {

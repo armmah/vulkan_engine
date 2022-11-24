@@ -1,13 +1,15 @@
 #include "pch.h"
 #include "Common.h"
 #include "CollectionUtility.h"
-#include "VkMesh.h"
+#include "VkTypes/VkMesh.h"
 #include "Mesh.h"
 #include "VertexAttributes.h"
 #include "Presentation/Device.h"
 #include "StagingBufferPool.h"
 
 MeshDescriptor Mesh::defaultMeshDescriptor = MeshDescriptor();
+
+Mesh::Mesh(const Mesh& mesh) : m_positions(mesh.m_positions), m_uvs(mesh.m_uvs), m_normals(mesh.m_normals), m_colors(mesh.m_colors), m_submeshes(mesh.m_submeshes) { updateMetaData(); }
 
 Mesh::Mesh(std::vector<glm::vec3>& positions, std::vector<glm::vec2>& uvs, std::vector<glm::vec3>& normals, std::vector<glm::vec3>& colors, std::vector<SubMesh>& submeshes)
 	: m_positions(std::move(positions)), m_uvs(std::move(uvs)), m_normals(std::move(normals)), m_colors(std::move(colors)), m_submeshes(std::move(submeshes))
@@ -28,6 +30,8 @@ Mesh::Mesh(std::vector<glm::vec3>& positions, std::vector<glm::vec2>& uvs, std::
 	m_submeshes[0] = std::move(submesh);
 	updateMetaData();
 }
+
+Mesh::Mesh() : vectors(), metaData() {}
 
 Mesh::Mesh(size_t vertN, size_t indexN)
 {

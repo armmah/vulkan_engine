@@ -1,6 +1,5 @@
 #pragma once
 #include "pch.h"
-#include "Common.h"
 #include "vk_mem_alloc.h"
 #include "VertexBinding.h"
 #include "Math/BoundsAABB.h"
@@ -19,43 +18,26 @@ namespace boost {
 
 struct SubMesh
 {
-	SubMesh() : m_indices(), m_bounds() { }
-	SubMesh(size_t size) : m_indices(), m_bounds() { m_indices.reserve(size); }
-	SubMesh(std::vector<MeshDescriptor::TVertexIndices>& indices) : m_indices(std::move(indices)), m_bounds() { }
-	size_t getIndexCount() const { return m_indices.size(); }
+	SubMesh();
+	SubMesh(size_t size);
+	SubMesh(std::vector<MeshDescriptor::TVertexIndices>& indices);
+	size_t getIndexCount() const;
 
 	std::vector<MeshDescriptor::TVertexIndices> m_indices;
 	BoundsAABB m_bounds;
 
 	template<class Archive>
-	void serialize(Archive& ar, const unsigned int version)
-	{
-		ar& m_indices;
-		ar& m_bounds.center;
-		ar& m_bounds.extents;
-	}
+	void serialize(Archive& ar, const unsigned int version);
 
-	bool operator ==(const SubMesh& other) const
-	{
-		if (m_indices.size() != other.m_indices.size())
-			return false;
+	bool operator ==(const SubMesh& other) const;
 
-		for (size_t i = 0; i < m_indices.size(); i++)
-		{
-			if (m_indices[i] != other.m_indices[i])
-				return false;
-		}
-
-		return true;
-	}
-
-	bool operator !=(const SubMesh& other) const { return !(*this == other); }
+	bool operator !=(const SubMesh& other) const;
 };
 
 struct Mesh
 {
 public:
-	Mesh(const Mesh& mesh) : m_positions(mesh.m_positions), m_uvs(mesh.m_uvs), m_normals(mesh.m_normals), m_colors(mesh.m_colors), m_submeshes(mesh.m_submeshes) { updateMetaData(); }
+	Mesh(const Mesh& mesh);
 	Mesh(std::vector<glm::vec3>& positions, std::vector<glm::vec2>& uvs, std::vector<glm::vec3>& normals, std::vector<glm::vec3>& colors, std::vector<SubMesh>& submeshes);
 	Mesh(std::vector<glm::vec3>& positions, std::vector<glm::vec2>& uvs, std::vector<glm::vec3>& normals, std::vector<glm::vec3>& colors, SubMesh& submesh);
 	Mesh(std::vector<glm::vec3>& positions, std::vector<glm::vec2>& uvs, std::vector<glm::vec3>& normals, std::vector<glm::vec3>& colors, SubMesh&& submesh);
@@ -78,27 +60,19 @@ public:
 	static Mesh getPrimitiveQuad();
 	static Mesh getPrimitiveTriangle();
 
-	const MeshDescriptor& getMeshDescriptor() const { return metaData; }
-	const BoundsAABB* getBounds(uint32_t submeshIndex) const { return submeshIndex >= 0 && submeshIndex < m_submeshes.size() ? &m_submeshes[submeshIndex].m_bounds : nullptr; }
+	const MeshDescriptor& getMeshDescriptor() const;
+	const BoundsAABB* getBounds(uint32_t submeshIndex) const;
 
 	static MeshDescriptor defaultMeshDescriptor;
 
 	template<class Archive>
-	void serialize(Archive& ar, const unsigned int version)
-	{
-		ar& m_positions;
-		ar& m_uvs;
-		ar& m_normals;
-		ar& m_colors;
-		ar& m_submeshes;
+	void serialize(Archive& ar, const unsigned int version);
 
-		updateMetaData();
-	}
 	bool operator==(const Mesh& other) const;
 
 private:
 	friend class boost::serialization::access;
-	Mesh() : vectors(), metaData() {};
+	Mesh();;
 	Mesh(size_t vertN, size_t indexN);
 
 	std::vector<MeshDescriptor::TVertexPosition> m_positions;

@@ -1,6 +1,5 @@
 ﻿#pragma once
 #include "EngineCore/pch.h"
-#include "Common.h"
 #include "vulkan/vulkan.h"
 #include "VkTypes/VkMaterialVariant.h"
 #include "Engine/RenderLoopStatistics.h"

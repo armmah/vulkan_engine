@@ -119,9 +119,6 @@
     <ClCompile Include="src\EngineCore\VertexBinding.cpp">
       <Filter>Source Files\EngineCore</Filter>
     </ClCompile>
-    <ClCompile Include="src\EngineCore\VkMesh.cpp">
-      <Filter>Source Files\EngineCore</Filter>
-    </ClCompile>
     <ClCompile Include="src\EngineCore\Color.cpp">
       <Filter>Source Files\EngineCore</Filter>
     </ClCompile>
@@ -227,9 +224,6 @@
     <ClCompile Include="src\Presentation\Passes\ShadowmapPass.cpp">
       <Filter>Source Files\Presentation\Passes</Filter>
     </ClCompile>
-    <ClCompile Include="src\EngineCore\VkGraphicsPipeline.cpp">
-      <Filter>Source Files\EngineCore</Filter>
-    </ClCompile>
     <ClCompile Include="src\EngineCore\BuffersUBOPool.cpp">
       <Filter>Source Files\EngineCore</Filter>
     </ClCompile>
@@ -238,6 +232,24 @@
     </ClCompile>
     <ClCompile Include="src\Loaders\Model\ModelLoaderOptions.h">
       <Filter>Header Files\Loaders\Model</Filter>
+    </ClCompile>
+    <ClCompile Include="src\EngineCore\Transform.cpp">
+      <Filter>Source Files\EngineCore</Filter>
+    </ClCompile>
+    <ClCompile Include="src\EngineCore\Renderer.cpp">
+      <Filter>Source Files\EngineCore</Filter>
+    </ClCompile>
+    <ClCompile Include="src\EngineCore\SubMesh.cpp">
+      <Filter>Source Files\EngineCore</Filter>
+    </ClCompile>
+    <ClCompile Include="src\VkTypes\VkGraphicsPipeline.cpp">
+      <Filter>Source Files\VkTypes</Filter>
+    </ClCompile>
+    <ClCompile Include="src\VkTypes\VkMesh.cpp">
+      <Filter>Source Files\VkTypes</Filter>
+    </ClCompile>
+    <ClCompile Include="src\VkTypes\VkMeshRenderer.cpp">
+      <Filter>Source Files\VkTypes</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -283,9 +295,6 @@
     <ClInclude Include="src\EngineCore\VertexBinding.h">
       <Filter>Header Files\EngineCore</Filter>
     </ClInclude>
-    <ClInclude Include="src\EngineCore\VkMesh.h">
-      <Filter>Header Files\EngineCore</Filter>
-    </ClInclude>
     <ClInclude Include="src\EngineCore\Color.h">
       <Filter>Header Files\EngineCore</Filter>
     </ClInclude>
@@ -324,9 +333,6 @@
     </ClInclude>
     <ClInclude Include="src\VkTypes\PushConstantTypes.h">
       <Filter>Header Files\VkTypes</Filter>
-    </ClInclude>
-    <ClInclude Include="src\VkTypes\VkMemoryAllocator.h">
-      <Filter>Header Files\EngineCore</Filter>
     </ClInclude>
     <ClInclude Include="src\Engine\Window.h">
       <Filter>Header Files\Engine</Filter>
@@ -391,9 +397,6 @@
     <ClInclude Include="src\Presentation\Passes\ShadowmapPass.h">
       <Filter>Header Files\Presentation\Passes</Filter>
     </ClInclude>
-    <ClInclude Include="VkGraphicsPipeline.h">
-      <Filter>Header Files\EngineCore</Filter>
-    </ClInclude>
     <ClInclude Include="src\EngineCore\BuffersUBO.h">
       <Filter>Header Files\EngineCore</Filter>
     </ClInclude>
@@ -402,6 +405,33 @@
     </ClInclude>
     <ClInclude Include="src\EngineCore\UboAllocatorDelegate.h">
       <Filter>Header Files\EngineCore</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Engine\Bitmask.h">
+      <Filter>Header Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="src\EngineCore\Renderer.h">
+      <Filter>Header Files\EngineCore</Filter>
+    </ClInclude>
+    <ClInclude Include="src\EngineCore\Transform.h">
+      <Filter>Header Files\EngineCore</Filter>
+    </ClInclude>
+    <ClInclude Include="src\VkTypes\VkGraphicsPipeline.h">
+      <Filter>Header Files\VkTypes</Filter>
+    </ClInclude>
+    <ClInclude Include="src\VkTypes\VkMemoryAllocator.h">
+      <Filter>Header Files\VkTypes</Filter>
+    </ClInclude>
+    <ClInclude Include="src\EngineCore\VkMesh.h">
+      <Filter>Header Files\VkTypes</Filter>
+    </ClInclude>
+    <ClInclude Include="src\EngineCore\VkMeshRenderer.h">
+      <Filter>Header Files\VkTypes</Filter>
+    </ClInclude>
+    <ClInclude Include="src\VkTypes\VkMesh.h">
+      <Filter>Header Files\VkTypes</Filter>
+    </ClInclude>
+    <ClInclude Include="src\VkTypes\VkMeshRenderer.h">
+      <Filter>Header Files\VkTypes</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

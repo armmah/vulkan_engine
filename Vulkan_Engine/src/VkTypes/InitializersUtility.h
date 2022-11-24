@@ -1,6 +1,5 @@
 #pragma once
 #include "pch.h"
-#include "Common.h"
 #include "VkMemoryAllocator.h"
 
 class Window;
@@ -59,7 +58,7 @@ namespace vkinit
 		static bool createImage(VkImage& image, VmaAllocation& memoryRange, const MemAllocationInfo& allocInfo, VkFormat format, VkImageUsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t mipCount);
 		static bool createTextureImageView(VkImageView& imageView, VkDevice device, VkImage image, VkFormat format, uint32_t mipCount, VkImageAspectFlags aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT);
 		static bool createTextureSampler(VkSampler& sampler, VkDevice device, uint32_t mipCount, bool linearFiltering = true, VkSamplerAddressMode sampleMode = VK_SAMPLER_ADDRESS_MODE_REPEAT, 
-			float anisotropySamples = 0.0f, std::optional<VkCompareOp> compareOp = std::nullopt);
+			float anisotropySamples = 0.0f, VkCompareOp compareOp = VkCompareOp::VK_COMPARE_OP_MAX_ENUM);
 		static bool createSwapchain(VkSwapchainKHR& swapchain, VkDevice device, VkSurfaceKHR surface, uint32_t imageCount, VkExtent2D extent,
 			VkPresentModeKHR presentationMode, VkSurfaceFormatKHR surfaceFormat, VkSurfaceTransformFlagBitsKHR currentTransform);
 	};

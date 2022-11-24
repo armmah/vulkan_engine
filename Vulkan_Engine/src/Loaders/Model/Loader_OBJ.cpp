@@ -6,6 +6,8 @@
 #include "VkMesh.h"
 #include "Mesh.h"
 #include "Material.h"
+#include "Renderer.h"
+#include "Transform.h"
 #include "VkTypes/VkTexture.h"
 #include "VkTypes/VkShader.h"
 

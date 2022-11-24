@@ -1,8 +1,7 @@
 #pragma once
 #include "pch.h"
-#include "Common.h"
 #include "Interfaces/IRequireInitialization.h"
-#include "VkGraphicsPipeline.h"
+#include "VkTypes/VkGraphicsPipeline.h"
 #include "Presentation/Passes/Pass.h"
 
 struct VkShader;

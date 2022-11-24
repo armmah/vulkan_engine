@@ -1,8 +1,8 @@
 #include "pch.h"
 #include "Scene.h"
-#include "VkMesh.h"
 #include "Mesh.h"
 #include "Material.h"
+#include "VkTypes/VkMesh.h"
 #include "VkTypes/VkTexture.h"
 #include "VkTypes/VkShader.h"
 
@@ -126,6 +126,34 @@ void Scene::serialize(Archive& ar, const unsigned int version)
 		& m_transforms;
 }
 
+template<class Archive>
+void SubMesh::serialize(Archive& ar, const unsigned int version)
+{
+	ar& m_indices;
+	ar& m_bounds.center;
+	ar& m_bounds.extents;
+}
+
+template<class Archive>
+inline void Mesh::serialize(Archive& ar, const unsigned int version)
+{
+	ar& m_positions;
+	ar& m_uvs;
+	ar& m_normals;
+	ar& m_colors;
+	ar& m_submeshes;
+
+	updateMetaData();
+}
+
+template<class Archive>
+void Renderer::serialize(Archive& ar, const unsigned int version)
+{
+	ar& meshID;
+	ar& materialIDs;
+	ar& transformID;
+}
+
 bool Scene::tryInitializeFromFile(const Loader::ModelLoaderOptions& modelOptions)
 {
 	const auto& path = modelOptions.filePath;
@@ -145,21 +173,21 @@ bool Scene::tryInitializeFromFile(const Loader::ModelLoaderOptions& modelOptions
 	}
 
 	/* ================ READ FROM GLTF =============== */
-	if (fileExists(path, ".gltf"))
+	if (FileIO::fileExists(path, ".gltf"))
 	{
 		ProfileMarker _("Loader::ASSIMP");
 		return Loader::load_AssimpImplementation(m_meshes, m_materials, m_rendererIDs, m_transforms, modelOptions);
 	}
 
 	/* ================ READ FROM OBJ =============== */
-	if (fileExists(path, ".obj"))
+	if (FileIO::fileExists(path, ".obj"))
 	{
 		ProfileMarker _("Loader::Custom_OBJ");
 		return Loader::loadOBJ_Implementation(m_meshes, m_materials, m_rendererIDs, m_transforms, modelOptions);
 	}
 
 	// Fallback
-	if (fileExists(path))
+	if (FileIO::fileExists(path))
 	{
 		ProfileMarker _("Loader::ASSIMP");
 		return Loader::load_AssimpImplementation(m_meshes, m_materials, m_rendererIDs, m_transforms, modelOptions);

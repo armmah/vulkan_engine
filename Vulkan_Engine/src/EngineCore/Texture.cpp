@@ -5,19 +5,20 @@
 
 #include "VkTypes/InitializersUtility.h"
 #include "Presentation/Device.h"
+#include "FileManager/FileIO.h"
 
 bool Texture::tryLoadSupportedFormat(Texture& texture, const std::string& path)
 {
-	if (!fileExists(path))
+	if (!FileIO::fileExists(path))
 		return false;
 
-	if (fileExists(path, ".dds"))
+	if (FileIO::fileExists(path, ".dds"))
 	{
 		return ddsLoad(texture, path);
 	}
 
 	std::vector<std::string> stbi_supportedFormats = { ".png", ".jpg" };
-	if (fileExists(path, stbi_supportedFormats))
+	if (FileIO::fileExists(path, stbi_supportedFormats))
 	{
 		return stbiLoad(texture, path);
 	}
@@ -83,7 +84,7 @@ bool Texture::ddsLoad(Texture& texture, const std::string& path)
 
 bool Texture::stbiLoad(Texture& texture, const std::string& path)
 {
-	if (!fileExists(path))
+	if (!FileIO::fileExists(path))
 		return false;
 
 	int width, height, channels;

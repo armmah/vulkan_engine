@@ -22,19 +22,9 @@ public:
 
 	static Path getShaderLibraryPath();
 
-	static bool isBinary(const Path& scenePath) { return scenePath.matchesExtension(sceneFileExtension); }
-
-	static Path getBinaryTargetPath(const Path& modelPath)
-	{
-		auto fileName = modelPath.getFileName(false) + sceneFileExtension;
-		return getAbsolutePath(workingSceneDir_relative).combine(fileName);
-	}
-
-	static bool tryGetBinaryIfExists(Path& binaryPath, const Path& modelPath)
-	{
-		binaryPath = getBinaryTargetPath(modelPath);
-		return binaryPath.fileExists();
-	}
+	static bool isBinary(const Path& scenePath);
+	static Path getBinaryTargetPath(const Path& modelPath);
+	static bool tryGetBinaryIfExists(Path& binaryPath, const Path& modelPath);
 
 	static Path syscall_GetApplicationPath();
 

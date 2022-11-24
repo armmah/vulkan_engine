@@ -4,6 +4,7 @@
 #include "Mesh.h"
 #include "PresentationTarget.h"
 #include "Material.h"
+#include "Engine/Bitmask.h"
 
 VkMaterialVariant::VkMaterialVariant(const VkPipeline pipeline, const VkPipelineLayout pipelineLayout, const VkDescriptorSetLayout descriptorSetLayout, std::array<VkDescriptorSet, SWAPCHAIN_IMAGE_COUNT>& descriptorSets)
 	: m_pipeline(pipeline), m_pipelineLayout(pipelineLayout), m_descriptorSetLayout(descriptorSetLayout), m_descriptorSets(descriptorSets) { }

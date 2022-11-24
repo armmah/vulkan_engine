@@ -41,14 +41,13 @@ namespace Presentation
 		}
 	}
 
+	bool DebugPass::isInitialized() const { return m_isInitialized; }
+	
 	const VkPipelineLayout DebugPass::getPipelineLayout() const { return m_debugQuad.m_pipelineLayout; }
-
 	const VkPipeline DebugPass::getPipeline() const { return m_debugQuad.m_pipeline; }
 
 	const VkDescriptorSet* DebugPass::getDescriptorSet(uint32_t frameNumber) { return &m_shadowmapDescriptorSet[frameNumber % SWAPCHAIN_IMAGE_COUNT]; }
 	
-	bool DebugPass::isInitialized() const { return m_isInitialized; }
-
 	void DebugPass::release(VkDevice device)
 	{
 		vkDestroySampler(device, m_shadowmapSampler, nullptr);

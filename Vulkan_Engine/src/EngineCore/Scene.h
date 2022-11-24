@@ -1,13 +1,14 @@
 #pragma once
 #include "pch.h"
 #include "Common.h"
-#include "VkTypes/VkMaterialVariant.h"
+#include "Renderer.h"
+#include "Transform.h"
+#include "VkTypes/VkMeshRenderer.h"
 
 struct Mesh;
 struct VkMesh;
 
 class Material;
-struct Transform;
 struct TextureSource;
 struct VkTexture2D;
 struct VkMaterial;

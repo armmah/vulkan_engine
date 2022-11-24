@@ -5,8 +5,18 @@
 
 #include "Camera.h"
 #include "DescriptorPoolManager.h"
-#include "VkGraphicsPipeline.h"
+#include "VkTypes/VkGraphicsPipeline.h"
 #include "UboAllocatorDelegate.h"
+
+PipelineDescriptor::PipelineDescriptor(VkDevice device) : m_currentFrameNumber(0)
+{
+	m_isInitialized = tryCreateDescriptorSetLayouts(device) &&
+		tryCreatePipelineLayout(m_forwardPipelineLayout, device) &&
+		tryCreatePipelineLayout(m_depthOnlyPipelineLayout, device, 2u) &&
+		tryCreateUBOs(device);
+}
+
+bool PipelineDescriptor::isInitialized() const { return m_isInitialized; }
 
 VkDescriptorSetLayout PipelineDescriptor::getDescriptorSetLayout(BindingSlots slot) { return m_appendedDescSetLayouts[static_cast<int>(slot)]; }
 
@@ -103,6 +113,12 @@ BufferHandle PipelineDescriptor::fillCameraUBO(const Camera& cam)
 	return handle;
 }
 
+const VkPipelineLayout PipelineDescriptor::getForwardPipelineLayout() { return m_forwardPipelineLayout; }
+
+const VkPipelineLayout PipelineDescriptor::getDepthOnlyPipelineLayout() { return m_depthOnlyPipelineLayout; }
+
+bool PipelineDescriptor::hasGraphicsPipelineFor(const VkShader* shader) const { return globalPipelineList.count(shader) != 0; }
+
 void PipelineDescriptor::insertGraphicsPipelineFor(const VkShader* shader, VkGraphicsPipeline pipeline) { globalPipelineList[shader] = pipeline; }
 
 bool PipelineDescriptor::tryGetGraphicsPipelineFor(const VkShader* shader, VkGraphicsPipeline& pipeline)
@@ -139,4 +155,10 @@ void PipelineDescriptor::release(VkDevice device)
 	}
 
 	globalPipelineList.clear();
+}
+
+void PipelineDescriptor::StartFrame(uint32_t frameNumber)
+{
+	m_globalViewUBOCollection.freeAllClaimed();
+	m_currentFrameNumber = frameNumber % SWAPCHAIN_IMAGE_COUNT;
 }

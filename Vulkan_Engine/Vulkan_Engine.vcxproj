@@ -174,16 +174,23 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\EngineCore\BuffersUBO.cpp" />
-    <ClCompile Include="src\EngineCore\BuffersUBOPool.cpp" />
+    <ClCompile Include="src\EngineCore\BuffersUBO.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="src\EngineCore\BuffersUBOPool.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="src\EngineCore\Camera.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="src\EngineCore\Color.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="src\EngineCore\DescriptorPoolManager.cpp" />
+    <ClCompile Include="src\EngineCore\DescriptorPoolManager.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="src\EngineCore\ImGuiHandle.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
@@ -194,6 +201,7 @@
     </ClCompile>
     <ClCompile Include="src\EngineCore\Material.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="src\EngineCore\Mesh.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
@@ -207,27 +215,40 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="src\EngineCore\PipelineBinding.cpp" />
+    <ClCompile Include="src\EngineCore\PipelineBinding.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="src\EngineCore\Renderer.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="src\EngineCore\Scene.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="src\EngineCore\ShaderSource.cpp" />
-    <ClCompile Include="src\EngineCore\StagingBufferPool.cpp" />
+    <ClCompile Include="src\EngineCore\ShaderSource.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="src\EngineCore\StagingBufferPool.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="src\EngineCore\SubMesh.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="src\EngineCore\Texture.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="src\EngineCore\UboAllocatorDelegate.cpp" />
+    <ClCompile Include="src\EngineCore\Transform.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="src\EngineCore\UboAllocatorDelegate.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="src\EngineCore\VertexAttributes.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="src\EngineCore\VertexBinding.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="src\EngineCore\VkGraphicsPipeline.cpp" />
-    <ClCompile Include="src\EngineCore\VkMesh.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
     </ClCompile>
@@ -297,12 +318,15 @@
     <ClCompile Include="src\VkTypes\InitializersUtility.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="src\VkTypes\VkGraphicsPipeline.cpp" />
     <ClCompile Include="src\VkTypes\VkMaterialVariant.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="src\VkTypes\VkMemoryAllocator.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="src\VkTypes\VkMesh.cpp" />
+    <ClCompile Include="src\VkTypes\VkMeshRenderer.cpp" />
     <ClCompile Include="src\VkTypes\VkShader.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
     </ClCompile>
@@ -333,14 +357,18 @@
     <ClInclude Include="src\EngineCore\Mesh.h" />
     <ClInclude Include="src\EngineCore\pch.h" />
     <ClInclude Include="src\EngineCore\PipelineBinding.h" />
+    <ClInclude Include="src\EngineCore\Renderer.h" />
     <ClInclude Include="src\EngineCore\Scene.h" />
     <ClInclude Include="src\EngineCore\ShaderSource.h" />
     <ClInclude Include="src\EngineCore\StagingBufferPool.h" />
     <ClInclude Include="src\EngineCore\Texture.h" />
+    <ClInclude Include="src\EngineCore\Transform.h" />
     <ClInclude Include="src\EngineCore\UboAllocatorDelegate.h" />
     <ClInclude Include="src\EngineCore\VertexAttributes.h" />
     <ClInclude Include="src\EngineCore\VertexBinding.h" />
     <ClInclude Include="src\EngineCore\VkMesh.h" />
+    <ClInclude Include="src\EngineCore\VkMeshRenderer.h" />
+    <ClInclude Include="src\Engine\Bitmask.h" />
     <ClInclude Include="src\Engine\RenderLoopStatistics.h" />
     <ClInclude Include="src\Engine\Window.h" />
     <ClInclude Include="src\FileManager\Directories.h" />
@@ -365,15 +393,17 @@
     <ClInclude Include="src\VkTypes\InitializersUtility.h" />
     <ClInclude Include="src\VkTypes\PipelineConstructor.h" />
     <ClInclude Include="src\VkTypes\PushConstantTypes.h" />
+    <ClInclude Include="src\VkTypes\VkGraphicsPipeline.h" />
     <ClInclude Include="src\VkTypes\vkInitQueueFamily.h" />
     <ClInclude Include="src\VkTypes\VkMaterialVariant.h" />
     <ClInclude Include="src\VkTypes\VkMemoryAllocator.h" />
+    <ClInclude Include="src\VkTypes\VkMesh.h" />
+    <ClInclude Include="src\VkTypes\VkMeshRenderer.h" />
     <ClInclude Include="src\VkTypes\VkShader.h" />
     <ClInclude Include="src\VkTypes\VkTexture.h" />
     <ClInclude Include="src\VkTypes\VulkanValidationLayers.h" />
     <ClInclude Include="src\vk_engine.h" />
     <ClInclude Include="src\vk_types.h" />
-    <ClInclude Include="VkGraphicsPipeline.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Shaders\Shaders.vcxproj">

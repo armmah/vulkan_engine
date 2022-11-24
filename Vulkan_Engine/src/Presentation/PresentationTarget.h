@@ -1,7 +1,7 @@
 #pragma once
 #include "pch.h"
 #include "Common.h"
-#include "VkGraphicsPipeline.h"
+#include "VkTypes/VkGraphicsPipeline.h"
 #include "Interfaces/IRequireInitialization.h"
 
 #include "Engine/RenderLoopStatistics.h"

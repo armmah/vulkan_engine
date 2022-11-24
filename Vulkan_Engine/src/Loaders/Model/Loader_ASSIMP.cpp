@@ -6,10 +6,13 @@
 #include "VkMesh.h"
 #include "Mesh.h"
 #include "Material.h"
+#include "Renderer.h"
+#include "Transform.h"
 #include "VkTypes/VkTexture.h"
 #include "VkTypes/VkShader.h"
 
 #include "Profiling/ProfileMarker.h"
+#include "FileManager/FileIO.h"
 
 #include <assimp/Importer.hpp>      // C++ importer interface
 #include <assimp/scene.h>           // Output data structure
@@ -61,7 +64,7 @@ bool getTexPath(std::string& fullPath, const std::string& modelDirectory, const 
 	{
 		fullPath = modelDirectory + res.C_Str();
 
-		if (fileExists(fullPath))
+		if (FileIO::fileExists(fullPath))
 		{
 			return true;
 		}
@@ -160,7 +163,7 @@ bool Loader::load_AssimpImplementation(std::vector<Mesh>& meshes, std::vector<Ma
 
 		if (modelScaler != 1.0)
 		{
-			for (int vi = 0; vi < vertN; vi++)
+			for (unsigned int vi = 0; vi < vertN; vi++)
 			{
 				vertices[vi] *= modelScaler;
 			}

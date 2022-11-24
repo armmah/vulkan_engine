@@ -3,7 +3,7 @@
 #include "Loaders/Model/Common.h"
 #include "Loaders/Model/ModelLoaderOptions.h"
 
-#include "VkMesh.h"
+#include "VkTypes/VkMesh.h"
 #include "Mesh.h"
 #include "Material.h"
 #include "Renderer.h"

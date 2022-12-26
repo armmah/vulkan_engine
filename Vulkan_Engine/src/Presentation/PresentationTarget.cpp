@@ -195,6 +195,9 @@ namespace Presentation
 			m_debugModule = nullptr;
 		}
 
+		m_emptyShadowMap->release(device);
+		m_emptyShadowMap = nullptr;
+
 		if (m_shadowMapModule)
 		{
 			m_shadowMapModule->release(device);

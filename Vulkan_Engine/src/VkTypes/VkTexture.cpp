@@ -12,26 +12,30 @@ VkTexture2D::VkTexture2D(VkImage image, VmaAllocation memoryRange, VkImageView i
 
 bool VkTexture2D::tryCreateTexture(UNQ<VkTexture2D>& tex, const TextureSource& texture, const Presentation::Device* presentationDevice, StagingBufferPool& stagingBufferPool)
 {
-	const auto* path = texture.path.c_str();
+	Texture loadedTexture;
+	if (!Texture::tryLoadSupportedFormat(loadedTexture, texture.path.value) || !loadedTexture.textureMipChain.size())
+		return false;
 
-	auto format = texture.format;
-	auto generateMips = texture.generateTheMips;
+	if (loadedTexture.format != texture.format)
+	{
+		printf("The meta data was expecting format %i, but the texture '%s' had the format %i.\n", loadedTexture.format, texture.path.c_str(), texture.format);
+	}
+
+	const auto result = tryCreateTexture(tex, loadedTexture, presentationDevice, stagingBufferPool, texture.generateTheMips);
+	loadedTexture.releasePixelData();
+
+	return result;
+}
+
+bool VkTexture2D::tryCreateTexture(UNQ<VkTexture2D>& tex, const Texture& loadedTexture, const Presentation::Device* presentationDevice, StagingBufferPool& stagingBufferPool, bool generateMips)
+{
+	auto format = loadedTexture.format;
 
 	std::vector<MipDesc> dimensions;
 	uint32_t mipCount = 0u;
 
-	Texture loadedTexture;
 	StagingBufferPool::StgBuffer stagingBuffer;
 	{
-		if (!Texture::tryLoadSupportedFormat(loadedTexture, texture.path.value) || !loadedTexture.textureMipChain.size())
-			return false;
-
-		if (loadedTexture.format != format)
-		{
-			printf("The meta data was expecting format %i, but the texture '%s' had the format %i.\n", format, path, loadedTexture.format);
-			format = loadedTexture.format;
-		}
-
 		mipCount = as_uint32(loadedTexture.textureMipChain.size());
 		dimensions.reserve(mipCount);
 		if (mipCount > 1u)
@@ -52,7 +56,7 @@ bool VkTexture2D::tryCreateTexture(UNQ<VkTexture2D>& tex, const TextureSource& t
 
 		if (!stagingBufferPool.claimAStagingBuffer(stagingBuffer, totalBufferSize))
 		{
-			printf("Could not allocate staging memory buffer for texture '%s'.\n", path);
+			printf("Could not allocate staging memory buffer for texture.\n");
 			return false;
 		}
 
@@ -67,7 +71,6 @@ bool VkTexture2D::tryCreateTexture(UNQ<VkTexture2D>& tex, const TextureSource& t
 		}
 		vmaUnmapMemory(allocator, stagingBuffer.allocation);
 	}
-	loadedTexture.releasePixelData();
 
 	VkImage image;
 	VmaAllocation memoryRange;
@@ -83,7 +86,7 @@ bool VkTexture2D::tryCreateTexture(UNQ<VkTexture2D>& tex, const TextureSource& t
 	auto vmaci = VkMemoryAllocator::getInstance()->createAllocationDescriptor(VMA_MEMORY_USAGE_GPU_ONLY);
 	if (!vkinit::Texture::createImage(image, memoryRange, vmaci, format, imageUsage, loadedTexture.width, loadedTexture.height, mipCount))
 	{
-		printf("Could not create image for texture '%s'.\n", path);
+		printf("Could not create image for texture.\n");
 		return false;
 	}
 
@@ -181,7 +184,7 @@ bool VkTexture2D::tryCreateTexture(UNQ<VkTexture2D>& tex, const TextureSource& t
 	if (!vkinit::Texture::createTextureImageView(imageView, presentationDevice->getDevice(), image, format, mipCount) ||
 		!vkinit::Texture::createTextureSampler(sampler, presentationDevice->getDevice(), mipCount, true, VK_SAMPLER_ADDRESS_MODE_REPEAT, Texture::c_anisotropySamples))
 	{
-		printf("Could not create imageview or sampler for texture '%s'.\n", path);
+		printf("Could not create imageview or sampler for texture.\n");
 		return false;
 	}
 

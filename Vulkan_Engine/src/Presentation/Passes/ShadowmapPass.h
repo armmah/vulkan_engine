@@ -55,4 +55,20 @@ namespace Presentation
 
 		bool m_isInitialized;
 	};
+
+	class EmptyShadowMap : public Pass, IRequireInitialization
+	{
+	public:
+		EmptyShadowMap(PresentationTarget& target, const Device& device, const VkShader* shader);
+		~EmptyShadowMap();
+
+		bool isInitialized() const override;
+		const VkMaterialVariant& getMaterialVariant() const;
+		
+		virtual void release(VkDevice device) override;
+
+	private:
+		UNQ<VkTexture2D> m_texture;
+		UNQ<VkMaterial> m_shadowMapMaterial;
+	};
 }

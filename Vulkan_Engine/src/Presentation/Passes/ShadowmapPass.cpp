@@ -10,6 +10,10 @@
 #include "Material.h"
 #include "VkTypes/VkMaterialVariant.h"
 
+#include "StagingBufferPool.h"
+#include "Presentation/Device.h"
+#include "Texture.h"
+
 namespace Presentation
 {
 	ShadowMap::ShadowMap(PresentationTarget& target, VkDevice device, VkPipelineLayout depthOnlyPipelineLayout, bool isEnabled, uint32_t dimensionsXY) : Pass(isEnabled),
@@ -24,7 +28,7 @@ namespace Presentation
 
 		vkinit::Commands::initViewportAndScissor(m_viewport, m_scissorRect, m_extent);
 
-		std::array<VkImageView, 1> imageViews{
+		std::array<VkImageView, SWAPCHAIN_IMAGE_COUNT> imageViews{
 			m_shadowMap.imageView
 		};
 
@@ -34,7 +38,7 @@ namespace Presentation
 
 		for (auto& fb : m_frameBuffer)
 		{
-			m_isInitialized &= vkinit::Surface::createFrameBuffer(fb, device, m_renderPass, m_extent, imageViews);
+			m_isInitialized &= vkinit::Surface::createFrameBuffer(fb, device, m_renderPass, m_extent, imageViews, 1u);
 		}
 
 		m_replacementShader = VkShader::findShader(1u);
@@ -78,5 +82,35 @@ namespace Presentation
 			vkDestroyFramebuffer(device, fb, nullptr);
 		}
 		vkDestroyRenderPass(device, m_renderPass, nullptr);
+	}
+}
+
+namespace Presentation
+{	
+	EmptyShadowMap::EmptyShadowMap(PresentationTarget& target, const Device& device, const VkShader* shader) : Pass(true)
+	{
+		VkFormat f = VkFormat::VK_FORMAT_R32_SFLOAT;
+
+		constexpr uint32_t value = 0u;
+		constexpr auto w = 2u, h = 2u, ch = 1u;
+		unsigned char pixels[sizeof(value) / sizeof(char) * w * h] = { value, value, value, value };
+
+		auto texBytes = LoadedTexture(pixels, sizeof(pixels), w, h);
+		auto tex = Texture({ texBytes }, f, w, h, ch);
+
+		StagingBufferPool buffer{};
+		VkTexture2D::tryCreateTexture(m_texture, tex, &device, buffer);
+		buffer.releaseAllResources();
+
+		auto pool = DescriptorPoolManager::getInstance()->createNewPool(SWAPCHAIN_IMAGE_COUNT);
+		target.createGraphicsMaterial(m_shadowMapMaterial, device.getDevice(), pool, shader, m_texture.get());
+	}
+	EmptyShadowMap::~EmptyShadowMap() { }
+	const VkMaterialVariant& EmptyShadowMap::getMaterialVariant() const { return m_shadowMapMaterial->getMaterialVariant(); }
+	bool EmptyShadowMap::isInitialized() const { return true; }
+	void EmptyShadowMap::release(VkDevice device)
+	{
+		m_texture->release(device);
+		m_shadowMapMaterial->release(device);
 	}
 }

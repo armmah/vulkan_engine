@@ -25,6 +25,7 @@ namespace Presentation
 	class HardwareDevice;
 
 	class ShadowMap;
+	class EmptyShadowMap;
 	class DebugPass;
 
 	class PresentationTarget : IRequireInitialization
@@ -69,6 +70,7 @@ namespace Presentation
 
 		VkRenderPass m_renderPass;
 		UNQ<ShadowMap> m_shadowMapModule;
+		UNQ<EmptyShadowMap> m_emptyShadowMap;
 		UNQ<DebugPass> m_debugModule;
 
 		std::vector<VkImage> m_swapChainImages;

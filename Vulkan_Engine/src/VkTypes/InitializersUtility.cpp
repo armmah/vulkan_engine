@@ -386,6 +386,20 @@ bool vkinit::Texture::createTextureImageView(VkImageView& imageView, VkDevice de
 	return vkCreateImageView(device, &viewInfo, nullptr, &imageView) == VK_SUCCESS;
 }
 
+bool vkinit::Surface::createFrameBuffer(VkFramebuffer& frameBuffer, VkDevice device, VkRenderPass renderPass, VkExtent2D extent, std::array<VkImageView, SWAPCHAIN_IMAGE_COUNT> imageViews, uint32_t count)
+{
+	VkFramebufferCreateInfo framebufferInfo{};
+	framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+	framebufferInfo.renderPass = renderPass;
+	framebufferInfo.attachmentCount = std::min(as_uint32(imageViews.size()), count);
+	framebufferInfo.pAttachments = imageViews.data();
+	framebufferInfo.width = extent.width;
+	framebufferInfo.height = extent.height;
+	framebufferInfo.layers = 1;
+
+	return vkCreateFramebuffer(device, &framebufferInfo, nullptr, &frameBuffer) == VK_SUCCESS;
+}
+
 bool vkinit::Texture::createTextureSampler(VkSampler& sampler, VkDevice device, uint32_t mipCount, bool linearFiltering, VkSamplerAddressMode sampleMode, 
 	float anisotropySamples, VkCompareOp compareOp)
 {
@@ -501,3 +515,23 @@ bool vkinit::MemoryBuffer::fillMemory(VkDevice device, VkDeviceMemory memory, co
 
 	return true;
 }
+
+VkDescriptorSetLayoutBinding vkinit::ShaderBinding::getLayoutBinding() const
+{
+	VkDescriptorSetLayoutBinding setLayoutBinding{};
+	setLayoutBinding.binding = 0;
+	setLayoutBinding.descriptorCount = m_descCount;
+	setLayoutBinding.descriptorType = m_type;
+	setLayoutBinding.pImmutableSamplers = nullptr;
+	setLayoutBinding.stageFlags = m_shaderStages;
+
+	return setLayoutBinding;
+}
+
+vkinit::ShaderBinding::ShaderBinding(VkDescriptorType type, VkShaderStageFlags shaderStages) : m_type(type), m_shaderStages(shaderStages), m_descCount(1) { }
+
+vkinit::BoundBuffer::BoundBuffer(VkShaderStageFlags stageFlags) : ShaderBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, stageFlags) { }
+
+vkinit::BoundTexture::BoundTexture(VkShaderStageFlags stageFlags) : ShaderBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, stageFlags) { }
+
+vkinit::ShaderBindingArgs::ShaderBindingArgs(VkDescriptorType type, VkShaderStageFlags shaderStages) : type(type), shaderStages(shaderStages) { }

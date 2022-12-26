@@ -28,8 +28,10 @@ namespace Presentation
 		// Initialize default shaders
 		VkShader::ensureDefaultShader(presentationDevice.getDevice());
 
+		m_emptyShadowMap = MAKEUNQ<EmptyShadowMap>(*this, presentationDevice, VkShader::findShader(0u));
+
 		// Creates the pipeline, but doesn't manage its lifetime
-		m_shadowMapModule = MAKEUNQ<ShadowMap>(*this, presentationDevice.getDevice(), m_globalPipelineState->getDepthOnlyPipelineLayout(), true, 1024u);
+		m_shadowMapModule = MAKEUNQ<ShadowMap>(*this, presentationDevice.getDevice(), m_globalPipelineState->getDepthOnlyPipelineLayout(), true, 2048u);
 
 		const auto* debugQuadShader = VkShader::findShader(2u);
 		// Creates the pipeline, but doesn't manage its lifetime

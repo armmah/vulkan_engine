@@ -217,7 +217,7 @@ bool Loader::load_AssimpImplementation(std::vector<Mesh>& meshes, std::vector<Ma
 		{
 			materials.push_back(Material(0, TextureSource(std::move(diffusePath), VK_FORMAT_R8G8B8A8_SRGB, true)));
 
-			// Replace the material ID, if successfuly loaded the texture, for all meshes referencing it.
+			// Replace the material ID, if successfuly loaded the m_texture, for all meshes referencing it.
 			for (auto& meshID : textureToMeshMap[mi])
 			{
 				if (meshID >= rendererIDs.size())

@@ -24,20 +24,7 @@ namespace vkinit
 		static bool createSurface(VkSurfaceKHR& surface, VkInstance instance, const Window* window);
 		static bool createRenderPass(VkRenderPass& renderPass, VkDevice device, VkFormat swapchainImageFormat, bool enableDepthAttachment);
 
-		template<size_t _Size>
-		static bool createFrameBuffer(VkFramebuffer& frameBuffer, VkDevice device, VkRenderPass renderPass, VkExtent2D extent, std::array<VkImageView, _Size> imageViews, uint32_t count = std::numeric_limits<uint32_t>::max())
-		{
-			VkFramebufferCreateInfo framebufferInfo{};
-			framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-			framebufferInfo.renderPass = renderPass;
-			framebufferInfo.attachmentCount = std::min(as_uint32(imageViews.size()), count);
-			framebufferInfo.pAttachments = imageViews.data();
-			framebufferInfo.width = extent.width;
-			framebufferInfo.height = extent.height;
-			framebufferInfo.layers = 1;
-
-			return vkCreateFramebuffer(device, &framebufferInfo, nullptr, &frameBuffer) == VK_SUCCESS;
-		}
+		static bool createFrameBuffer(VkFramebuffer& frameBuffer, VkDevice device, VkRenderPass renderPass, VkExtent2D extent, std::array<VkImageView, SWAPCHAIN_IMAGE_COUNT> imageViews, uint32_t count = std::numeric_limits<uint32_t>::max());
 	};
 
 	struct Commands
@@ -52,7 +39,7 @@ namespace vkinit
 		static bool createSemaphore(VkSemaphore& semaphore, VkDevice device);
 		static bool createFence(VkFence& fence, VkDevice device, bool createSignaled = true);
 	};
-
+	
 	struct Texture
 	{
 		static bool createImage(VkImage& image, VmaAllocation& memoryRange, const MemAllocationInfo& allocInfo, VkFormat format, VkImageUsageFlags usageFlags, uint32_t width, uint32_t height, uint32_t mipCount);
@@ -68,24 +55,14 @@ namespace vkinit
 		VkDescriptorType type;
 		VkShaderStageFlags shaderStages;
 
-		ShaderBindingArgs(VkDescriptorType type, VkShaderStageFlags shaderStages) : type(type), shaderStages(shaderStages) { }
+		ShaderBindingArgs(VkDescriptorType type, VkShaderStageFlags shaderStages);
 	};
 
 	struct ShaderBinding
 	{
-		VkDescriptorSetLayoutBinding getLayoutBinding() const
-		{
-			VkDescriptorSetLayoutBinding setLayoutBinding{};
-			setLayoutBinding.binding = 0;
-			setLayoutBinding.descriptorCount = m_descCount;
-			setLayoutBinding.descriptorType = m_type;
-			setLayoutBinding.pImmutableSamplers = nullptr;
-			setLayoutBinding.stageFlags = m_shaderStages;
+		VkDescriptorSetLayoutBinding getLayoutBinding() const;
 
-			return setLayoutBinding;
-		}
-
-		ShaderBinding(VkDescriptorType type, VkShaderStageFlags shaderStages) : m_type(type), m_shaderStages(shaderStages), m_descCount(1) { }
+		ShaderBinding(VkDescriptorType type, VkShaderStageFlags shaderStages);
 	private:
 		VkDescriptorType m_type;
 		VkShaderStageFlags m_shaderStages;
@@ -94,12 +71,12 @@ namespace vkinit
 
 	struct BoundBuffer : ShaderBinding
 	{
-		BoundBuffer(VkShaderStageFlags stageFlags) : ShaderBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, stageFlags) { }
+		BoundBuffer(VkShaderStageFlags stageFlags);
 	};
 
 	struct BoundTexture : ShaderBinding
 	{
-		BoundTexture(VkShaderStageFlags stageFlags) : ShaderBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, stageFlags) { }
+		BoundTexture(VkShaderStageFlags stageFlags);
 	};
 
 	struct Descriptor

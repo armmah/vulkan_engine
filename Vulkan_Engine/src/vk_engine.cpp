@@ -60,7 +60,7 @@ void VulkanEngine::init(bool requestValidationLayers)
 	m_lightTransform = MAKEUNQ<DirectionalLightParams>();
 	m_frameSettings = MAKEUNQ<FrameSettings>();
 	// Camera
-	m_cam = MAKEUNQ<Camera>(60.f, m_startingWindowSize);
+	m_cam = MAKEUNQ<Camera>(50.f, m_startingWindowSize);
 	//m_cam->setPosition({ -0.115, 35.8f, -13.2f });
 	//m_cam->setRotation(90.f, -67.5f);
 
@@ -187,7 +187,7 @@ void VulkanEngine::run()
 			drawOnce = false;
 		}
 
-		constexpr int64_t target = static_cast<int64_t>( 15.6f * (std::micro::den / std::milli::den) );
+		constexpr int64_t target = static_cast<int64_t>( 0.5f * 15.6f * (std::micro::den / std::milli::den) );
 		if (target > frameTime)
 		{
 			const auto waitFor_us = std::chrono::microseconds(target - frameTime);

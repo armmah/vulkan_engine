@@ -21,7 +21,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{131c7004-06f1-4745-ba95-e64be341abf2}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <WindowsTargetPlatformVersion>10.0.19041.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.22000.0</WindowsTargetPlatformVersion>
     <ConfigurationType>Application</ConfigurationType>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
@@ -79,7 +79,7 @@
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>TurnOffAllWarnings</WarningLevel>
-      <AdditionalIncludeDirectories>$(MSBuildThisFileDirectory)include;%(AdditionalIncludeDirectories);$(SolutionDir)Vulkan_Engine\src;$(SolutionDir)Vulkan_Engine\src\EngineCore;$(SolutionDir)Vulkan_Engine\src\Presentation;$(SolutionDir)third_party\SDL2-2.0.22\include;C:\VulkanSDK\1.3.211.0\Include;$(SolutionDir)third_party\glm\glm;$(SolutionDir)third_party\imgui;$(SolutionDir)third_party\stb_image;$(SolutionDir)third_party\tinyobjloader;$(SolutionDir)third_party\vma;$(SolutionDir)third_party\volk;$(SolutionDir)third_party\tiny_gltf;C:\boost_1_80_0</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(MSBuildThisFileDirectory)include;%(AdditionalIncludeDirectories);$(SolutionDir)Vulkan_Engine\src;$(SolutionDir)Vulkan_Engine\src\EngineCore;$(SolutionDir)Vulkan_Engine\src\Presentation;$(SolutionDir)third_party\SDL2-2.0.22\include;C:\VulkanSDK\1.3.236.0\Include;$(SolutionDir)third_party\glm;$(SolutionDir)third_party\imgui;$(SolutionDir)third_party\stb_image;$(SolutionDir)third_party\tinyobjloader;$(SolutionDir)third_party\vma;$(SolutionDir)third_party\volk;$(SolutionDir)third_party\tiny_gltf;C:\boost_1_80_0</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>

@@ -76,8 +76,8 @@ namespace Presentation
 
 	void PresentationTarget::applyFrameConfiguration(const FrameSettings* settings)
 	{
-		m_shadowMapModule->setActive(settings->enableShadowPass);
-		m_debugModule->setActive(settings->enableDebugShadowMap);
+		if(m_shadowMapModule) m_shadowMapModule->setActive(settings->enableShadowPass);
+		if(m_debugModule) m_debugModule->setActive(settings->enableDebugShadowMap);
 	}
 
 	void PresentationTarget::renderIndexedMeshes(FrameStats& stats, const std::vector<VkMeshRenderer>& renderers, Camera& cam, const BufferHandle& lightViewUBO, VkCommandBuffer commandBuffer, uint32_t frameNumber)
@@ -86,6 +86,7 @@ namespace Presentation
 
 		std::vector<VkMeshRenderer> sortedList(renderers.begin(), renderers.end());
 
+		auto variant_shadowMap = &m_emptyShadowMap->getMaterialVariant(); 
 		// ShadowMap - pass
 		if(m_shadowMapModule && m_shadowMapModule->getActive())
 		{
@@ -108,11 +109,12 @@ namespace Presentation
 				drawAt(commandBuffer, renderer, renderer.transform->localToWorld);
 				stats.drawCallCount += 1;
 			}
+
+			variant_shadowMap = &m_shadowMapModule->getMaterialVariant();
 		}
 		
-		const auto& variant = m_shadowMapModule->getMaterialVariant();
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, variant.getPipelineLayout(),
-			PipelineDescriptor::BindingSlots::Shadowmap, 1, variant.getDescriptorSet(frameNumber), 0, nullptr);
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, variant_shadowMap->getPipelineLayout(),
+			PipelineDescriptor::BindingSlots::Shadowmap, 1, variant_shadowMap->getDescriptorSet(frameNumber), 0, nullptr);
 		stats.descriptorSetCount += 1;
 
 		auto scopeForwardRenderPass = CommandObjectsWrapper::RenderPassScope(commandBuffer, m_renderPass, getSwapchainFrameBuffers(frameNumber), getSwapchainExtent(), true, hasDepthAttachement());
@@ -144,7 +146,7 @@ namespace Presentation
 			sortedList.resize(sortedList.size() - static_cast<size_t>(std::distance(partition, sortedList.end())));
 
 			auto cameraPosition = cam.getPosition();
-			// Sort the objects in frustum to minimize texture state change.
+			// Sort the objects in frustum to minimize m_texture state change.
 			std::sort(sortedList.begin(), sortedList.end(), [cameraPosition](const VkMeshRenderer& a, const VkMeshRenderer& b)
 				{
 					return a.material->getHash() < b.material->getHash();

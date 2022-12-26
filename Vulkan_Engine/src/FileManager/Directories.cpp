@@ -52,8 +52,8 @@ bool Directories::tryGetBinaryIfExists(Path& binaryPath, const Path& modelPath)
 
 Path Directories::syscall_GetApplicationPath()
 {
-	char pBuf[MAX_PATH];
+	char pBuf[MAX_PATH]{};
 	DWORD len = sizeof(pBuf);
-	int bytes = GetModuleFileName(nullptr, pBuf, len);
+	int bytes = GetModuleFileNameA(nullptr, pBuf, len);
 	return bytes ? Path(pBuf) : Path();
 }

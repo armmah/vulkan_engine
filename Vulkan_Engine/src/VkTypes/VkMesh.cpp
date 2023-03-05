@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "VkMesh.h"
-#include "vk_mem_alloc.h"
 #include "IndexAttributes.h"
 #include "VertexAttributes.h"
 

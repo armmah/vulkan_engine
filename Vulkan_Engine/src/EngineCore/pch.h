@@ -24,8 +24,8 @@
 #include <codeanalysis\warnings.h>
 #pragma warning(push, 0)
 #pragma warning ( disable : ALL_CPPCORECHECK_WARNINGS )
-#include "boost/archive/binary_oarchive.hpp"
-#include "boost/archive/binary_iarchive.hpp"
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
 
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/nvp.hpp>
@@ -42,17 +42,17 @@
 #include <glm/gtc/epsilon.hpp>
 
 #include "vulkan/vulkan.h"
-#include "vk_mem_alloc.h"
+#include <vma/vk_mem_alloc.h>
 
-#include "SDL.h"
-#include "SDL_vulkan.h"
+#include <SDL/SDL.h>
+#include <SDL/SDL_vulkan.h>
 
-#include "imgui.h"
-#include "imgui_impl_sdl.h"
-#include "imgui_impl_vulkan.h"
+#include <imgui/imgui.h>
+#include <imgui/imgui_impl_sdl.h>
+#include <imgui/imgui_impl_vulkan.h>
 
-#include "stb_image.h"
-#include "tiny_obj_loader.h"
+#include <stb_image/stb_image.h>
+#include <tinyobjloader/tiny_obj_loader.h>
 
 // Platform specific
 #include <Windows.h>

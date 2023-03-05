@@ -90,8 +90,12 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>C:\VulkanSDK\1.3.236.0\Include;$(SolutionDir)third_party;$(SolutionDir)third_party\SDL2-2.0.22\include\;%(AdditionalIncludeDirectories);</AdditionalIncludeDirectories>
+      <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
+      <DisableAnalyzeExternal>true</DisableAnalyzeExternal>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -104,8 +108,12 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>C:\VulkanSDK\1.3.236.0\Include;$(SolutionDir)third_party;$(SolutionDir)third_party\SDL2-2.0.22\include\;%(AdditionalIncludeDirectories);</AdditionalIncludeDirectories>
+      <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
+      <DisableAnalyzeExternal>true</DisableAnalyzeExternal>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -121,7 +129,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)third_party\SDL2-2.0.22\include;C:\VulkanSDK\1.3.236.0\Include;$(SolutionDir)third_party\stb_image;$(SolutionDir)third_party\vma;$(SolutionDir)\third_party\tinyobjloader;%(AdditionalIncludeDirectories);$(SolutionDir)third_party\tiny_gltf;C:\boost_1_80_0\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\VulkanSDK\1.3.236.0\Include;$(SolutionDir)third_party;$(SolutionDir)third_party\SDL2-2.0.22\include\;%(AdditionalIncludeDirectories);</AdditionalIncludeDirectories>
       <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
       <DisableAnalyzeExternal>true</DisableAnalyzeExternal>
     </ClCompile>
@@ -139,7 +147,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)third_party\SDL2-2.0.22\include;C:\VulkanSDK\1.3.236.0\Include;$(SolutionDir)third_party\stb_image;$(SolutionDir)third_party\vma;%(AdditionalIncludeDirectories);$(SolutionDir)\third_party\tinyobjloader;$(SolutionDir)third_party\tiny_gltf;C:\boost_1_80_0\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\VulkanSDK\1.3.236.0\Include;$(SolutionDir)third_party;$(SolutionDir)third_party\SDL2-2.0.22\include\;%(AdditionalIncludeDirectories);</AdditionalIncludeDirectories>
       <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
       <DisableAnalyzeExternal>true</DisableAnalyzeExternal>
     </ClCompile>
@@ -260,16 +268,12 @@
       <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">TurnOffAllWarnings</WarningLevel>
     </ClCompile>
     <ClCompile Include="dds_loader_implementation.cpp" />
-    <ClCompile Include="OpenFBX\miniz.c" />
-    <ClCompile Include="OpenFBX\ofbx.cpp" />
     <ClCompile Include="stb_implementation.cpp" />
     <ClCompile Include="tinyobjloader_implementation.cpp" />
     <ClCompile Include="vma_implementation.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="dds_loader.h" />
-    <ClInclude Include="OpenFBX\miniz.h" />
-    <ClInclude Include="OpenFBX\ofbx.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

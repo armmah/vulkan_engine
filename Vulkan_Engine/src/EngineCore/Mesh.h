@@ -1,6 +1,5 @@
 #pragma once
 #include "pch.h"
-#include "vk_mem_alloc.h"
 #include "VertexBinding.h"
 #include "Math/BoundsAABB.h"
 

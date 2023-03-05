@@ -1,7 +1,7 @@
 #pragma once
 #include "pch.h"
 
-#include <assimp/assimp/matrix4x4.h>
+#include <assimp/matrix4x4.h>
 struct ASSIMP_API aiNode;
 
 struct Mesh;

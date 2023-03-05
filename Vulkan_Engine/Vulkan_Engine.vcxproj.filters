@@ -421,12 +421,6 @@
     <ClInclude Include="src\VkTypes\VkMemoryAllocator.h">
       <Filter>Header Files\VkTypes</Filter>
     </ClInclude>
-    <ClInclude Include="src\EngineCore\VkMesh.h">
-      <Filter>Header Files\VkTypes</Filter>
-    </ClInclude>
-    <ClInclude Include="src\EngineCore\VkMeshRenderer.h">
-      <Filter>Header Files\VkTypes</Filter>
-    </ClInclude>
     <ClInclude Include="src\VkTypes\VkMesh.h">
       <Filter>Header Files\VkTypes</Filter>
     </ClInclude>

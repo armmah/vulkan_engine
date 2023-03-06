@@ -4,6 +4,7 @@
 #include "Material.h"
 #include "Mesh.h"
 #include "FileManager/Directories.h"
+#include "Loaders/Model/ModelLoaderOptions.h"
 
 #include "Profiling/ProfileMarker.h"
 #include "Loaders/Model/Common.h"
@@ -104,6 +105,9 @@ TEST(Benchmark, Serialization)
 
 TEST(Texturesource, Path)
 {
+	// Setting a dummy app path for testing purposes.
+	Directories::applicationPath = Path("C:/Git/Vulkan_Engine/");
+
 	auto test1 = TextureSource("directory/file.png");
 	auto test2 = TextureSource("long_complex/white space\\directory\\file.png");
 	auto test3 = TextureSource("file.png");
@@ -126,6 +130,7 @@ TEST(Texturesource, Path)
 	auto test4 = Path("C:\\Git\\Vulkan_Engine\\Resources\\Serialized/background.dds");
 	test4.removeDirectory( Directories::getWorkingDirectory() );
 	EXPECT_EQ(test4.value, "background.dds");
+
 	EXPECT_EQ(Directories::getWorkingDirectory().combine(test4.value).value, "C:/Git/Vulkan_Engine/Resources/Serialized/background.dds");
 }
 
@@ -133,7 +138,7 @@ TEST(Serialization, SceneBinary)
 {
 	Scene scene(nullptr, nullptr);
 	const auto modelPaths = Directories::getModels_IntelSponza();
-	const auto fullPath = Directories::getBinaryTargetPath(modelPaths.front());
+	const auto fullPath = Directories::getBinaryTargetPath(modelPaths.front().filePath);
 	
 	for (auto& model : modelPaths)
 	{

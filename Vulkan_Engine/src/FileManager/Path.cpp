@@ -42,7 +42,7 @@ void Path::removeDirectory(const std::string& str)
 	auto indexStart = value.find(str.c_str());
 	auto indexEnd = indexStart + str.length();
 
-	if (indexStart < 0 && indexEnd < 0)
+	if (indexStart < 0 || indexEnd < 0)
 		return;
 
 	if (indexEnd < value.length() && value[indexEnd] == '/')

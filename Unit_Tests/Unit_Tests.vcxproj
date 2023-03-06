@@ -79,13 +79,22 @@
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>TurnOffAllWarnings</WarningLevel>
-      <AdditionalIncludeDirectories>$(MSBuildThisFileDirectory)include;%(AdditionalIncludeDirectories);$(SolutionDir)Vulkan_Engine\src;$(SolutionDir)Vulkan_Engine\src\EngineCore;$(SolutionDir)Vulkan_Engine\src\Presentation;$(SolutionDir)third_party\SDL2-2.0.22\include;C:\VulkanSDK\1.3.236.0\Include;$(SolutionDir)third_party\glm;$(SolutionDir)third_party\imgui;$(SolutionDir)third_party\stb_image;$(SolutionDir)third_party\tinyobjloader;$(SolutionDir)third_party\vma;$(SolutionDir)third_party\volk;$(SolutionDir)third_party\tiny_gltf;C:\boost_1_80_0</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>
+      $(MSBuildThisFileDirectory)include;
+      %(AdditionalIncludeDirectories);
+      $(SolutionDir)Vulkan_Engine\src;
+      $(SolutionDir)Vulkan_Engine\src\EngineCore;
+      $(SolutionDir)third_party\SDL2-2.0.22\include\;
+      $(SolutionDir)third_party/assimp/include/;
+      C:\VulkanSDK\1.3.236.0\Include;
+      $(SolutionDir)third_party;
+      $(SolutionDir)third_party/boost_1.80/include/</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
-      <AdditionalLibraryDirectories>$(SolutionDir)third_party\SDL2-2.0.22\lib\x64;C:\VulkanSDK\1.3.211.0\Lib;C:\boost_1_80_0\bin.v2\libs\serialization\build\msvc-14.3\debug\link-static\threading-multi;%(AdditionalLibraryDirectories);$(SolutionDir)third_party\assimp\Lib\$(Configuration)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)third_party\SDL2-2.0.22\Lib\$(Platform);$(SolutionDir)third_party/assimp/Lib/$(Configuration);$(SolutionDir)third_party/boost_1.80\Lib\msvc-14.3\$(Configuration);C:\VulkanSDK\1.3.236.0\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>assimp-vc143-mtd.lib;vulkan-1.lib;SDL2.lib;SDL2main.lib;SDL2test.lib;$(MSBuildThisFileDirectory)..\packages\Microsoft.googletest.v140.windesktop.msvcstl.static.rt-dyn.1.8.1.5\lib\native\v140\windesktop\msvcstl\static\rt-dyn\x64\Debug\gtest_maind.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -119,7 +128,7 @@
       <SubSystem>Console</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <AdditionalLibraryDirectories>$(SolutionDir)third_party\SDL2-2.0.22\lib\x64;C:\VulkanSDK\1.3.211.0\Lib;C:\boost_1_80_0\bin.v2\libs\serialization\build\msvc-14.3\release\link-static\threading-multi;$(SolutionDir)third_party\assimp\Lib\$(Configuration)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)third_party\SDL2-2.0.22\lib\x64;C:\VulkanSDK\1.3.211.0\Lib;C:\boost_1_80_0\bin.v2\libs\serialization\build\msvc-14.3\release;$(SolutionDir)third_party\assimp\Lib\$(Configuration)</AdditionalLibraryDirectories>
       <AdditionalDependencies>assimp-vc143-mtd.lib;vulkan-1.lib;SDL2.lib;SDL2main.lib;$(MSBuildThisFileDirectory)..\..\lib\native\v140\windesktop\msvcstl\static\rt-dyn\x64\Release\gtest_main.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>

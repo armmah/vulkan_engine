@@ -134,6 +134,17 @@ TEST(Texturesource, Path)
 	EXPECT_EQ(Directories::getWorkingDirectory().combine(test4.value).value, "C:/Git/Vulkan_Engine/Resources/Serialized/background.dds");
 }
 
+template <typename T>
+void AssertEqual(const std::vector<T>& a, const std::vector<T>& b)
+{
+	EXPECT_TRUE(a.size() == b.size());
+
+	for (size_t i = 0; i < a.size(); i++)
+	{
+		EXPECT_EQ(a[i], b[i]);
+	}
+}
+
 TEST(Serialization, SceneBinary)
 {
 	Scene scene(nullptr, nullptr);
@@ -167,55 +178,20 @@ TEST(Serialization, SceneBinary)
 		Scene loadedScene(nullptr, nullptr);
 		archive >> loadedScene;
 
-		EXPECT_TRUE(stream.is_open());
+		EXPECT_TRUE( stream.is_open() );
 
 		// Transforms
-		const auto& transforms = scene.getTransforms();
-		const auto& loadedTransforms = loadedScene.getTransforms();
-		{
-			EXPECT_TRUE(transforms.size() == loadedTransforms.size());
-
-			for (size_t i = 0; i < loadedTransforms.size(); i++)
-			{
-				EXPECT_EQ(loadedTransforms[i], transforms[i]);
-			}
-		}
+		AssertEqual( scene.getTransforms(), loadedScene.getTransforms() );
 
 		// Meshes
-		const auto& meshes = scene.getMeshes();
-		const auto& loadedMeshes = loadedScene.getMeshes();
-		{
-			EXPECT_TRUE(loadedMeshes.size() == meshes.size());
-
-			for (size_t i = 0; i < loadedMeshes.size(); i++)
-			{
-				EXPECT_EQ(loadedMeshes[i], meshes[i]);
-			}
-		}
+		AssertEqual( scene.getMeshes(), loadedScene.getMeshes() );
 
 		// Materials
-		const auto& materials = scene.getMaterials();
-		const auto& loadedMaterials = loadedScene.getMaterials();
-		{
-			EXPECT_TRUE(loadedMaterials.size() == materials.size());
-
-			for (size_t i = 0; i < loadedMaterials.size(); i++)
-			{
-				EXPECT_EQ(loadedMaterials[i], materials[i]);
-			}
-		}
+		AssertEqual( scene.getMaterials(), loadedScene.getMaterials() );
 
 		// Renderers
-		const auto& renderers = scene.getRendererIDs();
-		const auto& loadedRenderers = loadedScene.getRendererIDs();
-		{
-			EXPECT_TRUE(loadedRenderers.size() == renderers.size());
+		AssertEqual( scene.getRendererIDs(), loadedScene.getRendererIDs() );
 
-			for (size_t i = 0; i < loadedRenderers.size(); i++)
-			{
-				EXPECT_EQ(loadedRenderers[i], renderers[i]);
-			}
-		}
 		stream.close();
 	}
 }

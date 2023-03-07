@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "Texture.h"
 #include "PresentationTarget.h"
 #include "Presentation/Device.h"
 #include "Presentation/HardwareDevice.h"
@@ -27,7 +28,7 @@ namespace Presentation
 		
 		// Initialize default shaders
 		VkShader::ensureDefaultShader(presentationDevice.getDevice());
-
+		
 		m_emptyShadowMap = MAKEUNQ<EmptyShadowMap>(*this, presentationDevice, VkShader::findShader(0u));
 
 		// Creates the pipeline, but doesn't manage its lifetime
@@ -49,7 +50,8 @@ namespace Presentation
 		return createSwapChain(swapchainCount, presentationHardware, presentationDevice, m_hasDepthAttachment) &&
 			createSwapChainImageViews(vkdevice) &&
 			createRenderPass(vkdevice) &&
-			createFramebuffers(vkdevice);
+			createFramebuffers(vkdevice) &&
+			transitionSwapchainLayout(presentationDevice);
 	}
 	bool PresentationTarget::hasDepthAttachement() { return m_depthImage ? true : false; }
 
@@ -104,9 +106,19 @@ namespace Presentation
 			vkGetSwapchainImagesKHR(device.getDevice(), m_swapchain, &imageCount, nullptr);
 			m_swapChainImages.resize(imageCount);
 			vkGetSwapchainImagesKHR(device.getDevice(), m_swapchain, &imageCount, m_swapChainImages.data());
+
 		}
 
 		return isSuccess;
+	}
+	
+	bool PresentationTarget::transitionSwapchainLayout(const Device& device)
+	{
+		return device.submitImmediatelyAndWaitCompletion([=](VkCommandBuffer cmd)
+		{
+			for (auto image : m_swapChainImages)
+				Texture::transitionImageLayout(cmd, image, m_swapChainImageFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, 1u);
+		});
 	}
 
 	bool PresentationTarget::createRenderPass(VkDevice device)
@@ -164,8 +176,6 @@ namespace Presentation
 
 	void PresentationTarget::releaseSwapChain(VkDevice device)
 	{
-		vkDestroyRenderPass(device, m_renderPass, nullptr);
-
 		if (hasDepthAttachement())
 		{
 			m_depthImage->release(device);
@@ -177,9 +187,13 @@ namespace Presentation
 		{
 			vkDestroyFramebuffer(device, m_swapChainFrameBuffers[i], nullptr);
 			vkDestroyImageView(device, m_swapChainImageViews[i], nullptr);
+
+			m_swapChainFrameBuffers[i] = nullptr;
+			m_swapChainImageViews[i] = nullptr;
 		}
 
 		vkDestroySwapchainKHR(device, m_swapchain, nullptr);
+		vkDestroyRenderPass(device, m_renderPass, nullptr);
 
 		m_renderPass = VK_NULL_HANDLE;
 		m_swapchain = VK_NULL_HANDLE;

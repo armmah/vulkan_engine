@@ -231,7 +231,7 @@ bool VulkanEngine::handleFailedToAcquireImageIfNecessary(VkResult imageAcquireRe
 
 		m_presentationTarget->releaseSwapChain(m_presentationDevice->getDevice());
 		if (!m_presentationTarget->createPresentationTarget(*m_presentationHardware, *m_presentationDevice))
-			printf("Recreating the swapchain was not successful");
+			printf("Recreating the swapchain was not successful\n");
 
 		return true;
 	}

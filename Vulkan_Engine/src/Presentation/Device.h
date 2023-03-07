@@ -21,7 +21,7 @@ namespace Presentation
 		VkQueue getPresentQueue() const { return m_presentQueue; }
 		VkCommandPool getCommandPool() const { return m_commandPool; }
 
-		void submitImmediatelyAndWaitCompletion(const std::function<void(VkCommandBuffer cmd)>&& commandForExecution) const;
+		bool submitImmediatelyAndWaitCompletion(const std::function<void(VkCommandBuffer cmd)>&& commandForExecution) const;
 
 		void release();
 

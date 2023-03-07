@@ -45,7 +45,7 @@ namespace Presentation
 		VkFramebuffer getSwapchainFrameBuffers(uint32_t index) const;
 		bool hasDepthAttachement();
 
-		bool createPresentationTarget(const HardwareDevice& presentationHardware, const Device& presentationDevice, uint32_t swapchainCount = 3u);
+		bool createPresentationTarget(const HardwareDevice& presentationHardware, const Device& presentationDevice, uint32_t swapchainCount = SWAPCHAIN_IMAGE_COUNT);
 		bool createGraphicsMaterial(UNQ<VkMaterial>& material, VkDevice device, VkDescriptorPool descPool, const VkShader* shader, const VkTexture2D* texture);
 
 		FrameStats renderLoop(const std::vector<VkMeshRenderer>& renderers, Camera& cam, DirectionalLightParams& lightTr, VkCommandBuffer commandBuffer, uint32_t frameNumber);
@@ -85,6 +85,7 @@ namespace Presentation
 		bool createRenderPass(VkDevice device);
 		bool createSwapChainImageViews(VkDevice device);
 		bool createFramebuffers(VkDevice device);
+		bool transitionSwapchainLayout(const Device& device);
 
 		VkExtent2D chooseSwapExtent(const SDL_Window* window);
 

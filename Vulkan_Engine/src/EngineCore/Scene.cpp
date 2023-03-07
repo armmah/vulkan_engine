@@ -28,8 +28,8 @@ constexpr bool force_serialize_from_origin = false;
 bool Scene::load(VkDescriptorPool descPool)
 {
 	//const auto modelOptions = Directories::getModels_DebrovicSponza();
-	const auto modelOptions = Directories::getModels_IntelSponza();
-	//const auto modelOptions = Directories::getModels_CrytekSponza();
+	//const auto modelOptions = Directories::getModels_IntelSponza();
+	const auto modelOptions = Directories::getModels_CrytekSponza();
 
 	Path fullPath;
 	/*****************************				IMPORT					****************************************/

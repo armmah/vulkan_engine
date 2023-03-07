@@ -15,7 +15,7 @@ namespace Presentation
 			createCommandPool();
 	}
 
-	void Device::submitImmediatelyAndWaitCompletion(const std::function<void(VkCommandBuffer cmd)>&& commandForExecution) const
+	bool Device::submitImmediatelyAndWaitCompletion(const std::function<void(VkCommandBuffer cmd)>&& commandForExecution) const
 	{
 		auto cmdPool = getCommandPool();
 		VkCommandBuffer cmdBuffer;
@@ -33,10 +33,14 @@ namespace Presentation
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		submitInfo.commandBufferCount = 1;
 		submitInfo.pCommandBuffers = &cmdBuffer;
-		vkQueueSubmit(getGraphicsQueue(), 1, &submitInfo, fence);
+		auto result = vkQueueSubmit(getGraphicsQueue(), 1, &submitInfo, fence);
 
-		vkWaitForFences(m_vkdevice, 1, &fence, VK_TRUE, UINT64_MAX);
+		auto resultFence = vkWaitForFences(m_vkdevice, 1, &fence, VK_TRUE, UINT64_MAX);
+		if (resultFence != VK_SUCCESS)
+			printf("Failed to wait on fence for immediate submission.\n");
 		vkDestroyFence(m_vkdevice, fence, nullptr);
+
+		return result == VK_SUCCESS;
 	}
 
 	void Device::release()

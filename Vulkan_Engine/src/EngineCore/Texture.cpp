@@ -159,24 +159,6 @@ struct _PipelineBarrierArg
 
 };
 
-/*
-VUID-VkDescriptorImageInfo-imageLayout-00344(ERROR / SPEC): msgNum: -564812795 - Validation Error: [ VUID-VkDescriptorImageInfo-imageLayout-00344 ] Object 0:
-handle = 0x2afdd3d6060, type = VK_OBJECT_TYPE_COMMAND_BUFFER; | MessageID = 0xde55a405 | vkCmdDraw: Cannot use VkImage 0xa7c5450000000023[] (layer=0 mip=0)
-with specific layout VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL that doesn't match the previous known layout VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL.
-The Vulkan spec states: imageLayout must match the actual VkImageLayout of each subresource accessible from imageView at the time this descriptor is accessed
-as defined by the image layout matching rules (https://vulkan.lunarg.com/doc/view/1.3.211.0/windows/1.3-extensions/vkspec.html#VUID-VkDescriptorImageInfo-imageLayout-00344)
-	Objects: 1
-		[0] 0x2afdd3d6060, type: 6, name: NULL
-
-VUID-vkCmdDraw-None-02699(ERROR / SPEC): msgNum: 369680064 - Validation Error: [ VUID-vkCmdDraw-None-02699 ] Object 0: handle = 0x4b7df1000000002f,
-type = VK_OBJECT_TYPE_DESCRIPTOR_SET; | MessageID = 0x1608dec0 | Descriptor set VkDescriptorSet 0x4b7df1000000002f[] encountered the following
-validation error at vkCmdDraw time: Image layout specified at vkUpdateDescriptorSet* or vkCmdPushDescriptorSet* time doesn't match actual image layout
-at time descriptor is used. See previous error callback for specific details. The Vulkan spec states: Descriptors in each bound descriptor set, specified
-via vkCmdBindDescriptorSets, must be valid if they are statically used by the VkPipeline bound to the pipeline bind point used by this command (https://vulkan.lunarg.com/doc/view/1.3.211.0/windows/1.3-extensions/vkspec.html#VUID-vkCmdDraw-None-02699)
-	Objects: 1
-		[0] 0x4b7df1000000002f, type: 23, name: NULL
-*/
-
 void Texture::transitionImageLayout(const VkCommandBuffer cmd, const VkImage image, VkFormat format,
 	VkImageLayout oldLayout, VkImageLayout newLayout, 
 	uint32_t mipCount, VkImageAspectFlagBits subResImageAspect)
@@ -209,6 +191,14 @@ void Texture::transitionImageLayout(const VkCommandBuffer cmd, const VkImage ima
 	{
 		src.accesses = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 		src.stages = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+
+		dst.accesses = VK_ACCESS_SHADER_READ_BIT;
+		dst.stages = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+	}
+	else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
+	{
+		src.accesses = 0;
+		src.stages = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 
 		dst.accesses = VK_ACCESS_SHADER_READ_BIT;
 		dst.stages = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;

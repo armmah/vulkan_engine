@@ -9,6 +9,8 @@ Path Directories::getApplicationPath()
 	return applicationPath;
 }
 
+bool Directories::isValidWorkingDirectory(const Path& path) { return path.combine(workingSceneDir_relative).fileExists(); }
+
 Path Directories::getWorkingDirectory() { return getAbsolutePath(workingSceneDir_relative); }
 
 Path Directories::getShaderLibraryPath() { return getAbsolutePath(libraryShaderPath_relative); }

@@ -3,18 +3,22 @@
 
 std::string getApplicationPath(char commandLineArgument[])
 {
-	std::string path;
-	
-	if(commandLineArgument == nullptr || !std::filesystem::exists(commandLineArgument))
+	// 1. The command line argument overrides the default fullPath, if its provided by user input and is valid.
+	auto appDirectory = Path(std::string(commandLineArgument));
+	if (commandLineArgument != nullptr && Directories::isValidWorkingDirectory(appDirectory))
 	{
-		path = Directories::syscall_GetApplicationPath().getFileDirectory();
-	}
-	else
-	{
-		path = Path(commandLineArgument).getFileDirectory();
+		return Path(commandLineArgument).getFileDirectory();
 	}
 
-	return path;
+	// 2. Try to see if the resources exist in the application directory.
+	appDirectory = Path(std::move(Directories::syscall_GetApplicationPath().getFileDirectory()));
+	if (Directories::isValidWorkingDirectory(appDirectory))
+		return appDirectory;
+
+	// 3. Try to exit the path and find the resources in there (step out of /$(Architecture)/$(Configuration)/)
+	appDirectory = appDirectory.combine("../../");
+	assert(Directories::isValidWorkingDirectory(appDirectory) && "The resources could not be found near the executable, or at solution directory. Please make sure the resources folder is placed beside the executable, or provide an override path to resources via command line argument.");
+	return appDirectory;
 }
 
 struct ApplicationParameters
@@ -24,23 +28,20 @@ struct ApplicationParameters
 
 	ApplicationParameters(int argc, char* argv[])
 	{
-		char* applicationPath = argc > 0 ? argv[0] : nullptr;
+		char* commandLineInput = argc > 0 ? argv[0] : nullptr;
 
 		for (int i = 0; i < argc; i++)
 		{
 			if (strcmp(argv[i], "-resources") == 0 && i + 1 < argc)
 			{
-				applicationPath = argv[i + 1];
+				commandLineInput = argv[i + 1];
 
 				i += 1;
 			}
 		}
 
-		auto path = getApplicationPath(applicationPath);
-		printf("Application directory '%s'.\n", path.c_str());
-
-		applicationDirectory = Path(std::move(path));
-		
+		applicationDirectory = Path(getApplicationPath(commandLineInput));
+		printf("Application directory '%s'.\n", applicationDirectory.c_str());
 	}
 };
 

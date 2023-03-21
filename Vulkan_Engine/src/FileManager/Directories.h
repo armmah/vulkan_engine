@@ -14,6 +14,7 @@ public:
 	static Path getApplicationPath();
 	static Path getAbsolutePath(const std::string& path);
 	
+	static bool isValidWorkingDirectory(const Path& path);
 	static Path getWorkingDirectory();
 
 	static std::vector<Loader::ModelLoaderOptions> getModels_IntelSponza();

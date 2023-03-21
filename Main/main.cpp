@@ -15,7 +15,7 @@ std::string getApplicationPath(char commandLineArgument[])
 	if (Directories::isValidWorkingDirectory(appDirectory))
 		return appDirectory;
 
-	// 3. Try to exit the path and find the resources in there (step out of /$(Architecture)/$(Configuration)/)
+	// 3. Try to exit the path and find the resources in the source directory (step out of /$(Architecture)/$(Configuration)/).
 	appDirectory = appDirectory.combine("../../");
 	assert(Directories::isValidWorkingDirectory(appDirectory) && "The resources could not be found near the executable, or at solution directory. Please make sure the resources folder is placed beside the executable, or provide an override path to resources via command line argument.");
 	return appDirectory;

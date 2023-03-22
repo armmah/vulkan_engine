@@ -4,18 +4,26 @@ This project has been created for learning and familiriazing purposes of the Vul
 
 Here are some example visuals from the application:
 
+The famous Intel Sponza scene being rendered with shadowmaps.
 <img src="https://github.com/armmah/vulkan_engine/blob/main/Examples/Shadowmaps.gif"/>
 
+Showing the debug pass that helps troubleshooting issues with the depth buffer.
 <img src="https://github.com/armmah/vulkan_engine/blob/main/Examples/Debugging_Depth.gif"/>
 
 ## Features
 
-- Loading OBJ, GLTF,
-- Custom serialization format,
-- Supports DXT texture compression,
-- Frustum Culling,
-- Crytek sponza and Intel sponza scenes,
-- Shadowmaps
+[+] Loading OBJ, GLTF,
+[+] Custom serialization format,
+[+] Supports DXT texture compression,
+[+] Frustum Culling,
+[+] Crytek sponza and Intel sponza scenes,
+[+] Shadowmaps for direct lighting,
+
+To Do:
+[-] Draw Indirect,
+[-] GPU Culling,
+[-] PBR,
+[-] Frame Graph
 
 ## Dependencies
 
@@ -42,7 +50,7 @@ For a successful build for the app to run without problems, the following things
 - Resources/Serialized scene data with meshes and textures (step 6),
 - Resources/Library spv shaders (step 6).
 
-The above steps are automated by step 6.
+The above actions are automated by build step 6.
 
 Note that on the 5th step, the shaders are compiled as well via the batch file "Shaders/compileAllSource.bat". The repository also contains the default shaders so this step is not strictly necessary and you could create the cmake project with the ENABLE_AUTO_COMPILE_SHADERS option disabled.
 

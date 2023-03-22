@@ -4,9 +4,9 @@ This project has been created for learning and familiriazing purposes of the Vul
 
 Here are some screenshots from the application:
 
-![Intel sponza](https://github.com/armmah/vulkan_engine/tree/main/Examples/Shadowmaps.gif "The famous Intel Sponza scene rendered with shadowmaps.")
+![Intel sponza](https://github.com/armmah/vulkan_engine/tree/main/Examples/Shadowmaps.gif)
 
-![Debugging depth ](https://github.com/armmah/vulkan_engine/tree/main/Examples/Debugging_Depth.gif "Showing the debug pass that helps to troubleshoot depth buffer used by shadowmaps.")
+![Debugging depth](https://github.com/armmah/vulkan_engine/tree/main/Examples/Debugging_Depth.gif)
 
 ## Features
 

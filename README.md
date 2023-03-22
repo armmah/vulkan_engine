@@ -4,7 +4,8 @@ This project has been created for learning and familiriazing purposes of the Vul
 
 Here are some screenshots from the application:
 
-![Intel sponza](https://github.com/armmah/vulkan_engine/tree/main/Examples/Shadowmaps.gif)
+<img src="https://github.com/armmah/vulkan_engine/blob/main/Examples/Shadowmaps.gif"/>
+![Intel sponza](https://github.com/armmah/vulkan_engine/blob/main/Examples/Shadowmaps.gif)
 
 ![Debugging depth](https://github.com/armmah/vulkan_engine/tree/main/Examples/Debugging_Depth.gif)
 

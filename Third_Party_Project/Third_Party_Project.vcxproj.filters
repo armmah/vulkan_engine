@@ -44,4 +44,7 @@
   <ItemGroup>
     <ClInclude Include="dds_loader.h" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="CMakeLists.txt" />
+  </ItemGroup>
 </Project>

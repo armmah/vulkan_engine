@@ -2,12 +2,11 @@
 
 This project has been created for learning and familiriazing purposes of the Vulkan Graphics API.
 
-Here are some screenshots from the application:
+Here are some example visuals from the application:
 
 <img src="https://github.com/armmah/vulkan_engine/blob/main/Examples/Shadowmaps.gif"/>
-![Intel sponza](https://github.com/armmah/vulkan_engine/blob/main/Examples/Shadowmaps.gif)
 
-![Debugging depth](https://github.com/armmah/vulkan_engine/tree/main/Examples/Debugging_Depth.gif)
+<img src="https://github.com/armmah/vulkan_engine/blob/main/Examples/Debugging_Depth.gif"/>
 
 ## Features
 

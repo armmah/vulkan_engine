@@ -1,6 +1,12 @@
 ## About
 
-Screenshot.jpg
+This project has been created for learning and familiriazing purposes of the Vulkan Graphics API.
+
+Here are some screenshots from the application:
+
+![Intel sponza](https://github.com/armmah/vulkan_engine/tree/main/Examples/Shadowmaps.gif "The famous Intel Sponza scene rendered with shadowmaps.")
+
+![Debugging depth ](https://github.com/armmah/vulkan_engine/tree/main/Examples/Debugging_Depth.gif "Showing the debug pass that helps to troubleshoot depth buffer used by shadowmaps.")
 
 ## Features
 
@@ -16,6 +22,7 @@ Screenshot.jpg
 - CMake 3.16.0 https://cmake.org/download/
 - VulkanSDK：https://www.lunarg.com/vulkan-sdk/
 - Visual Studio 2022: msvc-143
+- C++ version: 17
 
 ## Build
 
@@ -24,11 +31,20 @@ Screenshot.jpg
 3. Open the solution with Visual Studio (for windows),
 4. Set Main as the startup project,
 5. Build the project,
-- shaders,
-- resources,
 6. Run /BuildAll_Debug.bat,
 7. See the build at /_Build/Debug/
-- C++ version: 17
+
+## Build Details
+
+For a successful build for the app to run without problems, the following things are necessary:
+- The build .exe itself from (step 5),
+- The DLLs ( SDL and assimp ), copied from third_party by BuildAll batch file (step 6),
+- Resources/Serialized scene data with meshes and textures (step 6),
+- Resources/Library spv shaders (step 6).
+
+The above steps are automated by step 6.
+
+Note that on the 5th step, the shaders are compiled as well via the batch file "Shaders/compileAllSource.bat". The repository also contains the default shaders so this step is not strictly necessary and you could create the cmake project with the ENABLE_AUTO_COMPILE_SHADERS option disabled.
 
 ## Embed Libs
 

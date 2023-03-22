@@ -20,3 +20,9 @@ set(ALL_FILES
 
 add_custom_target(${PROJECT_NAME} SOURCES ${ALL_FILES})
 
+if (ENABLE_AUTO_COMPILE_SHADERS)
+add_custom_command(
+    TARGET ${PROJECT_NAME}
+    COMMAND cmd /c ${PROJECT_SOURCE_DIR}/Shaders/compileAllSource.bat ${VULKAN_PATH}
+)
+endif()

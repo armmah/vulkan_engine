@@ -59,8 +59,9 @@ namespace PipelineConstruction
 		ShaderStage(VkShaderModule shader, SupportedStages stage, const char* fnName = nullptr);
 
 		bool isValid() const override;
-		void submit(VkGraphicsPipelineCreateInfo& pipelineCI) const override;
 		const VkPipelineShaderStageCreateInfo getCreateInfo() const;
+	private:
+		void submit(VkGraphicsPipelineCreateInfo& pipelineCI) const override;
 	};
 
 	struct PipelineStageCollection : ComponentCreateInfoAbstract

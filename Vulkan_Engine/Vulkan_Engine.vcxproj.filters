@@ -251,6 +251,9 @@
     <ClCompile Include="src\VkTypes\VkMeshRenderer.cpp">
       <Filter>Source Files\VkTypes</Filter>
     </ClCompile>
+    <ClCompile Include="src\VkTypes\PipelineConstructor.cpp">
+      <Filter>Source Files\VkTypes</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\vk_engine.h">

@@ -195,6 +195,7 @@ source_group("Source Files/Profiling" FILES ${Source_Files__Profiling})
 
 set(Source_Files__VkTypes
     "src/VkTypes/InitializersUtility.cpp"
+    "src/VkTypes/PipelineConstructor.cpp"
     "src/VkTypes/VkGraphicsPipeline.cpp"
     "src/VkTypes/VkMaterialVariant.cpp"
     "src/VkTypes/VkMemoryAllocator.cpp"

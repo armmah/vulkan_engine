@@ -11,7 +11,7 @@ namespace Presentation
 {
 	DebugPass::DebugPass() : Pass(false), m_debugQuad(), m_isInitialized(), m_shadowmapDescriptorSet(), m_shadowmapSampler() { }
 
-	DebugPass::~DebugPass() { }
+	DebugPass::~DebugPass() = default;
 
 	DebugPass::DebugPass(PresentationTarget& target, VkDevice device, const VkShader* shader, VkPipelineLayout pipelineLayout, VkRenderPass renderPass, VkExtent2D extent, const VkTexture2D& displayTexture)
 		: Pass(false), m_debugQuad(), m_isInitialized(), m_shadowmapDescriptorSet(), m_shadowmapSampler()

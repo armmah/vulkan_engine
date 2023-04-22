@@ -13,7 +13,7 @@ public:
 	VkMesh(VkMesh&& fwdRef) noexcept;
 	~VkMesh();
 
-	void release(const VmaAllocator& allocator);
+	void release(VmaAllocator allocator);
 
 	UNQ<VertexAttributes> vAttributes;
 	uint32_t vCount;

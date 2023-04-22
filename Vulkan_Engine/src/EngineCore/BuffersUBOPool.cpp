@@ -4,7 +4,7 @@
 #include "UboAllocatorDelegate.h"
 
 BufferUBOPool::BufferUBOPool() : m_poolUsed(0) { }
-BufferUBOPool::~BufferUBOPool() { }
+BufferUBOPool::~BufferUBOPool() = default;
 
 BufferUBOPool::BufferUBOPool(UBOAllocatorDelegate&& allocDelegate) :
 	poolUBO(), m_poolUsed(0), m_allocDelegate(MAKEUNQ<UBOAllocatorDelegate>(allocDelegate)) { }
@@ -17,7 +17,7 @@ BuffersUBO* BufferUBOPool::claim()
 		BuffersUBO buffer;
 		if (m_allocDelegate && m_allocDelegate->invoke(buffer))
 		{
-			poolUBO.push_back(std::move(buffer));
+			poolUBO.emplace_back(std::move(buffer));
 		}
 		else printf("Failed to allocate new UBO from the pool.");
 	}
@@ -25,7 +25,7 @@ BuffersUBO* BufferUBOPool::claim()
 	return &poolUBO[m_poolUsed++];
 }
 
-void BufferUBOPool::operator=(BufferUBOPool&& other)
+void BufferUBOPool::operator=(BufferUBOPool&& other) noexcept
 {
 	poolUBO = std::move(other.poolUBO);
 	m_poolUsed = other.m_poolUsed;

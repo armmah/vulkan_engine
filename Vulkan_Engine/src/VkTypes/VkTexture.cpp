@@ -51,7 +51,7 @@ bool VkTexture2D::tryCreateTexture(UNQ<VkTexture2D>& tex, const Texture& loadedT
 		for (auto& mip : loadedTexture.textureMipChain)
 		{
 			totalBufferSize += mip.getByteSize();
-			dimensions.push_back(mip.getDimensions());
+			dimensions.emplace_back(mip.getDimensions());
 		}
 
 		if (!stagingBufferPool.claimAStagingBuffer(stagingBuffer, totalBufferSize))

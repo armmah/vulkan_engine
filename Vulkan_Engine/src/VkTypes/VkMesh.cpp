@@ -5,9 +5,9 @@
 
 VkMesh::VkMesh() : vAttributes(nullptr), vCount(0), iAttributes() { }
 VkMesh::VkMesh(VkMesh&& fwdRef) noexcept : vAttributes(std::move(fwdRef.vAttributes)), vCount(fwdRef.vCount), iAttributes(std::move(fwdRef.iAttributes)) {}
-VkMesh::~VkMesh() { }
+VkMesh::~VkMesh() = default;
 
-void VkMesh::release(const VmaAllocator& allocator)
+void VkMesh::release(VmaAllocator allocator)
 {
 	vAttributes->destroy(allocator);
 

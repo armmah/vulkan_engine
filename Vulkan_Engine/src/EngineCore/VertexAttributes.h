@@ -9,7 +9,7 @@ public:
 
 	void bind(VkCommandBuffer commandBuffer);
 
-	void destroy(const VmaAllocator& allocator);
+	void destroy(VmaAllocator allocator);
 
 private:
 	std::vector<VkBuffer> buffers;

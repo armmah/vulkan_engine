@@ -5,12 +5,12 @@ struct IndexAttributes
 {
 public:
 	IndexAttributes() = delete;
-	IndexAttributes(const VkBuffer& indexBuffer, const VmaAllocation& indexBufferMemory, uint32_t iCount, VkIndexType indexType, VkDeviceSize offset = 0);
+	IndexAttributes(VkBuffer indexBuffer, VmaAllocation indexBufferMemory, uint32_t iCount, VkIndexType indexType, VkDeviceSize offset = 0);
 
 	uint32_t getIndexCount() const { return iCount; }
 	void bind(VkCommandBuffer commandBuffer) const;
 
-	void destroy(const VmaAllocator& allocator);
+	void destroy(VmaAllocator allocator);
 
 private:
 	VkBuffer buffer;

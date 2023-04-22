@@ -14,7 +14,7 @@ namespace vkinit
 		return SDL_Vulkan_GetInstanceExtensions(window->get(), extCount, extensionNames);
 	}
 
-	bool Instance::createInstance(VkInstance& instance, const char* applicationName, std::vector<const char*> extNames, const VulkanValidationLayers* validationLayers)
+	bool Instance::createInstance(VkInstance& instance, const char* applicationName, const std::vector<const char*>& extNames, const VulkanValidationLayers* validationLayers)
 	{
 		VkApplicationInfo appInfo{};
 		appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;

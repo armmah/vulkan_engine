@@ -42,7 +42,7 @@ namespace Presentation
 		}
 
 		m_replacementShader = VkShader::findShader(1u);
-		if (PipelineConstruction::createPipeline(m_replacementMaterial.m_pipeline, depthOnlyPipelineLayout, device,
+		if (m_replacementShader && PipelineConstruction::createPipeline(m_replacementMaterial.m_pipeline, depthOnlyPipelineLayout, device,
 			getRenderPass(), getExtent(), *m_replacementShader, &Mesh::defaultMeshDescriptor, PipelineConstruction::FaceCulling::Front, true))
 		{
 			target.m_globalPipelineState->insertGraphicsPipelineFor(m_replacementShader, m_replacementMaterial);
@@ -61,7 +61,7 @@ namespace Presentation
 		}
 	}
 
-	ShadowMap::~ShadowMap() { }
+	ShadowMap::~ShadowMap() = default;
 
 	bool ShadowMap::isInitialized() const { return m_isInitialized; }
 	const VkViewport& ShadowMap::getViewport() const { return m_viewport; }
@@ -105,7 +105,7 @@ namespace Presentation
 		auto pool = DescriptorPoolManager::getInstance()->createNewPool(SWAPCHAIN_IMAGE_COUNT);
 		target.createGraphicsMaterial(m_shadowMapMaterial, device.getDevice(), pool, shader, m_texture.get());
 	}
-	EmptyShadowMap::~EmptyShadowMap() { }
+	EmptyShadowMap::~EmptyShadowMap() = default;
 	const VkMaterialVariant& EmptyShadowMap::getMaterialVariant() const { return m_shadowMapMaterial->getMaterialVariant(); }
 	bool EmptyShadowMap::isInitialized() const { return true; }
 	void EmptyShadowMap::release(VkDevice device)

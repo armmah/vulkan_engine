@@ -14,6 +14,7 @@ struct Renderer
 
 	Renderer(size_t meshID, size_t transformID, std::vector<size_t>&& materialIDs);
 	Renderer(size_t meshID, size_t transformID, std::vector<size_t>& materialIDs);
+	Renderer(size_t meshID, size_t transformID);
 	
 	template<class Archive>
 	void serialize(Archive& ar, const unsigned int version);

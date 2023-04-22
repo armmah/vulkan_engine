@@ -36,7 +36,7 @@ public:
 	const std::vector<VkMeshRenderer>& getRenderers() const;
 
 	bool load(VkDescriptorPool descPool);
-	void release(VkDevice device, const VmaAllocator& allocator);
+	void release(VkDevice device, VmaAllocator allocator);
 
 	bool tryInitializeFromFile(const Loader::ModelLoaderOptions& modelOptions);
 	void createGraphicsRepresentation(VkDescriptorPool descPool);

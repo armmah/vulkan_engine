@@ -15,7 +15,7 @@ namespace vkinit
 		static const std::vector<const char*> requiredExtensions;
 
 		static bool getRequiredExtensionsForPlatform(Window const* window, unsigned int* extCount, const char** extensionNames);
-		static bool createInstance(VkInstance& instance, const char* applicationName, std::vector<const char*> extNames, const VulkanValidationLayers* validationLayers);
+		static bool createInstance(VkInstance& instance, const char* applicationName, const std::vector<const char*>& extNames, const VulkanValidationLayers* validationLayers);
 		static bool createInstance(VkInstance& instance, const Window* window, const VulkanValidationLayers* validationLayers);
 	};
 
@@ -24,7 +24,7 @@ namespace vkinit
 		static bool createSurface(VkSurfaceKHR& surface, VkInstance instance, const Window* window);
 		static bool createRenderPass(VkRenderPass& renderPass, VkDevice device, VkFormat swapchainImageFormat, bool enableDepthAttachment);
 
-		static bool createFrameBuffer(VkFramebuffer& frameBuffer, VkDevice device, VkRenderPass renderPass, VkExtent2D extent, std::array<VkImageView, SWAPCHAIN_IMAGE_COUNT> imageViews, uint32_t count = std::numeric_limits<uint32_t>::max());
+		static bool createFrameBuffer(VkFramebuffer& frameBuffer, VkDevice device, VkRenderPass renderPass, VkExtent2D extent, const std::array<VkImageView, SWAPCHAIN_IMAGE_COUNT>& imageViews, uint32_t count = std::numeric_limits<uint32_t>::max());
 	};
 
 	struct Commands
@@ -86,7 +86,7 @@ namespace vkinit
 		static bool createDescriptorSets(std::array<VkDescriptorSet, SWAPCHAIN_IMAGE_COUNT>& descriptorSets,
 			VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout, const VkTexture2D& texture);
 		static bool createDescriptorSets(std::array<VkDescriptorSet, SWAPCHAIN_IMAGE_COUNT>& descriptorSets,
-			VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout, const VkImageView& imageView, const VkSampler& sampler);
+			VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout, VkImageView imageView, VkSampler sampler);
 
 		static bool createDescriptorSets(std::array<VkDescriptorSet, SWAPCHAIN_IMAGE_COUNT>& descriptorSets,
 			VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout);
@@ -95,8 +95,8 @@ namespace vkinit
 
 	struct MemoryBuffer
 	{
-		static bool createVmaAllocator(VmaAllocator& vmaAllocator, const VkInstance instance, const VkPhysicalDevice physicalDevice, const VkDevice device);
-		static bool allocateBufferAndMemory(VkBuffer& buffer, VmaAllocation& memRange, const VmaAllocator& vmaAllocator, uint32_t totalSizeBytes, VmaMemoryUsage memUsage, VkBufferUsageFlags flags);
+		static bool createVmaAllocator(VmaAllocator& vmaAllocator, VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device);
+		static bool allocateBufferAndMemory(VkBuffer& buffer, VmaAllocation& memRange, VmaAllocator vmaAllocator, uint32_t totalSizeBytes, VmaMemoryUsage memUsage, VkBufferUsageFlags flags);
 		static bool createBuffer(VkBuffer& buffer, VkDeviceMemory& memory, VkPhysicalDevice physicalDevice, VkDevice device, uint32_t bufferSize);
 		static int32_t findSuitableProperties(const VkPhysicalDeviceMemoryProperties* pMemoryProperties, uint32_t memoryTypeBitsRequirement, VkMemoryPropertyFlags requiredProperties);
 

@@ -4,7 +4,7 @@
 
 namespace Presentation
 {
-	bool Frame::initialize(VkDevice device, const VkCommandPool& pool)
+	bool Frame::initialize(VkDevice device, VkCommandPool pool)
 	{
 		bool fullyInitialized = true;
 		fullyInitialized &= vkinit::Synchronization::createSemaphore(m_imageAvailableSemaphore, device);

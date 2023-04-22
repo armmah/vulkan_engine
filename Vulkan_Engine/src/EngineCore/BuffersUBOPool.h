@@ -10,7 +10,7 @@ struct BufferUBOPool
 	BufferUBOPool();
 	~BufferUBOPool();
 	BufferUBOPool(UBOAllocatorDelegate&& allocDelegate);
-	void operator=(BufferUBOPool&& other);
+	void operator=(BufferUBOPool&& other) noexcept;
 
 	BuffersUBO* claim();
 	void freeAllClaimed();

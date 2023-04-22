@@ -45,13 +45,13 @@ public:
 	bool isValid();
 
 	template<typename T>
-	void mapAndCopyBuffer(const VmaAllocator& vmaAllocator, VmaAllocation& memRange, const T* source, size_t elementCount, size_t totalByteSize, const char* message);
+	void mapAndCopyBuffer(VmaAllocator vmaAllocator, VmaAllocation memRange, const T* source, size_t elementCount, size_t totalByteSize, const char* message);
 
 	static bool validateOptionalBufferSize(size_t vectorSize, size_t vertexCount, char const* name);
 	static void copyInterleavedNoCheck(std::vector<float>& interleavedVertexData, const void* src, size_t elementByteSize, size_t iterStride, size_t offset);
 
-	bool allocateGraphicsMesh(VkMesh& graphicsMesh, const VmaAllocator& vmaAllocator, const Presentation::Device* presentationDevice, StagingBufferPool& stagingPool);
-	bool allocateIndexAttributes(VkMesh& graphicsMesh, const SubMesh& submesh, const VmaAllocator& vmaAllocator, const Presentation::Device* presentationDevice, StagingBufferPool& stagingPool);
+	bool allocateGraphicsMesh(VkMesh& graphicsMesh, VmaAllocator vmaAllocator, const Presentation::Device* presentationDevice, StagingBufferPool& stagingPool);
+	bool allocateIndexAttributes(VkMesh& graphicsMesh, const SubMesh& submesh, VmaAllocator vmaAllocator, const Presentation::Device* presentationDevice, StagingBufferPool& stagingPool);
 	bool allocateVertexAttributes(VkMesh& graphicsMesh, const VmaAllocator& vmaAllocator, const Presentation::Device* presentationDevice, StagingBufferPool& stagingPool);
 
 	void makeFace(glm::vec3 pivot, glm::vec3 up, glm::vec3 right, MeshDescriptor::TVertexIndices firstIndex);

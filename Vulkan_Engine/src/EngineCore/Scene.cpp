@@ -22,7 +22,7 @@
 Scene::Scene(const Presentation::Device* device, Presentation::PresentationTarget* target)
 	: m_presentationDevice(device), m_presentationTarget(target) { }
 
-Scene::~Scene() { }
+Scene::~Scene() = default;
 
 constexpr bool force_serialize_from_origin = false;
 bool Scene::load(VkDescriptorPool descPool)
@@ -82,7 +82,7 @@ const std::vector<Renderer>& Scene::getRendererIDs() const { return m_rendererID
 const std::vector<VkMesh>& Scene::getGraphicsMeshes() const { return m_graphicsMeshes; }
 const std::vector<VkMeshRenderer>& Scene::getRenderers() const { return m_renderers; }
 
-void Scene::release(VkDevice device, const VmaAllocator& allocator)
+void Scene::release(VkDevice device, VmaAllocator allocator)
 {
 	for (auto& mesh : m_meshes)
 	{
@@ -240,7 +240,7 @@ void Scene::createGraphicsRepresentation(VkDescriptorPool descPool)
 	{
 		ProfileMarker _("Scene::Create_Graphics_Meshes");
 		/* ================= CREATE GRAPHICS MESHES ================*/
-		auto defaultMeshDescriptor = Mesh::defaultMeshDescriptor;
+		const auto& defaultMeshDescriptor = Mesh::defaultMeshDescriptor;
 		auto vmaAllocator = VkMemoryAllocator::getInstance()->m_allocator;
 		const auto count = m_meshes.size();
 
@@ -259,7 +259,7 @@ void Scene::createGraphicsRepresentation(VkDescriptorPool descPool)
 				printf("Mesh metadata does not match - can not bind to the same pipeline.\n");
 				continue;
 			}
-			m_graphicsMeshes.push_back(std::move(newGraphicsMesh));
+			m_graphicsMeshes.emplace_back(std::move(newGraphicsMesh));
 
 			uint32_t submeshIndex = 0;
 			for (auto materialIDs : ids.materialIDs)
@@ -271,12 +271,10 @@ void Scene::createGraphicsRepresentation(VkDescriptorPool descPool)
 					continue;
 				}
 
-				m_renderers.push_back(
-					VkMeshRenderer(
-						&m_graphicsMeshes.back(), submeshIndex, &m_materials[materialIDs],
-						&m_graphicsMaterials[loadedTextures[texPath]]->getMaterialVariant(),
-						mesh.getBounds(submeshIndex), &m_transforms[ids.transformID]
-					)
+				m_renderers.emplace_back(
+					&m_graphicsMeshes.back(), submeshIndex, &m_materials[materialIDs],
+					&m_graphicsMaterials[loadedTextures[texPath]]->getMaterialVariant(),
+					mesh.getBounds(submeshIndex), &m_transforms[ids.transformID]
 				);
 				++submeshIndex;
 			}

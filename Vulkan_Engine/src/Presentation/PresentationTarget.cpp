@@ -219,7 +219,7 @@ namespace Presentation
 		}
 	}
 
-	PresentationTarget::~PresentationTarget() {}
+	PresentationTarget::~PresentationTarget() = default;
 	bool PresentationTarget::isInitialized() const { return m_isInitialized; }
 	VkSwapchainKHR PresentationTarget::getSwapchain() const { return m_swapchain; }
 	VkExtent2D PresentationTarget::getSwapchainExtent() const { return m_swapChainExtent; }

@@ -37,6 +37,6 @@ namespace Presentation
 		VkSemaphore m_renderFinishedSemaphore;
 		VkFence m_inFlightFence;
 
-		bool initialize(VkDevice device, const VkCommandPool& pool);
+		bool initialize(VkDevice device, VkCommandPool pool);
 	};
 }

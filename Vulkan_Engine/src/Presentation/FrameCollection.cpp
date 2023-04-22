@@ -12,7 +12,7 @@ namespace Presentation
 		m_frameCollection.reserve(frameCount);
 		for (uint32_t i = 0; i < frameCount; i++)
 		{
-			m_frameCollection.push_back(Frame(device, pool));
+			m_frameCollection.emplace_back(device, pool);
 			m_fullyInitialized &= m_frameCollection[i].isInitialized();
 		}
 	}

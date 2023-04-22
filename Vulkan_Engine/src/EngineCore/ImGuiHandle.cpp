@@ -66,7 +66,7 @@ ImGuiHandle::ImGuiHandle(VkInstance instance, VkPhysicalDevice activeGPU, const 
 	ImGui_ImplVulkan_DestroyFontUploadObjects();
 }
 
-void ImGuiHandle::draw(FrameStats stats, Camera* cam, DirectionalLightParams* light, FrameSettings* settings)
+void ImGuiHandle::draw(const FrameStats& stats, Camera* cam, DirectionalLightParams* light, FrameSettings* settings)
 {
 	ImGui_ImplVulkan_NewFrame();
 	ImGui_ImplSDL2_NewFrame(m_window->get());

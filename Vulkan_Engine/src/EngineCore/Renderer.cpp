@@ -7,6 +7,9 @@ Renderer::Renderer(size_t meshID, size_t transformID, std::vector<size_t>&& mate
 Renderer::Renderer(size_t meshID, size_t transformID, std::vector<size_t>& materialIDs)
 	: meshID(meshID), transformID(transformID), materialIDs(std::move(materialIDs)) { }
 
+Renderer::Renderer(size_t meshID, size_t transformID)
+	: meshID(meshID), transformID(transformID), materialIDs({ 0 }) { };
+
 bool Renderer::operator ==(const Renderer& other) const
 {
 	if (meshID != other.meshID || materialIDs.size() != other.materialIDs.size())

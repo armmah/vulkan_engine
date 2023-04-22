@@ -18,7 +18,7 @@ void VertexAttributes::bind(VkCommandBuffer commandBuffer)
 	vkCmdBindVertexBuffers(commandBuffer, firstBinding, bindingCount, buffers.data(), offsets.data());
 }
 
-void VertexAttributes::destroy(const VmaAllocator& allocator)
+void VertexAttributes::destroy(VmaAllocator allocator)
 {
 	for (int i = 0; i < memoryRanges.size(); i++)
 	{

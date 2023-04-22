@@ -67,13 +67,13 @@ bool Texture::ddsLoad(Texture& texture, const std::string& path)
 			return false;
 		}
 
-		textureMipchain.push_back(LoadedTexture(tex.claim_data(), tex.get_size(), width, height));
+		textureMipchain.emplace_back(tex.claim_data(), tex.get_size(), width, height);
 
 		for (uint32_t mipIndex = 0; mipIndex < mipCount; mipIndex++)
 		{
 			auto& mip = tex.get_mipmap(mipIndex);
 			auto* mipData = tex.claim_mipmap_data(mipIndex);
-			textureMipchain.push_back(LoadedTexture(mipData, mip.get_size(), mip.get_width(), mip.get_height()));
+			textureMipchain.emplace_back(mipData, mip.get_size(), mip.get_width(), mip.get_height());
 		}
 
 		texture.Init(std::move(textureMipchain), format, as_uint32(width), as_uint32(height), as_uint32(channels));
@@ -96,7 +96,7 @@ bool Texture::stbiLoad(Texture& texture, const std::string& path)
 	}
 
 	std::vector<LoadedTexture> textureData;
-	textureData.push_back(LoadedTexture(pixels, static_cast<size_t>(width) * static_cast<size_t>(height) * 4, width, height));
+	textureData.emplace_back(pixels, static_cast<size_t>(width) * static_cast<size_t>(height) * 4, width, height);
 
 	texture.Init(std::move(textureData), VK_FORMAT_R8G8B8A8_SRGB, as_uint32(width), as_uint32(height), as_uint32(channels));
 	return true;

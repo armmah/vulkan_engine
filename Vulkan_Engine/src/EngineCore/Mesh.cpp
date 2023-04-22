@@ -121,7 +121,7 @@ bool MeshDescriptor::operator ==(const MeshDescriptor& other) const
 bool MeshDescriptor::operator !=(const MeshDescriptor& other) const { return !(*this == other); }
 
 template<typename T>
-inline void Mesh::mapAndCopyBuffer(const VmaAllocator& vmaAllocator, VmaAllocation& memRange, const T* source, size_t elementCount, size_t totalByteSize, const char* message)
+inline void Mesh::mapAndCopyBuffer(VmaAllocator vmaAllocator, VmaAllocation memRange, const T* source, size_t elementCount, size_t totalByteSize, const char* message)
 {
 	void* data;
 	vmaMapMemory(vmaAllocator, memRange, &data);
@@ -196,7 +196,7 @@ bool Mesh::allocateVertexAttributes(VkMesh& graphicsMesh, const VmaAllocator& vm
 	return true;
 }
 
-bool Mesh::allocateIndexAttributes(VkMesh& graphicsMesh, const SubMesh& submesh, const VmaAllocator& vmaAllocator, const Presentation::Device* presentationDevice, StagingBufferPool& stagingPool)
+bool Mesh::allocateIndexAttributes(VkMesh& graphicsMesh, const SubMesh& submesh, VmaAllocator vmaAllocator, const Presentation::Device* presentationDevice, StagingBufferPool& stagingPool)
 {
 	size_t totalSize = vectorsizeof(submesh.m_indices);
 	auto indexCount = submesh.getIndexCount();
@@ -235,8 +235,8 @@ bool Mesh::allocateIndexAttributes(VkMesh& graphicsMesh, const SubMesh& submesh,
 		indexPrecision = VkIndexType::VK_INDEX_TYPE_UINT32;
 	assert(indexPrecision != VkIndexType::VK_INDEX_TYPE_MAX_ENUM);
 
-	graphicsMesh.iAttributes.push_back(
-		IndexAttributes(iBuffer, iMemRange, as_uint32(indexCount), indexPrecision)
+	graphicsMesh.iAttributes.emplace_back(
+		iBuffer, iMemRange, as_uint32(indexCount), indexPrecision
 	);
 
 	return true;
@@ -260,7 +260,7 @@ void Mesh::copyInterleavedNoCheck(std::vector<float>& interleavedVertexData, con
 	}
 }
 
-bool Mesh::allocateGraphicsMesh(VkMesh& graphicsMesh, const VmaAllocator& vmaAllocator, const Presentation::Device* presentationDevice, StagingBufferPool& stagingPool)
+bool Mesh::allocateGraphicsMesh(VkMesh& graphicsMesh, VmaAllocator vmaAllocator, const Presentation::Device* presentationDevice, StagingBufferPool& stagingPool)
 {
 	if (!allocateVertexAttributes(graphicsMesh, vmaAllocator, presentationDevice, stagingPool))
 		return false;

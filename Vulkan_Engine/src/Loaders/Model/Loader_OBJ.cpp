@@ -117,7 +117,7 @@ bool Loader::loadOBJ_Implementation(std::vector<Mesh>& meshes, std::vector<Mater
 			auto submeshDesc = kvPair.second;
 
 			materialIDs.push_back(materialID);
-			submeshes.push_back(SubMesh(submeshDesc.indexCount * 3));
+			submeshes.emplace_back(submeshDesc.indexCount * 3);
 		}
 		meshToMaterialMapping[i] = materialIDs;
 
@@ -225,7 +225,7 @@ bool Loader::loadOBJ_Implementation(std::vector<Mesh>& meshes, std::vector<Mater
 				{
 					uniqueMaterials[materialID] = materials.size();
 					globalBufMaterialIDs.push_back(materials.size());
-					materials.push_back(Material(0, TextureSource(std::move(texPath))));
+					materials.emplace_back(0, TextureSource(std::move(texPath)));
 				}
 				else
 				{
@@ -234,12 +234,12 @@ bool Loader::loadOBJ_Implementation(std::vector<Mesh>& meshes, std::vector<Mater
 			}
 		}
 
-		rendererIDs.push_back(Renderer(kv.first, 0, globalBufMaterialIDs));
+		rendererIDs.emplace_back(kv.first, 0, globalBufMaterialIDs);
 	}
 
 	if (transforms.size() == 0)
 	{
-		transforms.push_back(Transform());
+		transforms.emplace_back(Transform());
 	}
 
 	return true;

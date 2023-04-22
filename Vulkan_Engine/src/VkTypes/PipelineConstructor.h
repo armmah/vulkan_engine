@@ -67,7 +67,7 @@ namespace PipelineConstruction
 	struct PipelineStageCollection : ComponentCreateInfoAbstract
 	{
 		PipelineStageCollection(ShaderStage* vertStage, ShaderStage* fragStage);
-		~PipelineStageCollection() { }
+		~PipelineStageCollection() = default;
 
 		bool isValid() const override;
 		void submit(VkGraphicsPipelineCreateInfo& pipelineCI) const override;

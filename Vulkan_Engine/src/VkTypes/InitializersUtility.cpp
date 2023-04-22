@@ -223,7 +223,7 @@ bool vkinit::Descriptor::createDescriptorSets(std::array<VkDescriptorSet, SWAPCH
 }
 
 bool vkinit::Descriptor::createDescriptorSets(std::array<VkDescriptorSet, SWAPCHAIN_IMAGE_COUNT>& descriptorSets,
-	VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout, const VkImageView& imageView, const VkSampler& sampler)
+	VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout, VkImageView imageView, VkSampler sampler)
 {
 	constexpr auto imageCount = SWAPCHAIN_IMAGE_COUNT;
 	std::array<VkDescriptorSetLayout, imageCount> layouts{};
@@ -386,7 +386,7 @@ bool vkinit::Texture::createTextureImageView(VkImageView& imageView, VkDevice de
 	return vkCreateImageView(device, &viewInfo, nullptr, &imageView) == VK_SUCCESS;
 }
 
-bool vkinit::Surface::createFrameBuffer(VkFramebuffer& frameBuffer, VkDevice device, VkRenderPass renderPass, VkExtent2D extent, std::array<VkImageView, SWAPCHAIN_IMAGE_COUNT> imageViews, uint32_t count)
+bool vkinit::Surface::createFrameBuffer(VkFramebuffer& frameBuffer, VkDevice device, VkRenderPass renderPass, VkExtent2D extent, const std::array<VkImageView, SWAPCHAIN_IMAGE_COUNT>& imageViews, uint32_t count)
 {
 	VkFramebufferCreateInfo framebufferInfo{};
 	framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -431,7 +431,7 @@ bool vkinit::Texture::createTextureSampler(VkSampler& sampler, VkDevice device, 
 	return (vkCreateSampler(device, &samplerInfo, nullptr, &sampler) == VK_SUCCESS);
 }
 
-bool vkinit::MemoryBuffer::createVmaAllocator(VmaAllocator& vmaAllocator, const VkInstance instance, const VkPhysicalDevice physicalDevice, const VkDevice device)
+bool vkinit::MemoryBuffer::createVmaAllocator(VmaAllocator& vmaAllocator, VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device)
 {
 	VmaAllocatorCreateInfo allocatorInfo = {};
 	allocatorInfo.instance = instance;
@@ -441,7 +441,7 @@ bool vkinit::MemoryBuffer::createVmaAllocator(VmaAllocator& vmaAllocator, const 
 	return vmaCreateAllocator(&allocatorInfo, &vmaAllocator) == VK_SUCCESS;
 }
 
-bool vkinit::MemoryBuffer::allocateBufferAndMemory(VkBuffer& buffer, VmaAllocation& memRange, const VmaAllocator& vmaAllocator, uint32_t totalSizeBytes, VmaMemoryUsage memUsage, VkBufferUsageFlags flags)
+bool vkinit::MemoryBuffer::allocateBufferAndMemory(VkBuffer& buffer, VmaAllocation& memRange, VmaAllocator vmaAllocator, uint32_t totalSizeBytes, VmaMemoryUsage memUsage, VkBufferUsageFlags flags)
 {
 	VmaAllocationCreateInfo vmaACI{};
 	vmaACI.usage = memUsage;

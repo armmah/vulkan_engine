@@ -34,7 +34,7 @@ void Loader::crawl(std::vector<Transform>& globalTransformCollection, std::unord
 {
 	auto localMatrix = parentMatrix * node->mTransformation;
 
-	globalTransformCollection.push_back(Transform(Loader::convertToGLM(localMatrix)));
+	globalTransformCollection.emplace_back(Loader::convertToGLM(localMatrix));
 
 	for (unsigned int mi = 0; mi < node->mNumMeshes; mi++)
 	{
@@ -203,7 +203,7 @@ bool Loader::load_AssimpImplementation(std::vector<Mesh>& meshes, std::vector<Ma
 
 		// By default set the material ID to 0, when its loaded and processed successfuly will be replaced by actual ID.
 		auto meshFinalIndex = meshes.size() - 1;
-		rendererIDs.push_back(Renderer(meshFinalIndex, meshToTransform[mi], { 0 }));
+		rendererIDs.emplace_back(meshFinalIndex, meshToTransform[mi]);
 		textureToMeshMap[matIndex].push_back(meshFinalIndex);
 	}
 
@@ -215,7 +215,7 @@ bool Loader::load_AssimpImplementation(std::vector<Mesh>& meshes, std::vector<Ma
 		std::string diffusePath;
 		if (getTexPath(diffusePath, dir, mat, aiTextureType::aiTextureType_DIFFUSE))
 		{
-			materials.push_back(Material(0, TextureSource(std::move(diffusePath), VK_FORMAT_R8G8B8A8_SRGB, true)));
+			materials.emplace_back(0, TextureSource(std::move(diffusePath), VK_FORMAT_R8G8B8A8_SRGB, true));
 
 			// Replace the material ID, if successfuly loaded the m_texture, for all meshes referencing it.
 			for (auto& meshID : textureToMeshMap[mi])

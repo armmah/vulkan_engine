@@ -24,7 +24,7 @@ VulkanEngine::VulkanEngine(std::string appDir)
 	Directories::applicationPath = Path(std::move(appDir));
 }
 
-VulkanEngine::~VulkanEngine() { }
+VulkanEngine::~VulkanEngine() = default;
 
 void VulkanEngine::init(bool requestValidationLayers)
 {
@@ -212,7 +212,7 @@ void VulkanEngine::draw()
 	auto buffer = frame.getCommandBuffer();
 	vkResetCommandBuffer(buffer, 0);
 	
-	const auto renderers = m_openScene->getRenderers();
+	const auto& renderers = m_openScene->getRenderers();
 	m_presentationTarget->applyFrameConfiguration(m_frameSettings.get());
 	m_renderLoopStatistics = m_presentationTarget->renderLoop(renderers, *m_cam, *m_lightTransform, buffer, m_frameNumber);
 
